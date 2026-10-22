@@ -218,3 +218,47 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# ScholarLens project data and generated artifacts
+# Original/large paper files and parser output
+*.pdf
+*.xml
+*.jsonl
+!data/sample/*.jsonl
+/data/raw/
+/data/processed/
+/data/index/
+/data/models/
+
+# Local databases and search engine state
+*.db
+*.sqlite
+*.sqlite3
+/elasticsearch-data/
+/infra/volumes/
+
+# ML/model caches
+.cache/
+.huggingface/
+transformers_cache/
+*/.cache/
+
+# Dependencies and frontend build output
+node_modules/
+frontend/dist/
+frontend/.vite/
+backend/.venv/
+
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Logs, reports and temporary files
+*.log
+*.tmp
+*.bak
+reports/generated/
+coverage/
