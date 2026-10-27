@@ -12,9 +12,9 @@
 
 ## 发布
 
-- 保持 `zjl` 分支，提交后端改动与 frontend 源码，不合并 main 或数据分支，不上传原始论文、数据库、模型、QA账户、日志和真实配置。
+- 保持 `zjl` 分支，提交后端改动与 frontend 源码，不合并 main 或数据分支，不将原始论文写入源码历史，不上传数据库、模型、QA账户、日志和真实配置；本批原件仅按后续明确授权发布于独立数据 Release。
 - FastAPI 可通过 `FRONTEND_DIST` 提供 production build，前端与 `/api` 共用一个 HTTPS 域名。未知 API 不回退为 HTML；静态路径不得穿越目录。
 - Cloudflare Tunnel 仅转发该应用的 loopback HTTP 端口，使用独立隧道与子域名，不修改已有服务或 DNS。电脑托管需要保持电脑、API、ES 和隧道运行；服务器托管不依赖个人电脑。CF Pages 本身不运行现有 Python/Elasticsearch 后端。
-- 邮件服务、原 PDF/XML 可以以后补接；缺失依赖保持真实状态。
+- 2026-10-28：正式库 859 份原 PDF 已接通；完整 999 份原包、正式 JSONL 与来源 CSV 在独立 [数据 Release](https://github.com/Scarlett-web/scholarlens-ir/releases/tag/papers-originals-2026-10-28) 存档，仍不写入源码 Git 历史。恢复与回滚见 [原件交付说明](13_ORIGINAL_PDF_DELIVERY.md)。邮件服务、XML 和真实供应商生成仍待后续；缺失依赖保持真实状态。
 
 验收：个人配置的两用户隔离、退出清理、私网/重绑定/跳转限制、密钥不进入响应、原有问答契约回归；前端 build/unit/structure/browser；同源主页、深层路由、静态文件及 API 错误边界；推送后核对远端提交。

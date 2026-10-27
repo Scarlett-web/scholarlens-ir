@@ -10,7 +10,8 @@ ScholarLens 是《信息检索》课程大作业，实现真实学术论文的�
 - 每个登录用户可独立填写 OpenAI 兼容 URL、模型及密钥；密钥只保存在标签页 sessionStorage，退出清除，按请求使用，不写服务器数据库。默认配置空，未做真实供应商调用。
 - 本轮本机后端 161 passed、1 deselected；前端 build、15 tests、structure、真实检索浏览器和14项账户流程通过。被排除的是独立 API 重启测试，不把历史结果当本轮证明。
 - FastAPI 支持 FRONTEND_DIST 同源托管，服务器与 Cloudflare 独立部署见 [部署说明](docs/11_SERVER_DEPLOYMENT.md)。本机测试不代表外网已发布，外网状态以实际部署验收为准。
-- 邮件、原始 PDF/XML 后续补接；正文可读不代表原 PDF 可下载，缺失时明确返回状态。
+- 正式库 859 份原始 PDF 已接通在线阅读与下载；逐份来源哈希、源站及公网浏览器 Range 检查通过，原件共 22,686 页。完整 999 份原包和元数据独立存档于 [GitHub 数据 Release](https://github.com/Scarlett-web/scholarlens-ir/releases/tag/papers-originals-2026-10-28)，大文件不进入源码历史；恢复、验收和回滚见 [原件交付说明](docs/13_ORIGINAL_PDF_DELIVERY.md)。
+- 邮件、真实 AI 上游调用、XML 和首次管理员指定仍待后续；PDF 阅读无需 XML。原件清晰度与扫描质量按原文件，不从正文重造 PDF。
 
 ## 上一版本后端状态（2026-10-27，历史）
 
@@ -27,7 +28,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File infra/start-scholarlens.ps1
 Invoke-RestMethod 'http://127.0.0.1:8000/api/stats'
 ```
 
-本机接口文档为`http://127.0.0.1:8000/docs`，能力状态为`/api/capabilities`。首次在新电脑使用时，先按[Windows启动说明](backend/BACKEND_STARTUP.md)安装依赖、配置数据与索引；GitHub代码不包含虚拟环境、原论文、数据库、ES索引或模型缓存，克隆后不会自动拥有本机859篇数据。
+本机接口文档为`http://127.0.0.1:8000/docs`，能力状态为`/api/capabilities`。首次在新电脑使用时，先按[Windows启动说明](backend/BACKEND_STARTUP.md)安装依赖、配置数据与索引；Git 源码不包含虚拟环境、原论文、数据库、ES索引或模型缓存；原件和正式 JSONL/来源 CSV 需从独立数据 Release 恢复，克隆源码不会自动拥有索引或模型。
 
 - [后端说明](backend/README.md)
 - [前端API手册](backend/FRONTEND_API_GUIDE.md)
@@ -74,7 +75,7 @@ Invoke-RestMethod 'http://127.0.0.1:8000/api/stats'
 ├── README.md
 ├── docs/                     # 需求、架构、协议、UI、计划和验收文档
 ├── backend/                  # 组长：FastAPI、检索、RAG、SQLite、测试与交接文档
-├── frontend/                 # 组员 B：React UI（当前仅占位）
+├── frontend/                 # React UI、个人 AI 配置与真实 API 对接
 ├── scripts/                  # 组员 A：解析、清洗、评测脚本（当前仅占位）
 ├── infra/                    # 组长：Windows Elasticsearch与后端启动/停止配置
 └── data/
