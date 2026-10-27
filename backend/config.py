@@ -26,8 +26,20 @@ class Settings:
     ai_max_tokens: int = 800
     grobid_url: str = ""
     uploads_index: str = "scholarlens-uploads-real"
+    upload_vector_index: str = "scholarlens-vectors-uploads-real"
     ai_token_parameter: str = "max_completion_tokens"
     pdf_manifest_path: str = ""
+
+    def __post_init__(self):
+        if (
+            self.uploads_index != "scholarlens-uploads-real"
+            and self.upload_vector_index == "scholarlens-vectors-uploads-real"
+        ):
+            object.__setattr__(
+                self,
+                "upload_vector_index",
+                "scholarlens-vectors-" + self.uploads_index.removeprefix("scholarlens-"),
+            )
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -47,6 +59,7 @@ class Settings:
             ai_max_tokens=int(os.getenv("AI_MAX_OUTPUT_TOKENS", "800")),
             grobid_url=os.getenv("GROBID_URL", ""),
             uploads_index=os.getenv("UPLOADS_INDEX", cls.uploads_index),
+            upload_vector_index=os.getenv("UPLOAD_VECTOR_INDEX", cls.upload_vector_index),
             ai_token_parameter=os.getenv("AI_TOKEN_PARAMETER", cls.ai_token_parameter),
             pdf_manifest_path=os.getenv("SCHOLARLENS_PDF_MANIFEST", ""),
         )

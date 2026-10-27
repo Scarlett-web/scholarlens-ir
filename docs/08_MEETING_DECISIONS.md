@@ -1,5 +1,9 @@
 # 08 首次会议决策表（2026-10-22）
 
+## V2.1 本次会话授权
+
+组长明确以introduction.pdf功能为基准放行业务补齐及会话化AI，不改前端、不提交推送。选择SQLite加法迁移和备份、受限本地文本PDF→DOCX、可配置HTTP邮件网关、验证完整引用后分段SSE、复用相同chunk向量的上传增量代。报告中的MD5与公开管理员注册不照搬，继续scrypt与本地管理员提升。邮件网关/真实AI服务、OCR/真实原论文PDF及GROBID地址仍待会议确认，负责人组长/数据组，交付时间待会议确认；本轮不代发群聊/邮件或issue。状态与验收见backend/V21_PARITY_VERIFICATION.md。
+
 ## 2026-10-27 后端 V2 会话决定
 
 本次完整Goal附件由组长明确授权D-11~D-19后端开发，不等待React、不改frontend。选择CPU MiniLM-L6-v2 ONNX（固定revision、384维、约90MB、2线程），独立向量索引，ES精确cosine与RRF(k=60)，SQLite会话/收藏/历史，管理员批准后独立上传索引；原859篇基础索引和旧generation保留。AI兼容服务留空配置；真实Key、PDF实物、GROBID安装和相关性人工标注仍待会议确认，负责人组长/A，资源交付与标注截止待会议确认。前端接口变更记录在04_API_CONTRACT与backend/FRONTEND_API_GUIDE，供组长转交组员，未代发群聊或issue。实际验收记录在BACKEND_V2_VERIFICATION，不能以受控替身冒充外部服务成功。

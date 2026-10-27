@@ -1,5 +1,26 @@
 # Windows 后端启动与恢复
 
+## V2.1 增补
+
+当前入口版本0.2.1，完整新增接口见[FRONTEND_API_GUIDE_V21](FRONTEND_API_GUIDE_V21.md)，验收见[V21_PARITY_VERIFICATION](V21_PARITY_VERIFICATION.md)。原V2启动方式不变，日常启动不重导基础859篇或49420向量。新增依赖python-docx、Pillow已锁定；真实AI、邮件、GROBID和原论文PDF仍需自行配置。
+
+私有.env新增`EMAIL_BASE_URL`、`EMAIL_API_KEY`（邮件HTTP网关）及`UPLOAD_VECTOR_INDEX=scholarlens-vectors-uploads-real`。一键脚本按白名单加载，不执行.env文本，不输出密钥。EMAIL端点的JSON协议和验证码限制见V2.1手册；不要将真实Key填写到.env.example。
+
+SQLite当前schema_version=4。启动先以SQLite backup API保存迁移前一致性副本至runtime/db-backups，记录SHA，再幂等新增字段/表，不删除旧用户记录。测试证明旧账号字段/哈希、收藏和历史可保留；本机初次审计的实际用户/收藏/上传表均为0行，主库没有用于存储验收账号。
+
+早期原型的第1次加法字段迁移已发生在首次快照前，现有observed快照记录了该事实；随后v3/v4升级有迁移前自动备份。测试另用旧V2字段的独立数据库执行完整升级/恢复，不把observed副本伪称为第一次字段变更前的备份。
+
+数据库恢复须先停止所有使用同一runtime的API/任务。恢复会保留恢复前数据库，**不要把测试数据库覆盖主库**：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File infra/stop-backend.ps1
+backend/.venv/Scripts/python.exe -m backend.db_migrations --database backend/.runtime/scholarlens.sqlite3 --restore PATH_TO_YOUR_VERIFIED_BACKUP
+```
+
+恢复旧schema后若重新启动V2.1会再次执行加法迁移；要回退应用版本也需恢复对应源码。恢复旧备份会撤回备份后的业务写入，应先审阅时间及保留的副本，不能作为日常重启步骤。源代码回退不自动替换用户数据库。
+
+DOCX转换使用本地受限子进程（30秒），没有额外后台服务；扫描PDF需要外部OCR。当前转换仅文本层，复杂排版不保证还原。审批成功的上传使用独立关键词/向量generation，失败重试和管理员向量重试都保留旧代；Porter对照只使用新建的专用测试索引。
+
 2026-10-27。工作区F:\scholarlens-ir，分支zjl。已有Python3.11虚拟环境和ES8.19.23 ZIP，不需要Docker或重新安装。API/ES仅loopback，SQLite不提供独立网络端口。
 
 ## 日常一键启动

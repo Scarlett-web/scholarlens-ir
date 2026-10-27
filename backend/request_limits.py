@@ -12,11 +12,17 @@ class UploadLimitMiddleware:
         self.max_bytes = max_bytes
 
     async def __call__(self, scope, receive, send):
-        if scope["type"] != "http" or scope["path"] != "/api/uploads" or scope["method"] != "POST":
+        if (
+            scope["type"] != "http"
+            or scope["path"] not in ("/api/uploads", "/api/admin/uploads", "/api/me/avatar")
+            or scope["method"] != "POST"
+        ):
             return await self.app(scope, receive, send)
         headers = {k.decode().lower(): v.decode() for k, v in scope.get("headers", [])}
         try:
-            self.store.authenticate(headers.get("authorization"))
+            user = self.store.authenticate(headers.get("authorization"))
+            if scope["path"] == "/api/admin/uploads" and user["role"] != "admin":
+                raise problem(403, "forbidden", "需要管理员权限")
             length = headers.get("content-length")
             if length is not None:
                 try:

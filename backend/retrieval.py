@@ -32,6 +32,29 @@ def vector_metadata(es, settings, base: str) -> tuple[str, dict]:
     return generation, meta
 
 
+def upload_vector_indices(es, settings) -> list[str]:
+    if not es.indices.exists_alias(name=settings.upload_vector_index):
+        return []
+    if not es.indices.exists_alias(name=settings.uploads_index):
+        return []
+    source = list(es.indices.get_alias(name=settings.uploads_index))
+    mappings = es.indices.get_mapping(index=settings.upload_vector_index)
+    if len(source) != 1 or len(mappings) != 1:
+        raise unavailable(message="上传向量与论文版本不一致")
+    meta = next(iter(mappings.values()))["mappings"].get("_meta", {})
+    if meta.get("base_generation") != source[0] or meta.get("model_revision") != REVISION:
+        raise unavailable(message="上传向量需要重新构建，关键词检索仍可使用")
+    return list(mappings)
+
+
+def uploaded_papers(es, settings):
+    return (
+        list(es.indices.get_alias(name=settings.uploads_index))
+        if es.indices.exists_alias(name=settings.uploads_index)
+        else []
+    )
+
+
 def vector_candidates(
     es, settings, base: str, params, paper_ids=None, collapse_papers=True, chunk_limit=100
 ):
@@ -53,8 +76,9 @@ def vector_candidates(
     if paper_ids is not None:
         filters.append({"terms": {"paper_id": paper_ids}})
     aggregation = {"collapse": {"field": "paper_id"}} if collapse_papers else {}
+    vector_indices = [generation, *upload_vector_indices(es, settings)]
     result = es.search(
-        index=generation,
+        index=vector_indices,
         size=WINDOW if collapse_papers else min(chunk_limit, 200),
         query={
             "script_score": {
@@ -119,7 +143,7 @@ def search_extended(es, settings, base, params, build_search):
     if params.mode == "hybrid":
         body = build_search(params)
         body.update(from_=0, size=WINDOW, sort=[{"_score": "desc"}, {"paper_id": "asc"}])
-        keyword = es.search(index=base, **body)["hits"]["hits"]
+        keyword = es.search(index=[base, *uploaded_papers(es, settings)], **body)["hits"]["hits"]
     dense_ids = [h["_source"]["paper_id"] for h in dense]
     keyword_ids = [h["_source"]["paper_id"] for h in keyword]
     ranked = (
@@ -136,15 +160,16 @@ def search_extended(es, settings, base, params, build_search):
             "took_ms": int((time.monotonic() - started) * 1000),
             "results": [],
         }
-    docs = {
-        d["_id"]: d["_source"]
+    docs = {}
+    base_ids = [p for p, _ in ranked]
+    for index_name in [base, *uploaded_papers(es, settings)]:
         for d in es.mget(
-            index=base,
-            ids=[p for p, _ in ranked],
+            index=index_name,
+            ids=base_ids,
             source_includes=["paper_id", "title", "authors", "year", "abstract"],
-        )["docs"]
-        if d.get("found")
-    }
+        )["docs"]:
+            if d.get("found"):
+                docs[d["_id"]] = d["_source"]
     ranked = [entry for entry in ranked if entry[0] in docs]
     if params.sort != "relevance":
         ranked.sort(

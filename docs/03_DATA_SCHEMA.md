@@ -2,6 +2,8 @@
 
 ## 1. 约定
 
+V2.1：正式论文JSONL及ID不变；SQLite schema_version=4增加profile/email验证、收藏夹及关联、浏览历史、通知、会话消息、审核归档和验证码限次。升级前SQLite backup并记录哈希，恢复CLI见backend/BACKEND_STARTUP.md；旧列/记录不删除。上传向量位于独立alias，与上传关键词generation绑定，匹配模型/分块版本且chunk_id及原文完全一致时复用旧向量，仅编码新增/变化片段；基础859篇和49420片段保留。负责人组长，验收为旧字段保留、用户隔离、备份恢复及真实上传三模式测试。
+
 2026-10-27 V2：原JSONL不变。独立向量片段保存paper_id/chunk_id/field/offset_start/offset_end/text/year/model_version/embedding；chunk_id由paper_id、字段、位置、内容哈希确定，locator为真实字符区间，不猜页码。SQLite独立保存用户、哈希会话、收藏、历史、上传审核与任务；服务器路径、密码哈希、令牌哈希不进入公开响应。负责人组长，验收为片段回溯一致、用户隔离及重启持久化。
 
 - 文件格式为 UTF-8，每行一个 JSON 对象；不得把整批数据包装成 JSON 数组。

@@ -8,7 +8,8 @@ from elasticsearch.helpers import scan
 from fastapi import APIRouter
 from pydantic import BaseModel
 
-from backend.retrieval import vector_metadata
+from backend.retrieval import vector_metadata, upload_vector_indices
+import os
 from backend.retrieval import encoder
 from backend.rag import provider_verified
 from backend.pdf_access import resolve_document_pdf, resolve_pdf
@@ -46,6 +47,7 @@ def router(es, settings, metadata, store):
             if not base:
                 raise ValueError("no base")
             generation, vector_meta = vector_metadata(es, settings, base)
+            upload_vector_indices(es, settings)
             if es.count(index=generation)["count"] != vector_meta["chunks"]:
                 raise ValueError("incomplete vector index")
             encoder(settings.model_dir)
@@ -104,6 +106,34 @@ def router(es, settings, metadata, store):
             local = {"status": "dependency_unavailable", "reason": "SQLite尚未就绪"}
         for name in ("favorites", "history", "authentication", "uploads"):
             modules[name] = local
+        for name in (
+            "profile",
+            "favorite_folders",
+            "browsing_history",
+            "ai_conversations",
+            "notifications",
+        ):
+            modules[name] = local
+        modules["password_recovery"] = {
+            "status": "not_configured"
+            if not os.getenv("EMAIL_BASE_URL")
+            else "dependency_unavailable",
+            "reason": "未配置邮件服务"
+            if not os.getenv("EMAIL_BASE_URL")
+            else "邮件端点已配置，以实际发送结果为准",
+        }
+        modules["pdf_to_docx"] = {
+            "status": "ready",
+            "reason": "本地文本PDF转换器已安装；文件可用性逐请求校验，扫描件需OCR",
+        }
+        modules["ai_stream"] = {
+            "status": "ready"
+            if configured and provider_verified(settings)
+            else "not_configured"
+            if not configured
+            else "dependency_unavailable",
+            "reason": "完整回答验证后分段SSE，不是上游逐token流",
+        }
         grobid_ready = False
         if settings.grobid_url:
             try:
@@ -149,6 +179,11 @@ def router(es, settings, metadata, store):
             }
         except Exception:
             pass
+        try:
+            uploaded_vectors = upload_vector_indices(es, settings)
+            upload_vector_ready = bool(uploaded_vectors)
+        except Exception:
+            upload_vector_ready = False
         return {
             "base_papers": base_count,
             "approved_uploads": uploaded,
@@ -158,8 +193,8 @@ def router(es, settings, metadata, store):
             "vector": vectors,
             "rrf_k": 60,
             "candidate_window": 1000,
-            "semantic_scope": "base_corpus",
-            "uploaded_semantic_status": "not_vectorized",
+            "semantic_scope": "base_and_vectorized_uploads",
+            "uploaded_semantic_status": "ready" if upload_vector_ready else "not_vectorized",
             "precision_at_5": None,
             "ndcg_at_10": None,
         }
@@ -176,5 +211,20 @@ def router(es, settings, metadata, store):
                 "reason": "尚无实际评价记录或人工标注",
             }
         return json.loads(path.read_text(encoding="utf-8"))
+
+    @api.get("/data-quality")
+    def data_quality():
+        base, meta = metadata()
+        date_count = es.count(index=base, query={"exists": {"field": "date"}})["count"]
+        year_count = es.count(index=base, query={"exists": {"field": "year"}})["count"]
+        return {
+            "indexed": es.count(index=base)["count"],
+            "date_complete": date_count,
+            "date_missing": es.count(index=base)["count"] - date_count,
+            "year_present": year_count,
+            "year_missing": es.count(index=base)["count"] - year_count,
+            "date_filter_note": "date只包含完整YYYY-MM-DD；缺完整日期的论文仍可用year筛选，不能由year补造月份和日期",
+            "status": meta["data_status"],
+        }
 
     return api

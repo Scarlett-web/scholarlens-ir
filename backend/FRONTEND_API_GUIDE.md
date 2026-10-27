@@ -26,6 +26,7 @@ API基础地址http://127.0.0.1:8000；Swagger为/docs，机器协议为/openapi
 | GET /api/evaluation | 无 | 已测三模式延迟或not_evaluated，相关性指标无标注时null | 匿名 |
 | GET /api/suggest | q，limit=8（1..20） | query、suggestions数组 | 匿名 |
 | GET /api/discover | limit=6（1..20） | papers、recommendations、example_searches、years、status | 匿名 |
+| GET /api/discover/random | limit、seed、exclude | 随机推荐批次与seed，换一批时传回已见paper_id | 匿名 |
 | GET /api/search | 下表查询参数 | query/total/page/page_size/took_ms/results | 匿名 |
 | GET /api/papers/{id} | include_fulltext=true | 元数据、正文、质量、来源和PDF状态 | 匿名 |
 | GET /api/papers/{id}/content | offset=0，limit=8000（1..20000） | 正文字符窗口 | 匿名 |
@@ -102,6 +103,8 @@ total在keyword是精确匹配论文数，在semantic/hybrid是去重候选论�
 ## 建议和发现
 
 suggest的建议字段为text/field/paper_id，field为title或authors，按词前缀匹配并去重；输入空或仅特殊字符返回空数组，不使用虚构热门词。客户端建议防抖200~300ms，失败时保留手动搜索。
+
+随机推荐使用`/api/discover/random?limit=3`。响应返回seed和recommendations；前端把已展示的paper_id逗号拼接到下一次`exclude`，即可稳定换一批，服务端不编造热度或阅读量。seed相同且exclude相同可复现，省略seed会生成新批次。
 
 ```json
 {"query":"magnet","suggestions":[{"text":"Dynamic Magnetic Resonance Inverse Imaging of Human Brain Function","field":"title","paper_id":"source-sha256:00a0e8b16d0dda799ea25a2f38579c3c203ac076f04d2949c86247f65e98baae"}]}

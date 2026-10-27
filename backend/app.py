@@ -31,11 +31,13 @@ from backend.accounts import Store, router as accounts_router
 from backend.rag import router as rag_router
 from backend.capabilities import router as capabilities_router
 from backend.uploads import router as uploads_router
+from backend.docx_convert import router as docx_router
+from backend.email_codes import router as email_router
 from dataclasses import replace
 from backend.request_limits import UploadLimitMiddleware
 from backend.pdf_response import PDFResponse
 from backend.chunks import chunks
-from backend.retrieval import vector_metadata
+from backend.retrieval import vector_metadata, upload_vector_indices
 import re
 from pathlib import PureWindowsPath
 
@@ -137,7 +139,7 @@ def create_app(settings: Settings | None = None, client=None) -> FastAPI:
 
     app = FastAPI(
         title="ScholarLens",
-        version="0.2.0",
+        version="0.2.1",
         lifespan=lifespan,
         responses={
             status: {"model": ErrorResponse}
@@ -249,6 +251,19 @@ def create_app(settings: Settings | None = None, client=None) -> FastAPI:
                 return resolve_pdf("uploads/files/" + row["stored_name"], own_settings)
             return None
         return resolve_document_pdf(doc, settings)
+
+    def upload_lookup(upload_id, user):
+        with store.connect() as db:
+            row = db.execute("SELECT * FROM uploads WHERE id=?", (upload_id,)).fetchone()
+        if row is None or (row["user_id"] != user["id"] and user.get("role") != "admin"):
+            raise HTTPException(
+                404, detail={"code": "not_found", "message": "上传记录不存在", "details": {}}
+            )
+        if row["status"] not in ("pending", "approved", "processing", "indexed"):
+            raise HTTPException(
+                409, detail={"code": "invalid_state", "message": "上传尚未允许下载", "details": {}}
+            )
+        return row
 
     @app.get("/api/search", response_model=SearchResponse)
     def search(response: Response, params: SearchParams = Depends()):
@@ -430,12 +445,17 @@ def create_app(settings: Settings | None = None, client=None) -> FastAPI:
             )
         base, _ = metadata()
         vector_generation, _ = vector_metadata(es, settings, base)
-        try:
-            hit = es.get(index=vector_generation, id=chunk_id, source_excludes=["embedding"])
-        except NotFoundError as exc:
+        hit = None
+        for generation in [vector_generation, *upload_vector_indices(es, settings)]:
+            try:
+                hit = es.get(index=generation, id=chunk_id, source_excludes=["embedding"])
+                break
+            except NotFoundError:
+                continue
+        if hit is None:
             raise HTTPException(
                 404, detail={"code": "chunk_not_found", "message": "片段不存在", "details": {}}
-            ) from exc
+            )
         c = hit["_source"]
         doc, _ = read_paper(c["paper_id"])
         if doc.get(c["field"], "")[c["offset_start"] : c["offset_end"]] != c["text"]:
@@ -448,6 +468,8 @@ def create_app(settings: Settings | None = None, client=None) -> FastAPI:
                 },
             )
         return c
+
+    app.include_router(docx_router(settings, store, read_paper, document_pdf, upload_lookup))
 
     @app.get("/api/papers/{paper_id:path}", response_model=PaperDetail)
     def paper_detail(paper_id: str, response: Response, include_fulltext: bool = True):
@@ -485,7 +507,8 @@ def create_app(settings: Settings | None = None, client=None) -> FastAPI:
 
     app.include_router(discovery_router(es, metadata))
     app.include_router(accounts_router(store, read_paper))
-    app.include_router(rag_router(es, settings, metadata, read_paper, upload_indices))
+    app.include_router(email_router(store))
+    app.include_router(rag_router(es, settings, metadata, read_paper, upload_indices, store))
     app.include_router(capabilities_router(es, settings, metadata, store))
     app.include_router(uploads_router(es, settings, store))
 

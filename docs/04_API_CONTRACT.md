@@ -4,6 +4,10 @@
 
 ## 1. 通用约定
 
+### V2.1 业务与AI增补（负责人组长）
+
+输入/输出、认证和验收以backend/V21_PARITY_GOAL.md及FRONTEND_API_GUIDE_V21.md为准。新增profile/avatar/password、绑定邮箱验证与密码找回、收藏夹、七日浏览记录、随机推荐、受控DOCX下载、管理员用户管理、审核预览/通知、我的文献、AI会话/总结/比较，以及上传向量化。原搜索/收藏接口保持兼容。SQLite使用幂等加法迁移、迁移前backup与本地恢复命令；不删除旧索引或原数据。邮件/AI未配置503，不伪造发送、生成、解析或原PDF读取。stream=true采用校验完整回答后分段SSE，未通过引用校验不发送内容；不冒充上游token流。用户及会话数据隔离、转换限时/清理、双路真实上传召回须通过新增测试。
+
 ### 2026-10-27 V2（优先于下方历史阶段标记）
 
 负责人组长。输入现有真实索引、可配置CPU模型和用户请求；输出沿用search全部字段及统一error结构。新增GET /api/suggest(q,limit=8)、GET /api/discover(limit=6)、GET /api/capabilities；建议来自真实title/authors，发现来自确定性真实论文与年份聚合，不编造热度。semantic/hybrid使用独立片段向量索引与真实BM25，RRF k=60；候选窗口1000，超出返回400；semantic只支持field=all/title/fulltext，hybrid关键词侧支持六字段；phrase/fuzzy只用于keyword/hybrid关键词侧，semantic拒绝。semantic/highlight不虚构精确词项；返回匹配片段与model/version解释。一路缺失时503，不静默降级。year/sort对两路及最终论文排序生效，total为候选论文数量，非全库精确语义命中数。

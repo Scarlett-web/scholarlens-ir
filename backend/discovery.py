@@ -1,6 +1,8 @@
 """Suggestions and deterministic discovery derived from the current ES generation."""
 
 import re
+import secrets
+import random
 import threading
 import time
 
@@ -36,6 +38,13 @@ class DiscoverResponse(BaseModel):
     recommendations: list[PaperSummary]
     example_searches: list[ExampleSearch]
     years: list[YearBucket]
+    status: str
+
+
+class RandomDiscoverResponse(BaseModel):
+    seed: str
+    recommendations: list[PaperSummary]
+    excluded_count: int
     status: str
 
 
@@ -108,6 +117,33 @@ def router(es, metadata):
                 {"year": b["key"], "papers": b["doc_count"]}
                 for b in response["aggregations"]["years"]["buckets"]
             ],
+            "status": meta["data_status"],
+        }
+
+    @api.get("/discover/random", response_model=RandomDiscoverResponse)
+    def random_discover(
+        limit: int = Query(default=3, ge=1, le=20),
+        seed: str | None = Query(default=None, max_length=64),
+        exclude: str = Query(default="", max_length=20000),
+    ):
+        generation, meta = metadata()
+        excluded = {item for item in (part.strip() for part in exclude.split(",")) if item}
+        actual_seed = seed or secrets.token_hex(12)
+        rng = random.Random(actual_seed)
+        docs = [
+            h["_source"]
+            for h in scan(
+                es, index=generation, source=["paper_id", "title", "authors", "year", "abstract"]
+            )
+        ]
+        candidates = [doc for doc in docs if doc["paper_id"] not in excluded]
+        if len(candidates) < limit:
+            candidates = docs
+        rng.shuffle(candidates)
+        return {
+            "seed": actual_seed,
+            "recommendations": candidates[:limit],
+            "excluded_count": len(excluded),
             "status": meta["data_status"],
         }
 
