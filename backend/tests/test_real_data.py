@@ -169,12 +169,16 @@ def test_actual_ranking_pagination_years_highlight_details_and_errors(actual_acc
 
 
 def test_mock_and_real_remain_isolated(delivery, request):
+    # Own the synthetic fixture; do not assume or replace a shared mock alias.
+    mock_alias = f"scholarlens-isolation-{uuid.uuid4().hex[:8]}-mock"
+    docs, metadata = load_jsonl(Path("data/sample/mock_papers.jsonl"), "mock")
     with Elasticsearch("http://127.0.0.1:9200", request_timeout=30) as client:
-        assert client.count(index="scholarlens-papers-mock")["count"] == 2
+        import_records(client, mock_alias, docs, metadata)
+        assert client.count(index=mock_alias)["count"] == 2
         assert client.count(index=request.config.getoption("--real-alias"))["count"] == 859
         assert not client.exists(index=request.config.getoption("--real-alias"), id="mock-0002")
         assert not client.exists(
-            index="scholarlens-papers-mock", id=delivery["records"][0]["paper_id"]
+            index=mock_alias, id=delivery["records"][0]["paper_id"]
         )
 
 

@@ -31,6 +31,8 @@ from backend.accounts import Store, router as accounts_router
 from backend.rag import router as rag_router
 from backend.capabilities import router as capabilities_router
 from backend.uploads import router as uploads_router
+from backend.workspace import router as workspace_router
+from backend.web import mount_frontend
 from backend.docx_convert import router as docx_router
 from backend.email_codes import router as email_router
 from dataclasses import replace
@@ -444,9 +446,15 @@ def create_app(settings: Settings | None = None, client=None) -> FastAPI:
                 detail={"code": "invalid_parameter", "message": "chunk_id格式无效", "details": {}},
             )
         base, _ = metadata()
-        vector_generation, _ = vector_metadata(es, settings, base)
+        generations = upload_vector_indices(es, settings)
+        try:
+            vector_generation, _ = vector_metadata(es, settings, base)
+            generations = [vector_generation, *generations]
+        except (HTTPException, NotFoundError):
+            if not generations:
+                raise
         hit = None
-        for generation in [vector_generation, *upload_vector_indices(es, settings)]:
+        for generation in generations:
             try:
                 hit = es.get(index=generation, id=chunk_id, source_excludes=["embedding"])
                 break
@@ -507,6 +515,7 @@ def create_app(settings: Settings | None = None, client=None) -> FastAPI:
 
     app.include_router(discovery_router(es, metadata))
     app.include_router(accounts_router(store, read_paper))
+    app.include_router(workspace_router(store, read_paper))
     app.include_router(email_router(store))
     app.include_router(rag_router(es, settings, metadata, read_paper, upload_indices, store))
     app.include_router(capabilities_router(es, settings, metadata, store))
@@ -524,6 +533,7 @@ def create_app(settings: Settings | None = None, client=None) -> FastAPI:
         return schema
 
     app.openapi = openapi
+    mount_frontend(app, settings.frontend_dir)
     return app
 
 

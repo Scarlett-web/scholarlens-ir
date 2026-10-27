@@ -360,11 +360,10 @@ def test_upload_review_permissions_missing_parser_and_bad_files(env):
         == "approved"
     )
     r = api.post("/api/admin/uploads/" + item["id"] + "/process", headers=other)
-    assert r.status_code == 503
-    assert (
-        api.get("/api/uploads/" + item["id"], headers=user).json()["status"]
-        == "dependency_unavailable"
-    )
+    # Without GROBID, actual text extraction is attempted. This blank fixture requires OCR.
+    assert r.status_code == 202
+    state = api.get("/api/uploads/" + item["id"], headers=user).json()
+    assert state["status"] == "failed" and state["reason"] == "pdf_requires_ocr"
     assert (
         api.post(
             "/api/uploads",

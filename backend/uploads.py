@@ -207,6 +207,34 @@ def tei_to_paper(xml: bytes, sha: str, original: str, relative_pdf: str, page_co
     ).model_dump()
 
 
+def local_pdf_to_paper(path, row):
+    """Extract actual PDF text; never infer scholarly metadata or perform OCR."""
+    reader = PdfReader(path)
+    texts, size = [], 0
+    for page in reader.pages:
+        text = page.extract_text() or ""
+        size += len(text)
+        if size > 2_000_000:
+            raise ValueError("PDF text exceeds extraction limit")
+        texts.append(text)
+    fulltext = "\n\n".join(texts).strip()
+    if not fulltext:
+        raise ValueError("pdf_requires_ocr")
+    metadata = reader.metadata
+    title = str(metadata.title or "").strip() if metadata else ""
+    errors = ["local_pdf_text_extraction", "missing_date", "missing_affiliation", "missing_address", "missing_abstract"]
+    if not title:
+        title = Path(row["original_name"]).stem
+        errors.append("title_from_filename")
+    author = str(metadata.author or "").strip() if metadata else ""
+    if not author:
+        errors.append("missing_authors")
+    return Paper(paper_id="upload-sha256:" + row["sha256"], title=title,
+                 authors=[author] if author else [], fulltext=fulltext,
+                 pages={"count": len(reader.pages)}, pdf_path="uploads/files/" + row["stored_name"],
+                 source_file=row["original_name"], parse_status="partial", errors=errors).model_dump()
+
+
 def router(es, settings, store):
     if (
         not settings.uploads_index.startswith("scholarlens-uploads-")
@@ -308,6 +336,14 @@ def router(es, settings, store):
     def upload_status(upload_id: str, user=Depends(store.current)):
         return public(get_upload(upload_id, user))
 
+    @api.get("/uploads/{upload_id}/pdf")
+    def preview_upload(upload_id: str, user=Depends(store.current)):
+        row = get_upload(upload_id, user)
+        path = storage / row["stored_name"]
+        if not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != row["sha256"]:
+            raise problem(404, "pdf_not_available", "上传文件缺失或校验不符")
+        return PDFResponse(path, media_type="application/pdf", filename="paper.pdf",
+                           content_disposition_type="inline", headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"})
     @api.get("/me/uploads")
     def my_uploads(
         page: int = Query(default=1, ge=1, le=10000),
@@ -434,14 +470,12 @@ def router(es, settings, store):
             verify_pdf(path)
             if hashlib.sha256(path.read_bytes()).hexdigest() != row["sha256"]:
                 raise ValueError("upload hash mismatch")
-            data = call_grobid(settings, path)
-            paper = tei_to_paper(
-                data,
-                row["sha256"],
-                row["original_name"],
-                "uploads/files/" + row["stored_name"],
-                len(PdfReader(path).pages),
-            )
+            if settings.grobid_url:
+                data = call_grobid(settings, path)
+                paper = tei_to_paper(data, row["sha256"], row["original_name"],
+                                     "uploads/files/" + row["stored_name"], len(PdfReader(path).pages))
+            else:
+                paper = local_pdf_to_paper(path, row)
             parsed = (
                 store.root / "uploads" / (upload_id + "-parsed-" + uuid.uuid4().hex[:8] + ".jsonl")
             )
@@ -494,7 +528,7 @@ def router(es, settings, store):
             reason = (
                 "parse_dependency_unavailable"
                 if isinstance(e, (httpx.HTTPError, ConnectionError))
-                else "processing_failed"
+                else "pdf_requires_ocr" if str(e) == "pdf_requires_ocr" else "processing_failed"
             )
             with store.connect() as db:
                 db.execute(
@@ -520,15 +554,6 @@ def router(es, settings, store):
             < 600
         ):
             raise problem(409, "invalid_state", "解析正在进行")
-        if not settings.grobid_url:
-            with store.connect() as db:
-                db.execute(
-                    "UPDATE uploads SET status='dependency_unavailable',reason='grobid_not_configured',updated_at=? WHERE id=?",
-                    (now(), upload_id),
-                )
-            raise problem(
-                503, "dependency_unavailable", "GROBID尚未配置；上传原件已保留，可配置后重试"
-            )
         with store.connect() as db:
             changed = db.execute(
                 "UPDATE uploads SET status='processing',reason='',attempts=attempts+1,updated_at=? WHERE id=? AND status=? AND updated_at=?",

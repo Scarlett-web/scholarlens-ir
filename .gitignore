@@ -265,3 +265,8 @@ backend/.runtime/
 *.bak
 reports/generated/
 coverage/
+
+# Frontend QA runtime and the one synthetic upload fixture
+frontend/output/
+frontend/qa-*.png
+!frontend/tests/fixtures/browser-upload.pdf

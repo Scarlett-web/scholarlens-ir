@@ -29,6 +29,8 @@ class Settings:
     upload_vector_index: str = "scholarlens-vectors-uploads-real"
     ai_token_parameter: str = "max_completion_tokens"
     pdf_manifest_path: str = ""
+    ai_personal: bool = False
+    frontend_dir: str = ""
 
     def __post_init__(self):
         if (
@@ -62,6 +64,7 @@ class Settings:
             upload_vector_index=os.getenv("UPLOAD_VECTOR_INDEX", cls.upload_vector_index),
             ai_token_parameter=os.getenv("AI_TOKEN_PARAMETER", cls.ai_token_parameter),
             pdf_manifest_path=os.getenv("SCHOLARLENS_PDF_MANIFEST", ""),
+            frontend_dir=os.getenv("FRONTEND_DIST", ""),
         )
 
 

@@ -1,0 +1,6 @@
+tunnel: TUNNEL_UUID
+credentials-file: /etc/scholarlens/tunnel.json
+ingress:
+  - hostname: scholarlens.example.com
+    service: http://127.0.0.1:18090
+  - service: http_status:404

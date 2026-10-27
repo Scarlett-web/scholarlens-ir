@@ -148,10 +148,12 @@ def router(es, settings, metadata, store):
             if grobid_ready
             else "dependency_unavailable"
             if settings.grobid_url
-            else "not_configured",
+            else "ready",
             "reason": "GROBID健康检查成功"
             if grobid_ready
-            else "GROBID未配置或健康检查失败；原始上传文件保留",
+            else "配置的GROBID不可用；原始文件保留，可恢复服务后重试"
+            if settings.grobid_url
+            else "使用本地PDF文本提取；仅文本型PDF，不含OCR与结构化学术字段推断",
         }
         return {"modules": modules, "data_status": meta["data_status"]}
 

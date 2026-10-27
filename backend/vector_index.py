@@ -1,6 +1,9 @@
 """Resumable independent vector generation; publish only a fully verified build."""
 
 import argparse
+from collections import deque
+from concurrent.futures import ThreadPoolExecutor
+import threading
 from datetime import datetime, timezone
 import hashlib
 import json
@@ -31,8 +34,47 @@ def atomic_state(path: Path, state: dict):
             time.sleep(0.05 * (attempt + 1))
 
 
-def build(settings: Settings, state_path: Path, batch_size: int = 8) -> dict:
+def encoded_batches(all_chunks, offset, batch_size, model_dir, workers=1):
+    """Bounded CPU prefetch; only the caller acknowledges bulk writes and checkpoints."""
+    local = threading.local()
+
+    def encode(batch):
+        if not hasattr(local, "encoder"):
+            local.encoder = Encoder(model_dir)
+        for attempt in range(3):
+            try:
+                return local.encoder.encode([" ".join(c["text"].split()) for c in batch])
+            except Exception:
+                if attempt == 2:
+                    raise
+                time.sleep(attempt + 1)
+
+    offsets = iter(range(offset, len(all_chunks), batch_size))
+    if workers == 1:
+        for start in offsets:
+            batch = all_chunks[start:start + batch_size]
+            yield start, batch, encode(batch)
+        return
+    with ThreadPoolExecutor(max_workers=workers, thread_name_prefix="scholarlens-embed") as pool:
+        pending = deque()
+        def submit_next():
+            start = next(offsets, None)
+            if start is None:
+                return
+            batch = all_chunks[start:start + batch_size]
+            pending.append((start, batch, pool.submit(encode, batch)))
+        for _ in range(workers * 2):
+            submit_next()
+        while pending:
+            start, batch, future = pending.popleft()
+            yield start, batch, future.result()
+            submit_next()
+
+
+def build(settings: Settings, state_path: Path, batch_size: int = 8, workers: int = 1) -> dict:
     """Acquire a process lock before reading or modifying a checkpoint."""
+    if not 1 <= workers <= 4 or not 1 <= batch_size <= 32:
+        raise ValueError("workers must be 1..4 and batch_size 1..32")
     state_path.parent.mkdir(parents=True, exist_ok=True)
     if not re.fullmatch(
         r"scholarlens-vectors-[a-z0-9-]+", settings.vector_index
@@ -42,10 +84,10 @@ def build(settings: Settings, state_path: Path, batch_size: int = 8) -> dict:
     runtime.mkdir(parents=True, exist_ok=True)
     with FileLock(str(runtime / (settings.vector_index + ".build.lock")), timeout=0):
         with FileLock(str(state_path) + ".lock", timeout=0):
-            return _build(settings, state_path, batch_size)
+            return _build(settings, state_path, batch_size, workers)
 
 
-def _build(settings: Settings, state_path: Path, batch_size: int = 8) -> dict:
+def _build(settings: Settings, state_path: Path, batch_size: int = 8, workers: int = 1) -> dict:
     """Read base ES only, checkpoint acknowledged batches; retain failed generations."""
     if not settings.vector_index.startswith("scholarlens-vectors-") or settings.vector_index in (
         settings.index,
@@ -124,7 +166,6 @@ def _build(settings: Settings, state_path: Path, batch_size: int = 8) -> dict:
                     body={"_meta": {**published_meta, "built_at": state["completed_at"]}},
                 )
             return state
-        encoder = Encoder(settings.model_dir)
         state_path.parent.mkdir(parents=True, exist_ok=True)
 
         def save():
@@ -132,11 +173,9 @@ def _build(settings: Settings, state_path: Path, batch_size: int = 8) -> dict:
 
         save()
         started = time.monotonic()
-        for offset in range(state["completed"], len(all_chunks), batch_size):
-            batch = all_chunks[offset : offset + batch_size]
+        for offset, batch, vectors in encoded_batches(all_chunks, state["completed"], batch_size, settings.model_dir, workers):
             for attempt in range(3):
                 try:
-                    vectors = encoder.encode([" ".join(c["text"].split()) for c in batch])
                     bulk(
                         es.options(request_timeout=60),
                         [
@@ -204,5 +243,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--state", default="backend/.runtime/vector-build.json")
     parser.add_argument("--batch-size", type=int, choices=range(1, 33), default=8)
+    parser.add_argument("--workers", type=int, choices=range(1, 5), default=1)
     args = parser.parse_args()
-    print(json.dumps(build(Settings.from_env(), Path(args.state), args.batch_size), indent=2))
+    print(json.dumps(build(Settings.from_env(), Path(args.state), args.batch_size, args.workers), indent=2))

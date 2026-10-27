@@ -10,12 +10,13 @@ from datetime import datetime, timezone
 import uuid
 from urllib.parse import urlparse
 
-from fastapi import APIRouter, Header
+from fastapi import APIRouter, Header, Request
 from fastapi.responses import StreamingResponse
 import httpx
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from backend.accounts import problem
+from backend.personal_ai import personal_settings, PublicAITransport
 from backend.chunks import chunks
 from backend.retrieval import vector_candidates, rrf
 
@@ -281,8 +282,10 @@ def generate(settings, question: str, evidence: list[dict], transport=None, hist
     if settings.ai_token_parameter not in ("max_completion_tokens", "max_tokens"):
         raise problem(503, "ai_not_configured", "AI token限制参数配置无效")
     payload[settings.ai_token_parameter] = min(max(settings.ai_max_tokens, 64), 4096)
+    if settings.ai_personal and transport is None:
+        transport = PublicAITransport()
     with httpx.Client(
-        timeout=min(max(settings.ai_timeout, 1), 120), trust_env=False, transport=transport
+        timeout=min(max(settings.ai_timeout, 1), 120), trust_env=False, transport=transport, follow_redirects=False
     ) as client:
         if transport is None:
             mark_provider(settings, False)
@@ -516,7 +519,8 @@ def router(es, settings, metadata, read_paper, upload_indices=lambda: [], store=
                     combined.append(group[i])
         return combined[: body.top_k]
 
-    def perform(body, authorization, operation="ask"):
+    def perform(body, authorization, operation="ask", headers=None):
+        effective = personal_settings(settings, headers or {}, lambda: require_user(authorization))
         history = []
         if body.conversation_id:
             user = require_user(authorization)
@@ -527,7 +531,7 @@ def router(es, settings, metadata, read_paper, upload_indices=lambda: [], store=
                     (body.conversation_id,),
                 ).fetchall()
             history = [{"role": r["role"], "content": r["content"][:1000]} for r in reversed(rows)]
-        if not settings.ai_api_key or not settings.ai_base_url or not settings.ai_model:
+        if not effective.ai_api_key or not effective.ai_base_url or not effective.ai_model:
             raise problem(503, "ai_not_configured", "AI尚未配置，请由服务器管理员设置模型和密钥")
         question = body.question
         if operation == "summarize":
@@ -553,9 +557,9 @@ def router(es, settings, metadata, read_paper, upload_indices=lambda: [], store=
         citations = []
         if refs:
             if history:
-                answer, citations = generate(settings, question, refs, history=history)
+                answer, citations = generate(effective, question, refs, history=history)
             else:
-                answer, citations = generate(settings, question, refs)
+                answer, citations = generate(effective, question, refs)
             if (
                 body.paper_ids
                 and operation == "compare"
@@ -573,7 +577,7 @@ def router(es, settings, metadata, read_paper, upload_indices=lambda: [], store=
                 "scope_paper_ids": body.paper_ids,
                 "context_messages": len(history),
             },
-            "model": {"name": settings.ai_model, "status": "generated" if refs else "not_called"},
+            "model": {"name": effective.ai_model, "status": "generated" if refs else "not_called"},
             "operation": operation,
             "conversation_id": body.conversation_id,
         }
@@ -603,19 +607,19 @@ def router(es, settings, metadata, read_paper, upload_indices=lambda: [], store=
         return result
 
     @api.post("/ask", response_model=AskResponse)
-    def ask(body: AskInput, authorization: str | None = Header(default=None)):
-        return perform(body, authorization)
+    def ask(body: AskInput, request: Request, authorization: str | None = Header(default=None)):
+        return perform(body, authorization, headers=request.headers)
 
     @api.post("/ai/summarize", response_model=AskResponse)
-    def summarize(body: OperationInput, authorization: str | None = Header(default=None)):
+    def summarize(body: OperationInput, request: Request, authorization: str | None = Header(default=None)):
         if not body.paper_ids or len(set(body.paper_ids)) != 1:
             raise problem(400, "invalid_parameter", "总结需要一篇论文")
-        return perform(body, authorization, "summarize")
+        return perform(body, authorization, "summarize", request.headers)
 
     @api.post("/ai/compare", response_model=AskResponse)
-    def compare(body: OperationInput, authorization: str | None = Header(default=None)):
+    def compare(body: OperationInput, request: Request, authorization: str | None = Header(default=None)):
         if not body.paper_ids or not 2 <= len(set(body.paper_ids)) <= 10:
             raise problem(400, "invalid_parameter", "比较需要2至10篇不同论文")
-        return perform(body, authorization, "compare")
+        return perform(body, authorization, "compare", request.headers)
 
     return api

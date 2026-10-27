@@ -1,4 +1,4 @@
-param([ValidatePattern('^[a-zA-Z0-9_.-]+\.json$')][string]$State='vector-build.json',[ValidateRange(1,32)][int]$BatchSize=8)
+param([ValidatePattern('^[a-zA-Z0-9_.-]+\.json$')][string]$State='vector-build.json',[ValidateRange(1,32)][int]$BatchSize=8,[ValidateRange(1,4)][int]$Workers=1)
 $ErrorActionPreference='Stop'
 $projectRoot=Split-Path $PSScriptRoot -Parent
 $runtime=Join-Path $projectRoot 'backend/.runtime'
@@ -17,6 +17,6 @@ $null=Invoke-RestMethod 'http://127.0.0.1:9200' -TimeoutSec 10
 $runId=[guid]::NewGuid().ToString('N')
 $stdout=Join-Path $runtime "vector-build-$runId.stdout.log"
 $stderr=Join-Path $runtime "vector-build-$runId.stderr.log"
-$proc=Start-Process -FilePath $python -ArgumentList @('-m','backend.vector_index','--state',('"'+$statePath+'"'),'--batch-size',"$BatchSize") -WorkingDirectory $projectRoot -WindowStyle Hidden -RedirectStandardOutput $stdout -RedirectStandardError $stderr -PassThru
+$proc=Start-Process -FilePath $python -ArgumentList @('-m','backend.vector_index','--state',('"'+$statePath+'"'),'--batch-size',"$BatchSize",'--workers',"$Workers") -WorkingDirectory $projectRoot -WindowStyle Hidden -RedirectStandardOutput $stdout -RedirectStandardError $stderr -PassThru
 @{pid=$proc.Id;state=$statePath;stdout=$stdout;stderr=$stderr;started_at=(Get-Date).ToUniversalTime().ToString('o')} | ConvertTo-Json | Set-Content -LiteralPath $jobFile -Encoding UTF8
 Write-Output "Started resumable vector build PID $($proc.Id). Inspect the checkpoint and job JSON for progress/logs."

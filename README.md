@@ -2,7 +2,15 @@
 
 ScholarLens 是《信息检索》课程大作业，实现真实学术论文的关键词、语义和混合检索，以及可追溯问答的后端接口。项目名称与课程要求中的 **Scholar IR System** 对应。
 
-## 当前后端状态（2026-10-27）
+## 完整网站交付（2026-10-28）
+
+- frontend/ 已纳入冰岛玻璃风格的完整 React 界面，连接检索、账户、收藏笔记、最近阅读、上传审核和研究助手；源码默认 demo，真实部署设置 VITE_DATA_SOURCE=api。
+- 每个登录用户可独立填写 OpenAI 兼容 URL、模型及密钥；密钥只保存在标签页 sessionStorage，退出清除，按请求使用，不写服务器数据库。默认配置空，未做真实供应商调用。
+- 本轮本机后端 161 passed、1 deselected；前端 build、15 tests、structure、真实检索浏览器和14项账户流程通过。被排除的是独立 API 重启测试，不把历史结果当本轮证明。
+- FastAPI 支持 FRONTEND_DIST 同源托管，服务器与 Cloudflare 独立部署见 [部署说明](docs/11_SERVER_DEPLOYMENT.md)。本机测试不代表外网已发布，外网状态以实际部署验收为准。
+- 邮件、原始 PDF/XML 后续补接；正文可读不代表原 PDF 可下载，缺失时明确返回状态。
+
+## 上一版本后端状态（2026-10-27，历史）
 
 - 已在组长Windows本机验收859篇真实论文、49420个向量片段，完整测试131项通过。
 - Elasticsearch 8.19.23、Python 3.11、FastAPI、MiniLM CPU ONNX与SQLite；本地运行无需Docker。
