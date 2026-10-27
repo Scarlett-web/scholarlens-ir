@@ -105,7 +105,7 @@ async function pointerClick(selector){
 }
 
 async function runApi() {
-  const response=await fetch(origin+"/api/stats");
+  const response=await browserFetch(origin+"/api/stats");
   assert.equal(response.status,200,"Vite proxy must reach FastAPI");
   const stats=await response.json();
   assert.equal(stats.status,"real");
@@ -162,7 +162,7 @@ async function runApi() {
   await navigate("/search?q=&mode=keyword");
   await waitFor("document.querySelectorAll('.paper-card').length===6");
   assert.ok(await evaluate("document.querySelector('#main').textContent.includes('最多20篇')"));
-  const capabilities=await (await fetch(origin+"/api/capabilities")).json();
+  const capabilities=await (await browserFetch(origin+"/api/capabilities")).json();
   const modeChecks=[];
   for(const mode of ['semantic','hybrid']){
     const ready=capabilities.modules[mode+'_search'].status==='ready';
@@ -170,7 +170,7 @@ async function runApi() {
     await navigate('/search?q=brain%20magnetic%20resonance%20imaging&mode='+mode);
     if(ready){
       await waitFor("document.querySelectorAll('.paper-card').length===6",30000);
-      const response=await fetch(origin+'/api/search?q=brain%20magnetic%20resonance%20imaging&mode='+mode+'&page_size=6');
+      const response=await browserFetch(origin+'/api/search?q=brain%20magnetic%20resonance%20imaging&mode='+mode+'&page_size=6');
       assert.equal(response.status,200);const data=await response.json();
       const firstPage=await evaluate("Array.from(document.querySelectorAll('.paper-card')).map(el=>el.dataset.paperId)");
       assert.deepEqual(firstPage,data.results.map(row=>row.paper_id),'UI must show the actual '+mode+' ranking');
@@ -205,9 +205,12 @@ async function runApi() {
   console.log("PASS real API browser: 859 papers, suggestions, 61 magnetic hits, BM25 snippets, pagination, year sorting/filtering, detail, local favorites/notes, recent reading, server random discovery, empty query, semantic/hybrid capabilities and actual ranking/pagination when ready, old demo bookmark, missing detail, desktop/390 geometry");
 }
 
+async function browserFetch(url){
+  // Keep HTTPS checks on the same Chrome network path as the UI under test.
+  const result=await evaluate("fetch("+q(url)+").then(async r=>({status:r.status,body:await r.text()}))");
+  return {status:result.status,json:async()=>JSON.parse(result.body)};
+}
 async function run(){
-  const available=await fetch(origin+"/");
-  assert.equal(available.status,200,"Preview server must be running before smoke tests");
   processHandle=spawn(chrome,[
     "--headless=new","--disable-gpu","--no-first-run","--no-default-browser-check",
     "--disable-background-networking","--remote-debugging-port=0","--window-size=1440,900",

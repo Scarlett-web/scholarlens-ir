@@ -40,6 +40,7 @@ def desktop_settings(original):
 
         def __init__(self, *args, **kwargs):
             if not args:
+                kwargs.setdefault("url", os.getenv("ELASTICSEARCH_URL", original.url))
                 kwargs.setdefault("index", self.index)
                 kwargs.setdefault("vector_index", self.vector_index)
             super().__init__(*args, **kwargs)

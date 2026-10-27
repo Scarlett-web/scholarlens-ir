@@ -4,6 +4,8 @@ ScholarLens 是《信息检索》课程大作业，实现真实学术论文的�
 
 ## 完整网站交付（2026-10-28）
 
+在线访问：[ScholarLens](https://scholarlens.lingion.cc.cd)。已部署到华为云，电脑关机后仍可访问。公网三模式检索与14项账户浏览器流程通过；首次使用请注册，测试用户未迁移。详细证明和未测边界见 [验收记录](docs/12_RELEASE_ACCEPTANCE.md)。
+
 - frontend/ 已纳入冰岛玻璃风格的完整 React 界面，连接检索、账户、收藏笔记、最近阅读、上传审核和研究助手；源码默认 demo，真实部署设置 VITE_DATA_SOURCE=api。
 - 每个登录用户可独立填写 OpenAI 兼容 URL、模型及密钥；密钥只保存在标签页 sessionStorage，退出清除，按请求使用，不写服务器数据库。默认配置空，未做真实供应商调用。
 - 本轮本机后端 161 passed、1 deselected；前端 build、15 tests、structure、真实检索浏览器和14项账户流程通过。被排除的是独立 API 重启测试，不把历史结果当本轮证明。

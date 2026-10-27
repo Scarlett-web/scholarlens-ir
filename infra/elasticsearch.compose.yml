@@ -1,0 +1,21 @@
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.19.23@sha256:4d0724bb8d78d7a2330693623e26ca4d621079d062ecc8a30b3e1fc180ec14c1
+    container_name: scholarlens-es
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:19200:9200"
+    mem_limit: 700m
+    memswap_limit: 700m
+    cpus: 1.0
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      xpack.ml.enabled: "false"
+      ingest.geoip.downloader.enabled: "false"
+      ES_JAVA_OPTS: -Xms256m -Xmx256m -XX:ActiveProcessorCount=1
+    volumes:
+      - scholarlens-es-data:/usr/share/elasticsearch/data
+volumes:
+  scholarlens-es-data:
+    name: scholarlens-es-data

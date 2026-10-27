@@ -108,8 +108,9 @@ async function pointerClick(selector){
 const accounts=[];
 const report={checks:[],account_ids:[],cleanup:[]};
 async function api(path,method='GET',body,token=''){
- const response=await fetch(origin+'/api'+path,{method,headers:{'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})},body:body===undefined?undefined:JSON.stringify(body)});
- const data=await response.json();return {status:response.status,data};
+ const options={method,headers:{'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})},body:body===undefined?undefined:JSON.stringify(body)};
+ // Exercise the browser's HTTPS path, including cleanup, instead of a separate Node TLS client.
+ return evaluate("fetch("+q(origin+'/api'+path)+","+JSON.stringify(options)+").then(async r=>({status:r.status,data:await r.json()}))");
 }
 async function register(){
  const account={username:'sl_accept_'+Date.now()+'_'+accounts.length,password:crypto.randomUUID()+'aA1!'};

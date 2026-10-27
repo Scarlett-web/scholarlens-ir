@@ -6,11 +6,11 @@
 
 1. frontend/ 中执行 npm ci；设置 VITE_DATA_SOURCE=api 和 VITE_API_BASE_URL=/api 后执行 npm run build。不要设置真实 AI 密钥。
 2. Python 3.11+ 创建 /opt/scholarlens/venv 并安装 backend/requirements.txt。源码放 /opt/scholarlens/current；frontend/dist 同步进这个目录。
-3. 独立 Elasticsearch 8.19.23 容器只绑定 127.0.0.1:19200，持久化独立卷，单节点、课程数据；根据主机资源限制堆和容器内存。不要修改其他应用或公开 ES。生产数据如需加密/认证按部署环境补充，不能把 loopback 无认证端口暴露公网。
+3. 独立 Elasticsearch 8.19.23 容器只绑定 127.0.0.1:19200，持久化独立卷，单节点、课程数据；参考 infra/elasticsearch.compose.yml（固定镜像 digest），根据主机资源限制堆和容器内存。不要修改其他应用或公开 ES。生产数据如需加密/认证按部署环境补充，不能把 loopback 无认证端口暴露公网。
 4. 建立独立 scholarlens 用户和 /var/lib/scholarlens，模型放该目录 minilm/，SQLite/上传/评价放 runtime/。不要使用 root 运行 API。
 5. /etc/scholarlens/app.env 仅管理员可读，参考 infra/.env.example，配置 ELASTICSEARCH_URL=http://127.0.0.1:19200、实际索引别名、SCHOLARLENS_RUNTIME_DIR=/var/lib/scholarlens/runtime、EMBEDDING_MODEL_DIR=/var/lib/scholarlens/minilm、FRONTEND_DIST=/opt/scholarlens/current/frontend/dist。邮件和服务器 AI 值默认留空。
 6. 使用 infra/scholarlens-api.service，systemctl daemon-reload 后启动并启用。API 仅监听 127.0.0.1:18090，验证 /api/stats、/api/capabilities、网页与 /assistant 深层路由。
-7. 新建独立 Cloudflare Tunnel 及空闲子域名，参考 cloudflared-scholarlens.example.yml，最后必须有 http_status:404。凭据只放 /etc/scholarlens，不进入 Git；独立 systemd 隧道服务，不覆盖已有 cloudflared 配置。
+7. 新建独立 Cloudflare Tunnel 及空闲子域名，参考 cloudflared-scholarlens.example.yml 与 cloudflared-scholarlens.service，最后必须有 http_status:404。凭据只放 /etc/scholarlens，不进入 Git；显式指定配置文件、Tunnel UUID 和 DNS zone，不依赖旧应用默认配置。独立 systemd 隧道服务，不覆盖已有 cloudflared 配置。
 
 ## 数据与验收
 

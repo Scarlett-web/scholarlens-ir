@@ -1,0 +1,16 @@
+[Unit]
+Description=Independent ScholarLens Cloudflare Tunnel
+After=network-online.target scholarlens-api.service
+Wants=network-online.target
+[Service]
+User=scholarlens
+Group=scholarlens
+ExecStart=/usr/local/bin/cloudflared --no-autoupdate --config /etc/scholarlens/tunnel.yml tunnel run
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+[Install]
+WantedBy=multi-user.target
