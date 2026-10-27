@@ -1,8 +1,35 @@
 ﻿# ScholarLens — 智能学术论文检索与分析平台
 
-ScholarLens 是《信息检索》课程大作业的规划项目，目标是将约 1000 篇学术论文处理为可检索、可解释、可问答的学术搜索系统。项目名称与课程要求中的 **Scholar IR System** 对应，最终以真实论文数据驱动课堂演示。
+ScholarLens 是《信息检索》课程大作业，实现真实学术论文的关键词、语义和混合检索，以及可追溯问答的后端接口。项目名称与课程要求中的 **Scholar IR System** 对应。
 
-## 当前状态（2026-10-22，开发第七周）
+## 当前后端状态（2026-10-27）
+
+- 已在组长Windows本机验收859篇真实论文、49420个向量片段，完整测试131项通过。
+- Elasticsearch 8.19.23、Python 3.11、FastAPI、MiniLM CPU ONNX与SQLite；本地运行无需Docker。
+- 提供六字段BM25、语义/RRF、建议/发现、详情/片段、用户/收藏/历史、审核上传与独立增量索引。
+- RAG证据链和模型适配器已有实现；真实AI Key、原论文PDF、运行中的GROBID仍需配置，能力接口如实返回状态。受控测试不代表这些外部资源已经交付。
+- 当前代码在组长分支`zjl`，数据组和前端分支不自动合并；本仓库没有部署公网API。
+
+已有本机环境日常启动（不重新导入论文）：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File infra/start-scholarlens.ps1
+Invoke-RestMethod 'http://127.0.0.1:8000/api/stats'
+```
+
+本机接口文档为`http://127.0.0.1:8000/docs`，能力状态为`/api/capabilities`。首次在新电脑使用时，先按[Windows启动说明](backend/BACKEND_STARTUP.md)安装依赖、配置数据与索引；GitHub代码不包含虚拟环境、原论文、数据库、ES索引或模型缓存，克隆后不会自动拥有本机859篇数据。
+
+- [后端说明](backend/README.md)
+- [前端API手册](backend/FRONTEND_API_GUIDE.md)
+- [V2完整验收与分阶段文件清单](backend/BACKEND_V2_VERIFICATION.md)
+- [AI服务配置](backend/AI_CONFIGURATION.md)
+- [三模式评价与限制](backend/SEARCH_EVALUATION.md)
+
+## 历史阶段记录
+
+> 2026-10-27：859篇正式JSONL已完成结构与来源清单验收，真实倒排检索API已运行，启动默认real索引，Mock保留。详见[真实数据验收](backend/REAL_DATA_VERIFICATION.md)和[持续任务](backend/REAL_DATA_GOAL.md)。PDF尚未实物交付，数据质量限制已记录。
+
+> 2026-10-26 更新：组长已启动后端 P0，Elasticsearch 8.19.23 + FastAPI 的 Mock 检索链路和运行说明见 [backend/README.md](backend/README.md)，实测见 [backend/VERIFICATION.md](backend/VERIFICATION.md)。下方 2026-10-22 内容保留为初始化阶段记录，不能代表当前后端状态。真实论文 JSONL 尚未交付，数据组 PR 未合并。
 
 - 当前 Git 分支：`zjl`（组长个人开发分支）。
 - 本次仅完成项目规划、协议文档和目录初始化；尚未安装依赖、启动服务、下载 PDF、解析数据或创建索引。
@@ -16,7 +43,7 @@ ScholarLens 是《信息检索》课程大作业的规划项目，目标是将�
 3. 在数据和依赖条件满足后增加标题/摘要语义检索、BM25+向量的 RRF 混合检索，以及带来源引用的 RAG 问答。
 4. 提供 React 现代化 Web 界面和真实数据演示，并用 Precision@5、nDCG@10、延迟等指标比较检索方法。
 
-## 拟议技术栈（均待会议确认）
+## 初始拟议技术栈（历史规划，当前实现以上文为准）
 
 | 层次 | 方案 | 选择理由 | 关键条件/风险 |
 |---|---|---|---|
@@ -36,12 +63,12 @@ ScholarLens 是《信息检索》课程大作业的规划项目，目标是将�
 ├── AGENTS.md                 # 持续执行规则与协作约束
 ├── README.md
 ├── docs/                     # 需求、架构、协议、UI、计划和验收文档
-├── backend/                  # 组长：FastAPI、检索、RAG（当前仅占位）
+├── backend/                  # 组长：FastAPI、检索、RAG、SQLite、测试与交接文档
 ├── frontend/                 # 组员 B：React UI（当前仅占位）
 ├── scripts/                  # 组员 A：解析、清洗、评测脚本（当前仅占位）
-├── infra/                    # 组长：Docker/Elasticsearch/GROBID 配置（当前仅占位）
+├── infra/                    # 组长：Windows Elasticsearch与后端启动/停止配置
 └── data/
-    └── sample/               # 可提交的少量 Mock JSONL（当前仅占位）
+    └── sample/               # 可提交的少量Mock JSONL，正式数据在本机忽略路径
 ```
 
 ## 文档入口
@@ -55,6 +82,6 @@ ScholarLens 是《信息检索》课程大作业的规划项目，目标是将�
 - [测试、指标与课堂演示](docs/07_TEST_DEMO.md)
 - [会议决策表](docs/08_MEETING_DECISIONS.md)
 
-## 本次初始化边界
+## 初始化边界（历史）
 
 本次提交范围只包含文档、`.gitkeep` 占位文件和 `.gitignore` 规则。不要把原始 PDF、数据库、模型缓存、依赖目录、密钥或临时输出加入仓库；不自动执行安装、Docker、Git commit、push 或 merge。

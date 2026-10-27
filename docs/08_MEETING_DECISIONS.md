@@ -1,5 +1,22 @@
 # 08 首次会议决策表（2026-10-22）
 
+## 2026-10-27 后端 V2 会话决定
+
+本次完整Goal附件由组长明确授权D-11~D-19后端开发，不等待React、不改frontend。选择CPU MiniLM-L6-v2 ONNX（固定revision、384维、约90MB、2线程），独立向量索引，ES精确cosine与RRF(k=60)，SQLite会话/收藏/历史，管理员批准后独立上传索引；原859篇基础索引和旧generation保留。AI兼容服务留空配置；真实Key、PDF实物、GROBID安装和相关性人工标注仍待会议确认，负责人组长/A，资源交付与标注截止待会议确认。前端接口变更记录在04_API_CONTRACT与backend/FRONTEND_API_GUIDE，供组长转交组员，未代发群聊或issue。实际验收记录在BACKEND_V2_VERIFICATION，不能以受控替身冒充外部服务成功。
+
+## 2026-10-26 后端 P0 会话决策
+
+2026-10-27增补：组长在真实数据Goal放行固定数据组提交获取正式JSONL、全量校验和安全清洗、样本/全量新索引及真实API切换。原件和旧索引不覆盖，PDF事实尚未实物核验，旧声明哈希差异登记待数据组说明；负责人A+组长，解释与PDF交付时间待会议确认（建议2026-10-28同步）。本轮完成标准与证据见backend/REAL_DATA_GOAL.md、REAL_DATA_VERIFICATION.md，不代发外部通知。
+
+- 第二阶段组长放行 D-12 后端读取接口提前纳入 P0 联调：详情、受控 PDF 访问与交接说明；输入现有索引，未交付 PDF 返回404。不更改搜索既定字段、不重建 ES、不覆盖已有业务索引；负责人组长，截止2026-10-26。shape细化记录于04_API_CONTRACT.md，待组员审阅；未代发外部通知。
+
+- 组长明确放行后端 P0：可安装隔离 Python 依赖、下载 Elasticsearch 运行包、配置本机单节点和建立 Mock 索引；不合并 PR #2，不修改数据组代码。
+- Elasticsearch 固定 8.19.23，Python 客户端使用兼容的 8.19 系列；Windows ZIP 自带 JDK，复用现有 Python 3.11.9；负责人组长，截止 2026-10-26。
+- 官方依据：Windows 安装 https://www.elastic.co/guide/en/elasticsearch/reference/8.19/zip-windows.html ，客户端兼容 https://www.elastic.co/docs/reference/elasticsearch/clients/python 。选择稳定固定的 8.x API，不将最新版作为本阶段目标。
+- 本机 Docker 未安装，采用 Windows 普通后台进程，不安装 Docker 或系统服务；HTTP 仅本机 9200/8000，ES 堆 512 MB。负责人组长，截止 2026-10-26。
+- D-04～D-07 后端接口先以现有 Mock 验收，真实 JSONL 未交付不阻塞接口开发；数据真实性、PDF 路径、解析质量仍须单独验收。schema/API 本轮兼容规则由组长在会话确认，文档作为协作审阅依据；未向外部群聊或 issue 发送消息。
+- 本次决定优先于下方 2026-10-22 表格中对应的待决项；其余 Java Lucene、模型、前端及真实数据事项保持待会议确认。
+
 以下事项必须在今天下午记录结论、负责人和截止日期。未决项在文档中保持“待会议确认”，不得被代码默认实现掩盖。
 
 | # | 必须决定的事项 | 候选/默认讨论方向 | 结论 | 负责人 | 截止 |

@@ -1,0 +1,10 @@
+cluster.name: scholarlens-local
+node.name: scholarlens-node-1
+discovery.type: single-node
+network.host: 127.0.0.1
+http.port: 9200
+transport.port: 9300
+xpack.security.enabled: false
+xpack.security.enrollment.enabled: false
+xpack.ml.enabled: false
+xpack.monitoring.collection.enabled: false

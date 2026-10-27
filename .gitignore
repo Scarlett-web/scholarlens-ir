@@ -248,6 +248,9 @@ node_modules/
 frontend/dist/
 frontend/.vite/
 backend/.venv/
+infra/.runtime/
+backend/.runtime/
+*.partial
 
 # Secrets and local configuration
 .env

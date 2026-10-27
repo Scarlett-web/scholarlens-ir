@@ -1,8 +1,12 @@
 # 02 技术架构与数据流程
 
-> 本文描述拟议架构，不代表依赖已安装或服务已运行。Elasticsearch 版本、是否直接调用 Java Lucene API、向量模型、大模型供应商和 Docker 编排方式均待会议确认。
+> 2026-10-26：后端 P0 已放行，使用 Elasticsearch 8.19.23 Windows ZIP（自带 JDK）+ Python 3.11 + FastAPI + Elasticsearch Python 8.19 客户端；本机无 Docker，使用本地进程、loopback 和 512 MB JVM 堆。实际验证见 backend/VERIFICATION.md。历史P0时这些事项待确认；V2已选择MiniLM CPU向量模型，大模型供应商、Java Lucene直接调用与Docker编排仍待会议确认。
 
 ## 1. 分层设计
+
+2026-10-27后端V2：组长根据本次Goal附件放行语义/RRF/RAG及SQLite/上传后端。BM25别名保留859篇；MiniLM ONNX CPU2线程生成384维向量到独立scholarlens-vectors-*，按paper_id折叠最佳片段，精确cosine扫描后RRF(k=60)。900字符/重叠100的片段ID和字符locator可追溯。SQLite保存哈希会话、用户隔离收藏历史、上传审核和任务租约；上传审核后发布独立scholarlens-uploads-*，不覆写基础索引。AI服务配置留空，兼容适配器进行引用校验，真实PDF与GROBID缺失独立报告。资源、运行证据和前端接口见backend/BACKEND_V2_GOAL.md与FRONTEND_API_GUIDE.md。
+
+2026-10-27：实际链路已推进至正式JSONL→独立index-ready文件（原件保留）→样本20篇→859篇real别名→8001验收→8000默认real。复用已有Mapping和导入器，Mock、样本及前代generation保留，未启动GROBID或新增模型。质量与回退详见backend/REAL_DATA_VERIFICATION.md。
 
 | 层 | 组件 | 输入 | 输出 | 负责人 | 运行条件与风险 |
 |---|---|---|---|---|---|
@@ -83,7 +87,7 @@ sequenceDiagram
 - `scripts/` 只负责离线输入输出，不直接依赖 Web 请求；可在没有后端时生成 JSONL 和报告。
 - `backend/` 负责 API、索引查询、RRF、RAG 编排和 SQLite；通过环境变量读取 ES、GROBID 和 LLM 地址。
 - `frontend/` 只依赖 API 契约，可用 Mock JSONL/Mock server 并行开发；禁止把检索逻辑复制到前端。
-- `infra/` 仅提供经会议确认后的 Docker/配置示例；当前不启动容器。
+- `infra/` 提供 P0 单节点配置与可重复启动/停止脚本；本轮使用原生 Windows ZIP，不安装系统服务。
 
 主要风险：GROBID 解析质量、英文/中文模型适配、ES 向量能力版本、LLM 网络和额度、Windows Docker 资源、1000 篇索引耗时。每项风险在 [07_TEST_DEMO](07_TEST_DEMO.md) 登记触发条件与退化方案。
 
