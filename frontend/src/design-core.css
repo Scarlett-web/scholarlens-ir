@@ -57,8 +57,8 @@ button,input,select,textarea{font-family:inherit}
 .presentation-toggle:hover,.presentation-toggle.active{background:#e9e9ef;color:var(--app-ink)}
 .presentation-toggle span{display:inline}
 .mobile-navigation-layer{display:none}
-.site-motion-toggle{display:flex;align-items:center;gap:12px;width:100%;min-height:40px;padding:8px 12px;border:0;border-radius:8px;background:transparent;font-size:12px;color:var(--app-muted);text-align:left;cursor:pointer}
-.site-motion-toggle:hover:not(:disabled){background:#e9e9ef;color:var(--app-ink)}
+.site-motion-toggle,.site-glass-toggle{display:flex;align-items:center;gap:12px;width:100%;min-height:40px;padding:8px 12px;border:0;border-radius:8px;background:transparent;font-size:12px;color:var(--app-muted);text-align:left;cursor:pointer}
+.site-motion-toggle:hover:not(:disabled),.site-glass-toggle:hover{background:#e9e9ef;color:var(--app-ink)}
 .site-motion-toggle:disabled{opacity:.6;cursor:default}
 .press-ripple{position:absolute;pointer-events:none;z-index:2;display:block;border-radius:50%;background:currentColor}
 .button,.search-submit,.topic-selector button,.bookmark-button{position:relative;overflow:hidden}
@@ -104,7 +104,7 @@ button,input,select,textarea{font-family:inherit}
 .toast{position:fixed;left:calc(50% + var(--app-rail)/2);z-index:140;background:var(--app-ink);border:0;box-shadow:0 8px 24px #1d1d1f14;border-radius:12px;min-width:200px;justify-content:center}
 .workspace-page{padding-top:48px;padding-bottom:64px}
 .page-heading{animation:workspace-enter 500ms var(--app-easing) both;display:flex;justify-content:space-between;align-items:flex-end;gap:24px;margin-bottom:32px}
-.page-heading h1{font-size:36px;line-height:1.2;font-weight:650;letter-spacing:-.04em;margin:0 0 12px;color:var(--app-ink)}
+.page-heading h1{font-size:36px;line-height:1.24;font-weight:650;letter-spacing:-.025em;margin:0 0 12px;color:var(--app-ink)}
 .page-heading p{font-size:14px;line-height:1.7;color:var(--app-muted);margin:0}
 .page-kicker{display:block;font-size:12px;font-weight:500;color:var(--app-blue);letter-spacing:.08em;margin-bottom:12px}
 .page-heading-extra{flex-shrink:0}
@@ -199,20 +199,27 @@ dialog.pdf-viewer-backdrop::backdrop{background:#16384e66;backdrop-filter:blur(1
 }
 @media(prefers-reduced-motion:reduce){.page-heading,.search-submit:hover>svg,.button-primary:hover:not(:disabled)>svg{transform:none!important}*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
 
-/* The environment is a quiet glacier night; the app stage remains a bright paper desk. */
-.observatory-backdrop{background:#081b2a}
-.observatory-backdrop img{filter:brightness(.72) saturate(.9) contrast(1.04)}
-.observatory-backdrop:after{background:#06182766}
-.workspace-shell:before{background:rgba(6,24,38,.48);border-color:#bcecf02e;box-shadow:inset 0 1px 0 #d6fbff3a,inset 0 -1px 0 #04131f73,0 20px 56px #020c145c}
-.app-sidebar{background:rgba(5,22,34,.66);border-right-color:#bcecf02e;backdrop-filter:blur(18px) saturate(1.2);-webkit-backdrop-filter:blur(18px) saturate(1.2)}
-.app-sidebar .brand-wordmark,.app-sidebar .sidebar-brand>span,.app-sidebar .sidebar-section-label,.app-sidebar .nav-link,.app-sidebar .tool-item,.app-sidebar .site-motion-toggle,.app-sidebar .presentation-toggle,.app-sidebar .sidebar-signature strong{color:#e4f3f7}
-.app-sidebar .sidebar-section-label,.app-sidebar .sidebar-signature small,.app-sidebar .tool-item small{color:#a9c3cc}
-.app-sidebar .nav-link:hover,.app-sidebar .tool-item:hover{background:#d4f4f51b;color:#fff}
-.app-sidebar .nav-link.active,.app-sidebar .tool-item.active{background:#d9f7fa28;border-color:#d9f7fa3c;color:#fff;box-shadow:inset 0 1px 0 #fff4,0 8px 20px #020d1640}
-.app-sidebar .nav-link.active>svg,.app-sidebar .tool-item.active>svg,.app-sidebar .brand-mark{color:#8adbd8}
-.app-sidebar .presentation-toggle:hover,.app-sidebar .presentation-toggle.active,.app-sidebar .site-motion-toggle:hover:not(:disabled){background:#d4f4f51b;color:#fff}
-.app-sidebar .sidebar-signature{border-top-color:#c5eff329}
-.app-sidebar .sidebar-signature-mark{background:#d8f5f52a;color:#e4f3f7}
-.app-stage:before{background:rgba(239,248,250,.82);box-shadow:inset 1px 0 0 #ffffff8c}
-.app-stage[data-space=home]:before{background:rgba(240,249,252,.78)}
-.site-header{background:rgba(224,242,247,.54);border-bottom-color:#ffffff66}
+/* Daylight glacier: white glass panels floating over the lagoon photograph.
+   --glass-* variables are the only transparency knobs; [data-glass] on the shell
+   switches the whole set so the surface never mixes two levels by accident. */
+.workspace-shell{--glass-sidebar:.36;--glass-stage:.54;--glass-home:.46;--glass-header:.5;--glass-shell:.18}
+.workspace-shell[data-glass=clear]{--glass-sidebar:.22;--glass-stage:.34;--glass-home:.28;--glass-header:.34;--glass-shell:.1}
+.workspace-shell[data-glass=solid]{--glass-sidebar:.6;--glass-stage:.76;--glass-home:.68;--glass-header:.72;--glass-shell:.4}
+.observatory-backdrop{background:#cfe4f0}
+.observatory-backdrop img{filter:brightness(1.02) saturate(1.16) contrast(1.06);transform:scale(1.05);animation:glacier-drift 52s ease-in-out infinite alternate;will-change:transform}
+.observatory-backdrop:before{content:"";position:absolute;inset:0;background:radial-gradient(120% 82% at 14% -10%,#ffffff5c,transparent 56%),linear-gradient(180deg,#f6fcff2e,#ecf7fd0a 62%,#e3f2f95c)}
+.observatory-backdrop:after{background:radial-gradient(86% 60% at 50% 112%,#b9d5e48f,transparent 74%)}
+@keyframes glacier-drift{from{transform:scale(1.05) translate3d(0,0,0)}to{transform:scale(1.1) translate3d(-1.4%,-1.1%,0)}}
+.workspace-shell:before{background:rgba(255,255,255,var(--glass-shell));border-color:#ffffffa8;box-shadow:inset 0 1px 0 #ffffffd9,inset 0 -1px 0 #ffffff5c,0 42px 112px -34px #2f5b6b2e,0 6px 26px #2f5b6b17;backdrop-filter:blur(6px) saturate(1.2);-webkit-backdrop-filter:blur(6px) saturate(1.2)}
+.app-sidebar{background:rgba(255,255,255,var(--glass-sidebar));border-right:1px solid #ffffffd1;backdrop-filter:blur(20px) saturate(1.4);-webkit-backdrop-filter:blur(20px) saturate(1.4);box-shadow:inset 1px 0 0 #ffffffd1,inset -1px 0 0 #2f5b6b1a}
+.app-sidebar .brand-wordmark,.app-sidebar .sidebar-brand>span,.app-sidebar .sidebar-section-label,.app-sidebar .nav-link,.app-sidebar .tool-item,.app-sidebar .site-motion-toggle,.app-sidebar .site-glass-toggle,.app-sidebar .presentation-toggle,.app-sidebar .sidebar-signature strong{color:#193348}
+.app-sidebar .sidebar-section-label,.app-sidebar .sidebar-signature small,.app-sidebar .tool-item small{color:#5b768a}
+.app-sidebar .nav-link:hover,.app-sidebar .tool-item:hover{background:#ffffffa8;color:#0f2839}
+.app-sidebar .nav-link.active,.app-sidebar .tool-item.active{background:#ffffffe6;border-color:#ffffff;color:#0f2839;box-shadow:0 6px 18px #2f5b6b1c,inset 0 1px 0 #fff;font-weight:600}
+.app-sidebar .nav-link.active>svg,.app-sidebar .tool-item.active>svg,.app-sidebar .brand-mark{color:#0969a9}
+.app-sidebar .presentation-toggle:hover,.app-sidebar .presentation-toggle.active,.app-sidebar .site-motion-toggle:hover:not(:disabled),.app-sidebar .site-glass-toggle:hover{background:#ffffffa8;color:#0f2839}
+.app-sidebar .sidebar-signature{border-top-color:#5b768a2b}
+.app-sidebar .sidebar-signature-mark{background:#ffffffd1;color:#2b5266}
+.app-stage:before{background:rgba(255,255,255,var(--glass-stage));box-shadow:inset 1px 0 0 #ffffffd6,inset 0 1px 0 #ffffffc7,inset 14px 0 26px -20px #2f5b6b26;backdrop-filter:blur(16px) saturate(1.3);-webkit-backdrop-filter:blur(16px) saturate(1.3)}
+.app-stage[data-space=home]:before{background:rgba(255,255,255,var(--glass-home))}
+.site-header{background:rgba(255,255,255,var(--glass-header));border-bottom-color:#ffffffd1;backdrop-filter:blur(20px) saturate(1.3);-webkit-backdrop-filter:blur(20px) saturate(1.3)}

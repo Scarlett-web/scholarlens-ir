@@ -1,11 +1,11 @@
 import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
-import { BarChart3, BookOpen, Check, ChevronRight, Compass, FilePlus2, FolderCheck, Home, Menu, Monitor, Pause, Play, Search, Sparkles, X } from "lucide-react";
+import { BarChart3, BookOpen, Check, ChevronRight, Compass, FilePlus2, FolderCheck, Home, Layers, Menu, Monitor, Pause, Play, Search, Sparkles, X } from "lucide-react";
 import { Brand } from "./Brand";
 import { MotionEffects } from "./MotionEffects";
 import { DATA_SOURCE, getLibraryStats } from "../services/papers";
-import { useStudio } from "../App";
+import { GLASS_PRESETS, useStudio } from "../App";
 import { useAuth } from "../services/AuthContext";
 
 const MAIN_NAV = [
@@ -22,7 +22,7 @@ const TOOL_NAV = [
 export function SiteLayout({ children }: { children: ReactNode }) {
   const {user}=useAuth();
   const { pathname } = useLocation();
-  const { favorites, presentation, setPresentation, toast, notify, motionPaused, setMotionPaused, reducedMotion } = useStudio();
+  const { favorites, presentation, setPresentation, toast, notify, motionPaused, setMotionPaused, glass, setGlass, reducedMotion } = useStudio();
   const [menu, setMenu] = useState(false);
   const [dataStatus, setDataStatus] = useState(DATA_SOURCE === "demo" ? "演示空间 · 18 篇虚构论文" : "正在连接论文库…");
   useEffect(() => {
@@ -56,7 +56,14 @@ export function SiteLayout({ children }: { children: ReactNode }) {
     setPresentation(!presentation);
     notify(!presentation?"课堂展示字号已开启":"已恢复正常字号");
   };
-  return <div className="shell shell-light workspace-shell" data-motion={motionPaused || reducedMotion ? "paused" : "running"}>
+  const cycleGlass=()=>{
+    const index = GLASS_PRESETS.findIndex((preset) => preset.value === glass);
+    const next = GLASS_PRESETS[(index + 1) % GLASS_PRESETS.length];
+    setGlass(next.value);
+    notify("玻璃通透度：" + next.label + " · " + next.hint);
+  };
+  const glassLabel = GLASS_PRESETS.find((preset) => preset.value === glass)?.label ?? "标准";
+  return <div className="shell shell-light workspace-shell" data-glass={glass} data-motion={motionPaused || reducedMotion ? "paused" : "running"}>
     <div className="observatory-backdrop" aria-hidden="true"><img src="/images/iceland-jokulsarlon.webp" srcSet="/images/iceland-jokulsarlon-1600.webp 1600w, /images/iceland-jokulsarlon-2560.webp 2560w, /images/iceland-jokulsarlon.webp 3200w" sizes="100vw" width="3200" height="1801" alt="" fetchPriority="high"/></div>
     <MotionEffects/>
     <a className="skip-link" href="#main">跳转到内容</a>
@@ -78,6 +85,9 @@ export function SiteLayout({ children }: { children: ReactNode }) {
       <div className="sidebar-bottom">
         <button className="site-motion-toggle" type="button" disabled={reducedMotion} aria-pressed={motionPaused || reducedMotion} onClick={()=>setMotionPaused(!motionPaused)}>
           {motionPaused || reducedMotion ? <Play size={18}/> : <Pause size={18}/>}<span>{reducedMotion ? "已跟随系统静态显示" : motionPaused ? "开启网站动效" : "暂停网站动效"}</span>
+        </button>
+        <button className="site-glass-toggle" type="button" onClick={cycleGlass} title="调整页面玻璃的通透度：通透 / 标准 / 厚雾">
+          <Layers size={18}/><span>玻璃通透度 · {glassLabel}</span>
         </button>
         <button className={"presentation-toggle"+(presentation?" active":"")} onClick={togglePresentation} aria-pressed={presentation} title="放大论文标题与正文">
           <Monitor size={18}/><span>{presentation?"退出展示模式":"课堂展示模式"}</span>

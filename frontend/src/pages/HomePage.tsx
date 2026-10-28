@@ -51,8 +51,8 @@ export function HomePage(){
         cancelAnimationFrame(frame);frame=0;return;
       }
       const rect=scene.getBoundingClientRect();
-      rotateX=(.5-(event.clientY-rect.top)/rect.height)*8;
-      rotateY=((event.clientX-rect.left)/rect.width-.5)*10;
+      rotateX=(.5-(event.clientY-rect.top)/rect.height)*14;
+      rotateY=((event.clientX-rect.left)/rect.width-.5)*18;
       if(frame)return;
       frame=requestAnimationFrame(()=>{
         scene.style.setProperty("--scene-rx",rotateX+"deg");

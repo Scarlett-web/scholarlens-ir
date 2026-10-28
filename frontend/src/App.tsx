@@ -20,6 +20,16 @@ import { accountApi, sessionToken } from "./services/backend";
 import { AccountPage } from "./pages/AccountPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 
+/** Surface transparency presets. Purely visual; stored per browser. */
+export type GlassLevel = "clear" | "soft" | "solid";
+export const GLASS_PRESETS: { value: GlassLevel; label: string; hint: string }[] = [
+  { value: "clear", label: "通透", hint: "玻璃最薄，冰川最清楚" },
+  { value: "soft", label: "标准", hint: "文字与背景的默认平衡" },
+  { value: "solid", label: "厚雾", hint: "玻璃最实，正文对比最强" },
+];
+export const normalizeGlass = (value: unknown): GlassLevel =>
+  value === "clear" || value === "solid" ? value : "soft";
+
 interface StudioContextValue {
   workspaceReady: boolean;
   workspaceError: string;
@@ -31,8 +41,10 @@ interface StudioContextValue {
   uploads: LocalUpload[];
   presentation: boolean;
   motionPaused: boolean;
+  glass: GlassLevel;
   reducedMotion: boolean;
   setMotionPaused(value: boolean): void;
+  setGlass(value: GlassLevel): void;
   toast: string | null;
   notify(message: string): void;
   toggleFavorite(paper: Paper): void;
@@ -135,6 +147,7 @@ function StudioProvider({ children }: { children: ReactNode }) {
   const [uploads, setUploads] = useState<LocalUpload[]>(() => readLocal("uploads", []));
   const [presentation, setPresentation] = useState<boolean>(() => readLocal("presentation", false));
   const [motionPaused, setMotionPaused] = useState<boolean>(() => readLocal<boolean>("motion-paused", false) === true);
+  const [glass, setGlass] = useState<GlassLevel>(() => normalizeGlass(readLocal("glass", "soft")));
   const [reducedMotion, setReducedMotion] = useState(() => window.matchMedia("(prefers-reduced-motion: reduce)").matches);
   const [toast, setToast] = useState<string | null>(null);
 
@@ -144,6 +157,7 @@ function StudioProvider({ children }: { children: ReactNode }) {
   useEffect(() => { if (!writeLocal("uploads", uploads)) setToast("PDF 文件记录保存失败，请导出或清理本地数据。"); }, [uploads]);
   useEffect(() => { writeLocal("presentation", presentation); }, [presentation]);
   useEffect(() => { writeLocal("motion-paused", motionPaused); }, [motionPaused]);
+  useEffect(() => { writeLocal("glass", glass); }, [glass]);
   useEffect(()=>{
     alive.current=true;
     let active=true;
@@ -219,7 +233,7 @@ function StudioProvider({ children }: { children: ReactNode }) {
   }, [toast]);
 
   const value = useMemo<StudioContextValue>(() => ({
-    workspaceReady,workspaceError,workspaceSyncing, favorites, history, collections, uploads, presentation, motionPaused, reducedMotion, setMotionPaused, toast,
+    workspaceReady,workspaceError,workspaceSyncing, favorites, history, collections, uploads, presentation, motionPaused, glass, reducedMotion, setMotionPaused, setGlass, toast,
     retryWorkspaceRead:()=>{if(user&&!workspaceReady&&workspaceError)setWorkspaceReadAttempt(value=>value+1);},
     notify: (message) => setToast(message),
     isFavorite: (id) => favorites.some((entry) => entry.paper.paper_id === id),
@@ -324,7 +338,7 @@ function StudioProvider({ children }: { children: ReactNode }) {
       setToast("本地文件和审核记录已删除");
     },
     setPresentation
-  }), [favorites, history, collections, uploads, presentation, motionPaused, reducedMotion, toast, user, workspaceReady,workspaceError,workspaceSyncing]);
+  }), [favorites, history, collections, uploads, presentation, motionPaused, glass, reducedMotion, toast, user, workspaceReady,workspaceError,workspaceSyncing]);
 
   return <StudioContext.Provider value={value}>{children}</StudioContext.Provider>;
 }
