@@ -1,6 +1,7 @@
 import {backend} from "./backend";
 import {personalAiHeaders} from "./personalAi";
 import type {PersonalAi} from "./personalAi";
+import {readEvidenceReferences} from "../lib/evidenceLocation";
 
 // Provider credentials are never bundled; optional personal keys stay session-only.
 const rawEndpoint = (import.meta.env.VITE_AI_ENDPOINT ?? "").trim();
@@ -15,8 +16,8 @@ export interface AgentStep {id:string;tool:string;label:string;status:"done"|"ru
 export interface AgentTrace {name:string;version:string;workflow:string;tools:{name:string;label:string}[];steps:AgentStep[];evidence_count:number;grounded:boolean;warnings?:string[];elapsed_ms?:number}
 export interface AiMessage {role:"user"|"assistant";content:string;sources?:AiSource[];agent?:AgentTrace;sourceLabel?:string}
 interface Answer {answer:string;evidence_status:string;citations:Evidence[];evidence:Evidence[];agent?:AgentTrace}
-function sources(citations:Evidence[]=[]):AiSource[]{
-  return citations.map(item=>({paper_id:item.paper_id,title:item.paper_title,excerpt:item.quote,chunk_id:item.chunk_id,locator:item.locator}));
+function sources(citations:unknown=[]):AiSource[]{
+  return readEvidenceReferences(citations).map(item=>({paper_id:item.paper_id,title:item.paper_title,excerpt:item.quote,chunk_id:item.chunk_id,locator:item.locator}));
 }
 export function getAssistantAvailability(){
   return backend<{modules:Record<string,{status:string;reason:string}>}>("/capabilities");
@@ -30,8 +31,7 @@ export async function askAi(request:AiRequest,signal?:AbortSignal):Promise<AiMes
 }
 export async function retrieveEvidence(question:string,paperIds:string[]=[],signal?:AbortSignal){
   const response=await backend<Answer>("/agent/run",{method:"POST",signal,body:{question,operation:"evidence",mode:"keyword",top_k:Math.max(5,paperIds.length),paper_ids:paperIds.length?paperIds:null}});
-  if(!Array.isArray(response.evidence))throw new Error("证据服务返回格式无效");
-  return {evidence:response.evidence,agent:response.agent};
+  return {evidence:readEvidenceReferences(response.evidence),agent:response.agent};
 }
 export const conversationApi={
   list:()=>backend<Conversation[]>("/ai/conversations"),

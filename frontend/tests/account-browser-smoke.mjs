@@ -201,8 +201,8 @@ async function run(){
  await waitFor("document.querySelector('.ai-compose button[type=submit]')?.textContent.includes('检索原文')");
  assert.ok(await evaluate("document.querySelector('.ai-compose button[type=submit]').getBoundingClientRect().bottom<=innerHeight"),'Assistant primary action must be visible on the desktop first screen');
  await fill('[aria-label=研究问题]','magnetic resonance imaging');await pointerClick('.ai-compose button[type=submit]');
- await waitFor("document.querySelectorAll('.evidence-result').length>0",60000);
- assert.ok(await evaluate("document.querySelector('.evidence-result p').textContent.length>20"));
+ await waitFor("document.querySelectorAll('.evidence-source-choice').length>0",60000);
+ assert.ok(await evaluate("document.querySelector('.evidence-quote').textContent.length>20"));
  report.checks.push('unconfigured-ai-can-retrieve-real-evidence');
  await evaluate("[...document.querySelectorAll('button')].find(b=>b.textContent==='新建对话').click()");
  await waitFor("document.querySelector('[aria-label=研究对话]').value.startsWith('conv-')");

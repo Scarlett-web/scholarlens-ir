@@ -1,11 +1,13 @@
 import {backend} from "../services/backend";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useParams, useNavigate } from "react-router-dom";
+import { Link, useParams, useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, ArrowUpRight, Bookmark, Calendar, ChevronDown, ChevronUp, Clipboard, Download, ExternalLink, FileQuestion, FileText, Quote, Search, Sparkles } from "lucide-react";
 import { useStudio } from "../App";
 import { DemoBadge, IntegrationNotice } from "../components/Layout";
-import { Highlight, PaperCard } from "../components/PaperCard";
+import { PaperCard } from "../components/PaperCard";
 import { ReadingToolbar } from "../components/ReadingToolbar";
+import { EvidencePassage } from "../components/EvidencePassage";
+import { evidenceLocatorLabel, evidenceTargetFromHash, resolveEvidenceLocation } from "../lib/evidenceLocation";
 import { DATA_SOURCE, getPaper, pdfUrl } from "../services/papers";
 import { DEMO_PAPERS } from "../data/demoPapers";
 import type { Paper } from "../types";
@@ -28,6 +30,7 @@ function citationFor(p: Paper, style:CitationStyle):string {
 export function PaperPage() {
   const {paperId=""}=useParams();
   const navigate=useNavigate();
+  const location=useLocation();
   const [paper,setPaper]=useState<Paper|null>(null);
   const [loading,setLoading]=useState(true);
   const [error,setError]=useState("");
@@ -38,7 +41,10 @@ export function PaperPage() {
   const [citationStyle,setCitationStyle]=useState<CitationStyle>("apa");
   const [pdfOpen,setPdfOpen]=useState(false);
   const [converting,setConverting]=useState(false);
-  const {isFavorite,toggleFavorite,recordView,notify,workspaceReady}=useStudio();
+  const {isFavorite,toggleFavorite,recordView,notify,workspaceReady,motionPaused,reducedMotion}=useStudio();
+  const evidenceTarget=useMemo(()=>evidenceTargetFromHash(location.hash),[location.hash]);
+  const evidenceMatch=useMemo(()=>paper?.paper_id===paperId&&evidenceTarget?resolveEvidenceLocation(paper,evidenceTarget):null,[paper,paperId,evidenceTarget]);
+  const hasEvidenceTarget=new URLSearchParams(location.hash.replace(/^#/,"")).has("evidence");
 
   useEffect(()=>{
     let alive=true;
@@ -52,6 +58,15 @@ export function PaperPage() {
   },[paperId]);
   useEffect(()=>{if(paper&&workspaceReady)recordView(paper);},[paper,workspaceReady]);
   useEffect(()=>{ if(paper) document.title=paper.title+" · ScholarLens"; },[paper]);
+  useEffect(()=>{
+    if(!evidenceMatch)return;
+    if(evidenceMatch.field==="fulltext")setExpanded(true);
+    const frame=requestAnimationFrame(()=>{
+      const target=document.getElementById("paper-evidence-match");
+      target?.scrollIntoView({block:"center",behavior:motionPaused||reducedMotion?"instant":"smooth"});target?.focus({preventScroll:true});
+    });
+    return()=>cancelAnimationFrame(frame);
+  },[evidenceMatch,motionPaused,reducedMotion]);
   const related=useMemo(()=>{
     if(!paper||DATA_SOURCE!=="demo")return [];
     return DEMO_PAPERS.filter((p)=>p.paper_id!==paper.paper_id)
@@ -62,7 +77,7 @@ export function PaperPage() {
   },[paper]);
   const full=paper?.fulltext??"";
   const demoPaper=paper?.paper_id.startsWith("demo-") ?? false;
-  const displayText=expanded?full:full.slice(0,4500);
+  const displayText=expanded||evidenceMatch?.field==="fulltext"?full:full.slice(0,4500);
   const canOpenPdf=Boolean(paper?.pdf_available&&DATA_SOURCE==="api");
 
   const copy=async(text:string,success:string)=>{
@@ -84,12 +99,13 @@ export function PaperPage() {
     error?<div className="empty-state error-state">{error}<Link to="/search" className="button button-secondary">返回检索</Link></div>:
     !paper?<div className="empty-state"><FileQuestion size={33}/><h2>没有找到这篇论文</h2><Link to="/search" className="button button-primary">返回搜索</Link></div>:<>
       <ReadingToolbar key={paper.paper_id} paper={paper} articleRef={articleRef} expanded={expanded} setExpanded={setExpanded} focused={focused} setFocused={setFocused}/>
+      {hasEvidenceTarget&&<div className="reader-evidence-notice" role="status"><Quote size={17}/><span>{evidenceMatch&&evidenceTarget?"已核对并定位原文 · "+evidenceLocatorLabel(evidenceTarget.locator):"未能核对这条证据的位置。原文或链接可能已变化，请手动核对。"}</span><button className="text-action" onClick={()=>navigate({pathname:location.pathname,search:location.search,hash:""},{replace:true})}>关闭定位</button></div>}
       <div className="detail-header">
         <div className="detail-tags">{demoPaper?<DemoBadge/>:<span className="paper-source-tag">来自论文检索服务</span>}
           {paper.year&&<span className="year-pill"><Calendar size={14}/>{paper.year}</span>}
           {paper.parse_status!=="unknown"&&<span className="year-pill">解析状态：{{success:"已解析",partial:"部分解析",error:"解析异常"}[paper.parse_status]}</span>}
         </div>
-        <h1>{paper.title}</h1>
+        <h1><EvidencePassage text={paper.title} match={evidenceMatch?.field==="title"?evidenceMatch:null}/></h1>
         <p className="detail-authors">{paper.authors.length?paper.authors.join(" · "):"作者信息暂缺"}</p>
         <div className="detail-buttons">
           <button className="button button-primary" disabled={!workspaceReady} onClick={()=>toggleFavorite(paper)}>
@@ -118,7 +134,7 @@ export function PaperPage() {
         <article className="detail-main" ref={articleRef}>
           <section className="reading-section" id="paper-abstract" tabIndex={-1}>
             <span className="eyebrow">ABSTRACT</span><h2>论文摘要</h2>
-            <p className="reading-paragraph" data-reader-text={paper.abstract?true:undefined}>{paper.abstract||"源数据没有提供摘要。"}</p>
+            <p className="reading-paragraph" data-reader-text={paper.abstract?true:undefined}><EvidencePassage text={paper.abstract||"源数据没有提供摘要。"} match={evidenceMatch?.field==="abstract"?evidenceMatch:null}/></p>
             {paper.abstract&&<button className="text-action" onClick={()=>void copy(paper.abstract,"摘要已复制")}>
               <Clipboard size={15}/> 复制摘要
             </button>}
@@ -129,9 +145,9 @@ export function PaperPage() {
                 <input value={readingSearch} onChange={(e)=>setReadingSearch(e.target.value)} placeholder="在当前全文中查找关键词…" aria-label="全文查找"/>
                 {readingSearch&&<span>{full.toLocaleLowerCase().split(readingSearch.toLocaleLowerCase()).length-1} 处匹配</span>}
               </label>
-              <div className="reading-paragraph pre-line" data-reader-text><Highlight text={displayText} query={readingSearch}/></div>
+              <div className="reading-paragraph pre-line" data-reader-text><EvidencePassage text={displayText} query={readingSearch} match={evidenceMatch?.field==="fulltext"?evidenceMatch:null}/></div>
               {!expanded&&full.length>displayText.length&&<p className="reader-fold-notice">当前展示前 {displayText.length.toLocaleString()} 字符，共 {full.length.toLocaleString()} 字符。</p>}
-              {full.length>4500&&<button className="text-action" onClick={()=>setExpanded(!expanded)}>
+              {full.length>4500&&<button className="text-action" onClick={()=>{if(expanded&&evidenceMatch?.field==="fulltext")navigate({pathname:location.pathname,search:location.search,hash:""},{replace:true});setExpanded(!expanded);}}>
                 {expanded?<ChevronUp size={16}/>:<ChevronDown size={16}/>}
                 {expanded?"收起全文":"展开全部全文"}
               </button>}</>:<p className="muted">{canOpenPdf?"这篇论文暂无提取文本，请使用上方的 PDF 原文阅读。":"源数据没有提供可阅读的文本。"}</p>}

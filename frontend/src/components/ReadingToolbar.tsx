@@ -29,7 +29,7 @@ export function ReadingToolbar({ paper, articleRef, expanded, setExpanded, focus
   useEffect(() => {
     const article = articleRef.current;
     if (!article) return;
-    let frame = 0, timer = 0;
+    let frame = 0, timer = 0, saveOnFrame = false;
     let pending: ReadingPosition | null = null;
     const offset = () => (toolbar.current?.getBoundingClientRect().height ?? 64) + 24;
     const persist = () => {
@@ -55,8 +55,14 @@ export function ReadingToolbar({ paper, articleRef, expanded, setExpanded, focus
         timer = window.setTimeout(persist, 350);
       }
     };
-    const scroll = () => { if (!frame) frame = requestAnimationFrame(() => measure(true)); };
-    const resize = () => { if (!frame) frame = requestAnimationFrame(() => measure(false)); };
+    const scheduleMeasure = (save: boolean) => {
+      saveOnFrame ||= save;
+      if (!frame) frame = requestAnimationFrame(() => {
+        const shouldSave = saveOnFrame; saveOnFrame = false; measure(shouldSave);
+      });
+    };
+    const scroll = () => scheduleMeasure(true);
+    const resize = () => scheduleMeasure(false);
     const observer = new ResizeObserver(resize);
     observer.observe(article);
     measure(false);

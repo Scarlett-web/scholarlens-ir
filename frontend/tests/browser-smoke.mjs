@@ -112,7 +112,8 @@ async function exerciseReader() {
   const position=await evaluate("(()=>{const a=document.querySelector('.detail-main'),offset=document.querySelector('.reader-tools').getBoundingClientRect().height+24;return scrollY+a.getBoundingClientRect().top-offset+.45*(a.getBoundingClientRect().height-innerHeight+offset)})()");
   await evaluate('window.scrollTo({top:'+position+',behavior:"instant"})');
   await waitFor("Number(document.querySelector('.reader-progress progress').value)>=40");
-  await waitFor("JSON.parse(localStorage.getItem('scholarlens-v1:reading-positions:guest')||'{}')[decodeURIComponent(location.pathname.slice(7))]?.ratio>.4");
+  try {await waitFor("JSON.parse(localStorage.getItem('scholarlens-v1:reading-positions:guest')||'{}')[decodeURIComponent(location.pathname.slice(7))]?.ratio>.4");}
+  catch(error){console.error('Reading position diagnostic',await evaluate("(()=>{const a=document.querySelector('.detail-main');return {path:location.pathname,progress:document.querySelector('.reader-progress progress')?.value,position:scrollY,height:a?.offsetHeight,rect:a?.getBoundingClientRect().toJSON(),stored:localStorage.getItem('scholarlens-v1:reading-positions:guest'),focused:document.querySelector('.detail-page')?.dataset.readingFocus,folded:!!document.querySelector('.reader-fold-notice')}})()"));throw error;}
   const paperPath=await evaluate('location.pathname');
   await navigate(paperPath);
   await waitFor("document.querySelector('.reader-resume')!==null");

@@ -50,3 +50,14 @@ node tools/audit/upload-workflow-browser.mjs
 ```
 
 脚本只接受 localhost 地址，所有 API 请求被明确的 fixture 拦截，未知请求使检查失败。覆盖游客/研究账户/管理员权限界面、上传确认、状态与操作、失败恢复、串行刷新和账户失效隔离，报告和截图写入忽略目录。它验证界面与接口契约，不代表真实登录、PDF 解析、入库或生产审批已经端到端通过；真实 API 游客回归独立使用 `frontend/` 的 `npm run test:browser`。
+
+## 证据与原文定位回归
+
+在真实 API 模式的本机前端预览启动后运行：
+
+```powershell
+$env:SCHOLARLENS_URL='http://127.0.0.1:4175'
+node tools/audit/evidence-workflow-browser.mjs
+```
+
+此脚本同样只接受 localhost，并显式拦截全部 API。覆盖逐字核对、Unicode 偏移、来源上下文、复制、笔记追加与容量、独立阅读页定位、坏定位、停止与迟到响应、账户失效隔离，以及同帧布局测量和滚动时的阅读位置保存。合成论文和账户仅用于界面契约验证，不会写入真实服务，也不代表供应商生成或真实账户持久化已通过。报告与桌面/390px 截图保存在忽略目录；契约及真实 API 验收见 `docs/24_EVIDENCE_READING_WORKFLOW.md`。
