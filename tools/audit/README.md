@@ -70,3 +70,12 @@ node tools/audit/search-account-browser.mjs
 ```
 
 仅访问 localhost，全部 API 使用明确 fixture，未知调用使检查失败。检查记录行、真实字段与零评分、条件移除和分页参数、游客收藏、登录输入和失败恢复、动态暂停、账户资料/通知/用户列表的失败重试、历史清空与迟到分页隔离，以及编辑资料不重复读取头像。不会向真实服务注册、登录、上传或清空历史；头像内容与账户写入均为接口 fixture，不能据此声称后端端到端通过。契约及发布证据见 `docs/25_SEARCH_ACCOUNT_WORKFLOW.md`。
+
+## 研究书架与账户同步边界回归
+
+```powershell
+$env:SCHOLARLENS_URL='http://127.0.0.1:4175'
+node tools/audit/library-shelf-browser.mjs
+```
+
+仅接受 localhost 并明确拦截所有 API，未知调用或浏览器异常使检查失败。覆盖分类、排序、相邻笔记、真实本机阅读位置、备份、账户首次读取失败/重试、同步失败保留和导出草稿、账户过期的迟到响应隔离及动态暂停；报告与桌面/390px截图写入忽略目录。不会操作生产账户或真实索引，不能代替真实后端写入和跨设备同步验收。说明与本轮证据见 `docs/27_LIBRARY_RESEARCH_SHELF.md`。

@@ -24,6 +24,7 @@ interface StudioContextValue {
   workspaceReady: boolean;
   workspaceError: string;
   workspaceSyncing: boolean;
+  retryWorkspaceRead(): void;
   favorites: LibraryEntry[];
   history: HistoryEntry[];
   collections: string[];
@@ -117,6 +118,7 @@ function StudioProvider({ children }: { children: ReactNode }) {
   const [workspaceReady,setWorkspaceReady]=useState(!user);
   const [workspaceError,setWorkspaceError]=useState("");
   const [workspaceSyncing,setWorkspaceSyncing]=useState(false);
+  const [workspaceReadAttempt,setWorkspaceReadAttempt]=useState(0);
   const version=useRef(0),dirty=useRef(false),alive=useRef(true),failed=useRef(false);
   const token=useRef(sessionToken());
   const queue=useRef(Promise.resolve());
@@ -145,15 +147,19 @@ function StudioProvider({ children }: { children: ReactNode }) {
   useEffect(()=>{
     alive.current=true;
     let active=true;
-    if(user)accountApi.workspace(token.current).then(data=>{
+    const controller=new AbortController();
+    if(user){
+      setWorkspaceError("");
+      accountApi.workspace(token.current,controller.signal).then(data=>{
       if(!active)return;
       version.current=data.version;
       setFavorites(data.favorites.map(entry=>({...entry,paper:normalizePaper(entry.paper)})));
       setHistory(data.history.map(entry=>({...entry,paper:normalizePaper(entry.paper)})));
       setCollections(data.collections);setWorkspaceReady(true);
     }).catch(cause=>{if(active)setWorkspaceError(cause instanceof Error?cause.message:"账户阅读空间加载失败");});
-    return()=>{active=false;alive.current=false;};
-  },[user]);
+    }
+    return()=>{active=false;alive.current=false;controller.abort();};
+  },[user,workspaceReadAttempt]);
   useEffect(()=>{
     if(!user||!workspaceReady||!dirty.current||failed.current)return;
     writeLocal("account-"+user.id+"-recovery",{favorites,history,collections,version:version.current});
@@ -170,7 +176,7 @@ function StudioProvider({ children }: { children: ReactNode }) {
         version.current=result.version;
       }).catch(cause=>{
         failed.current=true;
-        if(alive.current)setWorkspaceError(cause instanceof Error?cause.message:"账户同步失败");
+        if(alive.current){setWorkspaceError(cause instanceof Error?cause.message:"账户同步失败");setWorkspaceSyncing(false);}
       }).finally(()=>{pendingSaves.current-=1;if(alive.current&&!dirty.current&&pendingSaves.current===0)setWorkspaceSyncing(false);});
     },500);
     return()=>window.clearTimeout(timer);
@@ -214,6 +220,7 @@ function StudioProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<StudioContextValue>(() => ({
     workspaceReady,workspaceError,workspaceSyncing, favorites, history, collections, uploads, presentation, motionPaused, reducedMotion, setMotionPaused, toast,
+    retryWorkspaceRead:()=>{if(user&&!workspaceReady&&workspaceError)setWorkspaceReadAttempt(value=>value+1);},
     notify: (message) => setToast(message),
     isFavorite: (id) => favorites.some((entry) => entry.paper.paper_id === id),
     toggleFavorite: (paper) => {

@@ -16,7 +16,7 @@ function ServerHighlight({text}: {text: string}) {
 }
 
 export function PaperCard({ paper, query = "", dense = false, order }: { paper: Paper; query?: string; dense?: boolean; order?: number }) {
-  const { isFavorite, toggleFavorite, workspaceReady } = useStudio();
+  const { isFavorite, toggleFavorite, workspaceReady, workspaceError } = useStudio();
   const saved = isFavorite(paper.paper_id);
   const excerpt = safePlainText(paper.abstract || paper.fulltext || "暂无摘要").slice(0, dense ? 170 : 260);
   const snippet = paper.highlight?.abstract?.[0] || paper.highlight?.fulltext?.[0];
@@ -31,7 +31,7 @@ export function PaperCard({ paper, query = "", dense = false, order }: { paper: 
         </div>
         <button className={saved ? "icon-button bookmark-button saved" : "icon-button bookmark-button"}
           title={saved ? "取消收藏" : "收藏论文"} aria-label={saved ? "取消收藏论文" : "收藏论文"} aria-pressed={saved}
-          disabled={!workspaceReady} onClick={() => toggleFavorite(paper)}><Bookmark size={19} fill={saved ? "currentColor" : "none"} /></button>
+          disabled={!workspaceReady||Boolean(workspaceError)} onClick={() => toggleFavorite(paper)}><Bookmark size={19} fill={saved ? "currentColor" : "none"} /></button>
       </div>
       <Link className="paper-title-link" to={"/paper/" + encodeURIComponent(paper.paper_id)}>
         <h3><Highlight text={paper.title} query={query} /></h3><ArrowUpRight size={18} />
@@ -49,7 +49,7 @@ export function PaperCard({ paper, query = "", dense = false, order }: { paper: 
 
 /** Search rows keep the returned order and metadata separate from reading actions. */
 export function SearchRecord({paper,query,order}:{paper:Paper;query:string;order:number}) {
-  const {isFavorite,toggleFavorite,workspaceReady}=useStudio();
+  const {isFavorite,toggleFavorite,workspaceReady,workspaceError}=useStudio();
   const saved=isFavorite(paper.paper_id);
   const detail="/paper/"+encodeURIComponent(paper.paper_id);
   const snippet=paper.highlight?.abstract?.[0]||paper.highlight?.fulltext?.[0];
@@ -65,7 +65,7 @@ export function SearchRecord({paper,query,order}:{paper:Paper;query:string;order
       {paper.keywords.length>0&&<div className="paper-keywords paper-record-keywords">{paper.keywords.slice(0,3).map(term=><span key={term}>{term}</span>)}</div>}
     </div>
     <div className="paper-record-actions">
-      <button className={"paper-record-save bookmark-button"+(saved?" saved":"")} aria-label={saved?"取消收藏论文":"收藏论文"} aria-pressed={saved} disabled={!workspaceReady} onClick={()=>toggleFavorite(paper)}><Bookmark size={16} fill={saved?"currentColor":"none"}/><span>{saved?"已收藏":"收藏"}</span></button>
+      <button className={"paper-record-save bookmark-button"+(saved?" saved":"")} aria-label={saved?"取消收藏论文":"收藏论文"} aria-pressed={saved} disabled={!workspaceReady||Boolean(workspaceError)} onClick={()=>toggleFavorite(paper)}><Bookmark size={16} fill={saved?"currentColor":"none"}/><span>{saved?"已收藏":"收藏"}</span></button>
       <Link className="paper-read-link" to={detail}>阅读论文 <ArrowUpRight size={14}/></Link>
       <Link className="paper-record-evidence" to={"/assistant?"+new URLSearchParams({paper:paper.paper_id})}>查原文证据 <ArrowUpRight size={14}/></Link>
     </div>

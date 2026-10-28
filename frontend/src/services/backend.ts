@@ -51,7 +51,7 @@ export const accountApi = {
   register: (username: string, password: string) => backend<User>("/auth/register", {method:"POST",body:{username,password},token:""}),
   login: (username: string, password: string) => backend<{user:User;access_token:string}>("/auth/login", {method:"POST",body:{username,password},token:""}),
   logout: () => backend("/auth/logout", {method:"POST"}),
-  workspace: (token: string) => backend<WorkspaceData>("/me/workspace", {token}),
+  workspace: (token: string, signal?: AbortSignal) => backend<WorkspaceData>("/me/workspace", {token,signal}),
   saveWorkspace: (data: WorkspaceData, token: string) => backend<{version:number}>("/me/workspace", {method:"PUT",token,body:{
     version:data.version,collections:data.collections,
     favorites:data.favorites.map(item=>({paper_id:item.paper.paper_id,collection:item.collection,note:item.note??"",savedAt:item.savedAt})),
