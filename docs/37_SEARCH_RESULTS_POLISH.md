@@ -60,3 +60,10 @@
 - 隔离浏览器 6 组通过，新增关键词/语义/混合 × 全部字段/标题的完整标题检查、旧响应及无高亮响应的备用路径、作者/机构/摘要不得标黄的反向断言，全文字段与普通关键词仍可高亮。报告：`tools/audit/reports/search-account-2026-10-28T15-24-55-635Z/`。
 - 真实 859 篇库只读检查通过，三个模式均正确聚焦完整题名，六字段高亮、四作者展开、PDF 原件下载和助手布局通过；报告：`tools/audit/reports/research-usability-2026-10-28T15-26-22-715Z/`。已人工查看完整题名截图，正文为普通文本。
 - `npm run test:browser` 退出码 0，阅读、图谱、评估、真实库检索/翻页/筛选/排序、收藏与笔记、桌面和 390px 回归通过。日志：外层 `output/title-highlight-20261028/browser-smoke.log`。
+
+### 本轮线上验收
+
+- 应用提交 `a0cab5885504058b7d19d65a2f9ce616a0ec35e3` 已推送，已部署 `/opt/scholarlens/releases/20261028T152832Z-a0cab58`。旧 release `20261028T151256Z-c911311` 保留，SQLite 一致性备份、环境副本、回滚脚本和部署报告位于 `/opt/scholarlens/backups/20261028T152832Z-a0cab58/`。
+- 源站与公开 Chrome 浏览器均验证三个真实模式的完整题名只返回/显示一处完整标题高亮，正文无零散 mark；六字段分别选择时，页面高亮只落在选中字段。作者展开、PDF 原件下载及布局检查继续通过，无页面 JavaScript 异常。
+- 公网报告与截图：`tools/audit/reports/research-usability-2026-10-28T15-29-15-415Z/`。资源、冰川图片、859 篇/61 条基准查询、证据接口和 PDF 206 分段核对见外层 `output/title-highlight-20261028/public-checks.json`。
+- 发布前后用户数均为 28，环境哈希一致，Elasticsearch 容器及 Cloudflare 进程未重启；本轮 CSS 哈希与上版一致。只重启应用服务，不修改正式索引、账户、原件或模型。
