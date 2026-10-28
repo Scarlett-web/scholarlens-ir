@@ -46,3 +46,13 @@
 当前只有Windows AMD64实际运行证据，macOS/POSIX执行仍未验证。合成文本/空白PDF不代表全部正式论文解析质量；未调用GROBID、邮件或外部AI供应商，没有证明OCR、真实供应商生成或全部业务/浏览器路径。生产仅只读验证，后续发布记录另列。
 
 发布前还运行`frontend/`的`npm run build:production`、`npm run test`（34项）、`npm run verify:structure`及`SCHOLARLENS_URL=http://127.0.0.1:4174 npm run test:browser`，均退出0。生产构建固定真实同源`/api`，JS/CSS资源哈希与上一线上版本一致；本轮没有修改前端源码。浏览器使用独立临时Chrome配置，真实API游客流程通过，桌面/390px截图保存在`frontend/output/api-integration/`，原截图先复制到外层本轮发布目录。390px仅回归，不代表手机体验重新设计或已全部优化。
+
+## 发布与回滚
+
+应用提交`6c9eaa7f0865083db0bdf5958a3f380fb1f5a5dc`已推送`origin/zjl`。Gitleaks 8.30.1对最终暂存差异约51.21KB扫描退出0、无命中，100%脱敏；不是对当前全部历史重新宣称零命中。发布证据保存在外层`output/upload-ownership-release-20261028-1540/`，含脱敏扫描、打包清单、源站和公网检查JSON。
+
+华为云当前release为`/opt/scholarlens/releases/20261028T074402Z-6c9eaa7`，上一版`/opt/scholarlens/releases/20261028T065832Z-3fc28bc`保留。备份目录`/opt/scholarlens/backups/20261028T074402Z-6c9eaa7/`含SQLite一致性备份（integrity_check通过）、环境副本及`rollback.sh`，权限分别600/600/700；未修改依赖锁文件、用户、原始论文、正式索引或模型。只重启本应用，Cloudflare隧道PID和ES容器身份/启动时间前后相同。
+
+源站与`https://scholarlens.lingion.cc.cd/`只读验收通过：用户数发布前后25，论文859，magnetic关键词61条，Agent0.2.0证据5段、两个真实工具步骤、模型not_called，原PDF字节范围0–63返回206；JS/CSS及冰岛背景哈希匹配发布清单，robots正常。应用active、NRestarts=0。没有创建生产测试账户或执行上传/审核/个人数据写入；公开证据操作没有会话ID，不写会话。个人AI及邮件仍未配置。
+
+本轮后续仅补发布文档的提交无需再重启应用；总目标账本中其他未完成项继续保留。
