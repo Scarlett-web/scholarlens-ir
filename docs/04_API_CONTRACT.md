@@ -8,6 +8,12 @@
 
 输入/输出、认证和验收以backend/V21_PARITY_GOAL.md及FRONTEND_API_GUIDE_V21.md为准。新增profile/avatar/password、绑定邮箱验证与密码找回、收藏夹、七日浏览记录、随机推荐、受控DOCX下载、管理员用户管理、审核预览/通知、我的文献、AI会话/总结/比较，以及上传向量化。原搜索/收藏接口保持兼容。SQLite使用幂等加法迁移、迁移前backup与本地恢复命令；不删除旧索引或原数据。邮件/AI未配置503，不伪造发送、生成、解析或原PDF读取。stream=true采用校验完整回答后分段SSE，未通过引用校验不发送内容；不冒充上游token流。用户及会话数据隔离、转换限时/清理、双路真实上传召回须通过新增测试。
 
+### 2026-10-28 二次凭证确认与会话失效
+
+负责人：项目维护者。`POST /api/auth/password` 与 `POST /api/auth/deactivate` 先验证 Bearer 会话；仅在会话有效但当前密码或确认用户名错误时，返回 `401 invalid_credentials`，不撤销会话、不更改密码或停用状态。前端显示原错误并允许重试，保留账户空间与当前会话个人配置。缺失、过期、已撤销或已停用的令牌仍返回 `401 unauthenticated`，前端清除当前会话及会话个人密钥；迟到的旧令牌响应不得清除更新后的令牌。
+
+成功修改密码仍撤销该用户所有会话并要求重新登录；成功停用仍禁用登录、撤销所有会话并保留数据。HTTP 状态保持兼容，细分错误码只用于这两个已认证的二次确认接口。验收须在临时 SQLite 和真实账户路由上覆盖错误重试、成功撤销、真实会话失效、用户隔离与资料保留，并以独立浏览器核对界面。测试脚本必须自行启动隔离服务并核对实例挑战，不接受生产服务或本地转发作为写入目标。见 `docs/28_ACCOUNT_CREDENTIAL_BOUNDARIES.md`。
+
 ### 2026-10-27 V2（优先于下方历史阶段标记）
 
 负责人组长。输入现有真实索引、可配置CPU模型和用户请求；输出沿用search全部字段及统一error结构。新增GET /api/suggest(q,limit=8)、GET /api/discover(limit=6)、GET /api/capabilities；建议来自真实title/authors，发现来自确定性真实论文与年份聚合，不编造热度。semantic/hybrid使用独立片段向量索引与真实BM25，RRF k=60；候选窗口1000，超出返回400；semantic只支持field=all/title/fulltext，hybrid关键词侧支持六字段；phrase/fuzzy只用于keyword/hybrid关键词侧，semantic拒绝。semantic/highlight不虚构精确词项；返回匹配片段与model/version解释。一路缺失时503，不静默降级。year/sort对两路及最终论文排序生效，total为候选论文数量，非全库精确语义命中数。
@@ -130,5 +136,5 @@ search 的 query 回显全部已验证参数（包括 year_from/year_to/phrase/f
 
 ## 7. 错误码
 
-`400 invalid_parameter`、`401 unauthenticated`、`403 forbidden`、`404 paper_not_found`、`404 pdf_not_available`、`409 duplicate_record`、`413 file_too_large`、`429 rate_limited`、`500 internal_error`、`503 dependency_unavailable`。错误 `details` 只放可诊断的非敏感信息。
+`400 invalid_parameter`、`401 unauthenticated`、`401 invalid_credentials`（仅已认证的密码/停用二次确认错误）、`403 forbidden`、`404 paper_not_found`、`404 pdf_not_available`、`409 duplicate_record`、`413 file_too_large`、`429 rate_limited`、`500 internal_error`、`503 dependency_unavailable`。错误 `details` 只放可诊断的非敏感信息。
 

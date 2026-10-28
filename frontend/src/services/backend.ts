@@ -32,7 +32,9 @@ export async function backend<T>(path: string, options: Options = {}): Promise<T
       body: options.body === undefined ? undefined : form ? options.body as FormData : JSON.stringify(options.body), signal: controller.signal});
     if (!response.ok) {
       const raw = await response.json().catch(() => null);
-      if (response.status === 401 && token && token === sessionToken()) {
+      const secondaryCredentialFailure = raw?.error?.code === "invalid_credentials" && options.method === "POST"
+        && (path === "/auth/password" || path === "/auth/deactivate");
+      if (response.status === 401 && !secondaryCredentialFailure && token && token === sessionToken()) {
         setSession(""); window.dispatchEvent(new Event("scholarlens-auth-expired"));
       }
       throw new BackendError(raw?.error?.message || "请求失败（HTTP " + response.status + "）", response.status, raw?.error?.code || "request_failed");

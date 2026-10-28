@@ -11,6 +11,16 @@ import { spawn } from "node:child_process";
 
 const chrome = "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
 const origin = process.env.SCHOLARLENS_URL || "http://127.0.0.1:4173";
+const target = new URL(origin);
+if (target.protocol !== "http:" || !["127.0.0.1", "localhost", "[::1]"].includes(target.hostname)) {
+  throw new Error("Account writes are restricted to an explicitly identified isolated local fixture.");
+}
+const fixtureChallenge = process.env.SCHOLARLENS_FIXTURE_CHALLENGE;
+if (!fixtureChallenge) throw new Error("Use node tools/audit/account-security-browser.mjs: it starts and identifies its own isolated account fixture.");
+const fixtureResponse = await fetch(new URL("/__isolated_account_fixture__?" + new URLSearchParams({value:fixtureChallenge}), target), {redirect:"error"});
+const fixtureIdentity = await fixtureResponse.json();
+assert.ok(fixtureResponse.ok && fixtureIdentity.isolated === true && fixtureIdentity.external_services === false && fixtureIdentity.challenge === fixtureChallenge,
+  "Refusing account writes without the matching isolated fixture identity");
 const profile = fs.mkdtempSync(path.join(os.tmpdir(),"scholarlens-smoke-"));
 if (!fs.existsSync(chrome)) throw new Error("Chrome not found: "+chrome);
 

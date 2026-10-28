@@ -558,7 +558,7 @@ def router(store: Store, read_paper):
         if not hmac.compare_digest(
             password_hash(body.current_password, row["salt"]), row["password_hash"]
         ):
-            raise problem(401, "unauthenticated", "当前密码错误")
+            raise problem(401, "invalid_credentials", "当前密码错误")
         if body.current_password == body.new_password:
             raise problem(400, "invalid_parameter", "新密码必须不同")
         salt = secrets.token_hex(16)
@@ -576,7 +576,7 @@ def router(store: Store, read_paper):
         if body.username.casefold() != row["username"].casefold() or not hmac.compare_digest(
             password_hash(body.password, row["salt"]), row["password_hash"]
         ):
-            raise problem(401, "unauthenticated", "请确认当前用户名和密码")
+            raise problem(401, "invalid_credentials", "请确认当前用户名和密码")
         with store.connect() as db:
             if (
                 row["role"] == "admin"
