@@ -12,6 +12,9 @@ class SearchHit(BaseModel):
     title: str
     authors: list[str]
     year: int | None
+    date: str = ""
+    affiliation: list[str] = Field(default_factory=list)
+    address: list[str] = Field(default_factory=list)
     abstract_snippet: str
     highlights: dict[str, list[str]]
     score: float

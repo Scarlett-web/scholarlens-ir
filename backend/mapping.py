@@ -2,13 +2,14 @@
 
 from backend.schema import SEARCH_FIELDS
 
-MAPPING_VERSION = "papers-p0-v1"
+MAPPING_VERSION = "papers-v2-cjk"
 
 
 def index_definition(metadata: dict) -> dict:
     """Build a new generation's settings/mapping with its import evidence."""
     properties = {
-        field: {"type": "text", "analyzer": "standard", "similarity": "paper_bm25"}
+        field: {"type": "text", "analyzer": "standard", "similarity": "paper_bm25",
+                "fields": {"cjk": {"type": "text", "analyzer": "cjk", "similarity": "paper_bm25"}}}
         for field in (*SEARCH_FIELDS, "abstract")
     }
     properties.update(

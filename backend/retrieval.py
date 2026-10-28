@@ -166,7 +166,7 @@ def search_extended(es, settings, base, params, build_search):
         for d in es.mget(
             index=index_name,
             ids=base_ids,
-            source_includes=["paper_id", "title", "authors", "year", "abstract"],
+            source_includes=["paper_id", "title", "authors", "year", "date", "affiliation", "address", "abstract"],
         )["docs"]:
             if d.get("found"):
                 docs[d["_id"]] = d["_source"]
@@ -209,7 +209,8 @@ def search_extended(es, settings, base, params, build_search):
             explanation.update(
                 chunk_id=chunk["chunk_id"], locator=chunk["locator"], evidence=chunk["text"][:900]
             )
-        highlights = lexical.get("highlight", {})
+        from backend.search_text import canonical_highlights
+        highlights = canonical_highlights(lexical.get("highlight", {}))
         # Semantic snippets are escaped text without false exact-match emphasis.
         if not highlights and chunk:
             highlights = {chunk["field"]: [html.escape(chunk["text"][:240])]}
@@ -219,6 +220,9 @@ def search_extended(es, settings, base, params, build_search):
                 "title": doc.get("title", ""),
                 "authors": doc.get("authors", []),
                 "year": doc.get("year"),
+                "date": doc.get("date", ""),
+                "affiliation": doc.get("affiliation", []),
+                "address": doc.get("address", []),
                 "abstract_snippet": doc.get("abstract", "")[:240],
                 "highlights": highlights,
                 "score": score,

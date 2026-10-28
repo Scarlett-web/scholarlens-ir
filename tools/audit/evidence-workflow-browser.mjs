@@ -26,7 +26,7 @@ const refs=[
 const browser=await chromium.launch({channel:"chrome",headless:true});
 const unhandled=[],errors=[];
 const report={passed:false,scope:"local isolated API fixture UI; not real authentication, supplier generation or account persistence",checks:[]};
-async function setup({user=false,note="Existing research note.",answerMode=false}={}){
+async function setup({user=false,note="Existing research note.",answerMode=false,generalMode=false}={}){
   const context=await browser.newContext({viewport:{width:1440,height:1000},reducedMotion:"reduce"});
   const favorite={paper:papers.a,collection:"全部收藏",note,savedAt:"2026-10-28T05:00:00Z"};
   await context.addInitScript(({user,favorite,allowedOrigin})=>{
@@ -35,21 +35,30 @@ async function setup({user=false,note="Existing research note.",answerMode=false
     else if(!user&&!localStorage.getItem("scholarlens-v1:favorites"))localStorage.setItem("scholarlens-v1:favorites",JSON.stringify([favorite]));
     Object.defineProperty(navigator,"clipboard",{value:{writeText:async text=>{window.fixtureClipboard=text;}}});
   },{user,favorite,allowedOrigin:new URL(origin).origin});
-  const state={response:refs,agentGate:null,paperGate:null,paperFail:false,requests:[],saved:[],workspace:{version:0,favorites:[favorite],history:[],collections:["全部收藏"]}};
+  const state={response:refs,agentGate:null,paperGate:null,paperFail:false,requests:[],saved:[],conversations:[],messages:[],workspace:{version:0,favorites:[favorite],history:[],collections:["全部收藏"]}};
   await context.route("**/api/**",async route=>{
     const request=route.request(),url=new URL(request.url()),path=url.pathname.slice(4),method=request.method();
     const json=(data,status=200)=>route.fulfill({status,contentType:"application/json",body:JSON.stringify(data)});
     state.requests.push({path,method});
     if(path==="/stats")return json({status:"real",papers:859});
     if(path==="/discover"&&method==="GET"&&url.searchParams.get("limit")==="20")return json({papers:Object.keys(papers).length,recommendations:Object.values(papers),example_searches:[],years:[],status:"synthetic"});
-    if(path==="/capabilities")return json({modules:{ai_qa:{status:answerMode?"ready":"not_configured",reason:"Controlled fixture only: provider unavailable. Authorization Bearer synthetic-not-real-bearer-1234567890; api_key=sk-synthetic-not-real-key-1234567890."},keyword_search:{status:"ready"},semantic_search:{status:"ready"},hybrid_search:{status:"ready"}}});
+    if(path==="/capabilities")return json({modules:{ai_qa:{status:answerMode&&!generalMode?"ready":"not_configured",reason:"Controlled fixture only: provider unavailable. Authorization Bearer synthetic-not-real-bearer-1234567890; api_key=sk-synthetic-not-real-key-1234567890."},keyword_search:{status:"ready"},semantic_search:{status:"ready"},hybrid_search:{status:"ready"}}});
     if(path==="/auth/me"&&user)return json({id:801,username:"fixture-researcher",role:"user"});
     if(path==="/me/workspace"&&method==="GET"&&user)return json(state.workspace);
     if(path==="/me/workspace"&&method==="PUT"&&user){state.saved.push(request.postDataJSON());return json({version:state.saved.length});}
-    if(path==="/ai/conversations"&&method==="GET"&&user)return json([]);
+    if(path==="/ai/conversations"&&method==="GET"&&user)return json(state.conversations);
+    if(path==="/ai/conversations"&&method==="POST"&&generalMode){const item={id:"fixture-conversation",title:request.postDataJSON().title,message_count:0};state.conversations=[item];return json(item);}
+    if(path==="/ai/conversations/fixture-conversation/messages"&&generalMode)return json(state.messages);
     if(path==="/agent/run"&&method==="POST"){
       const body=request.postDataJSON();assert.ok(body.operation==="evidence"||answerMode&&body.operation==="ask");
       assert.equal(request.headers()["x-ai-key"],undefined);
+      if(generalMode){
+        assert.equal(request.headers()["x-scholarlens-ai-key"],"fixture-only-not-a-real-key");
+        assert.equal(request.headers()["x-scholarlens-ai-url"],"https://provider.example/v1");
+        const answer="可以，我们先聊聊你的研究兴趣，再一起梳理问题。";
+        if(body.conversation_id)state.messages.push({role:"user",content:body.question,citations:[]},{role:"assistant",content:answer,citations:[]});
+        return json({answer,evidence:[],citations:[],evidence_status:"general_answer",agent:{name:"Fixture agent",version:"0.2.0",steps:[],evidence_count:0,grounded:false}});
+      }
       const response=state.response,gate=state.agentGate;state.agentGate=null;
       if(gate)await gate;
       try{return await json({evidence:response,answer:body.operation==="ask"?"Controlled fixture answer citing supplied text.":"",citations:body.operation==="ask"?[refs[0]]:[],evidence_status:body.operation==="ask"?"grounded":"evidence_only",agent:{name:"Fixture agent",version:"0.2.0",workflow:"evidence-grounded-answer",steps:[],evidence_count:response.length,grounded:body.operation==="ask"}});}catch(error){if(!gate)throw error;return;}
@@ -147,6 +156,43 @@ try{
   await answer.page.getByRole("button",{name:"核对引用片段",exact:true}).click();await answer.page.getByText("片段与当前原文一致",{exact:true}).waitFor();
   assert.equal(await answer.page.locator(".evidence-question").textContent(),"Fixture generated answer question");assert.equal(await answer.page.locator(".evidence-source-choice").count(),1);
   await answer.context.close();report.checks.push("controlled answer fixture exposes direct source targets and opens cited passages in the same evidence workbench; not a real provider generation");
+  const general=await setup({user:true,answerMode:true,generalMode:true});const gp=general.page;
+  await gp.goto(origin+"/assistant");
+  await gp.getByRole("textbox",{name:"个人API地址",exact:true}).fill("https://provider.example/v1");
+  await gp.getByRole("textbox",{name:"个人API模型",exact:true}).fill("fixture-model");
+  await gp.getByRole("textbox",{name:"个人API密钥",exact:true}).fill("fixture-only-not-a-real-key");
+  await gp.getByRole("button",{name:"保存个人配置",exact:true}).click();
+  assert.equal(await gp.locator('.personal-ai-settings details').getAttribute('open'),null);
+  assert.equal(await gp.locator('.assistant-availability').count(),0);
+  assert.equal(await gp.evaluate(()=>JSON.stringify({...localStorage}).includes('fixture-only-not-a-real-key')),false);
+  for(const viewport of [{width:1366,height:768},{width:1440,height:900}]){
+    await gp.setViewportSize(viewport);
+    assert.ok(await gp.getByRole("button",{name:"发送问题",exact:true}).evaluate(el=>el.getBoundingClientRect().bottom<=innerHeight));
+    assert.ok(await gp.locator('.ai-conversation').evaluate(el=>el.clientHeight>=270));
+  }
+  await screenshot(gp,"fixture-personal-ai-desktop");
+  await gp.locator('.assistant-conversations summary').click();await gp.getByRole('button',{name:'新建对话',exact:true}).click();
+  await gp.getByRole('combobox',{name:'研究对话',exact:true}).selectOption('fixture-conversation');
+  await gp.getByRole('textbox',{name:'研究问题',exact:true}).fill('你好，我还没想好研究什么，可以聊聊吗？');
+  await gp.getByRole('button',{name:'发送问题',exact:true}).click();
+  await gp.getByText('通用回答 · 未由本库文献验证',{exact:true}).waitFor();
+  assert.equal(await gp.locator('.ai-chat-citations').count(),0);
+  await screenshot(gp,"fixture-general-chinese-answer");
+  await gp.getByRole('combobox',{name:'研究对话',exact:true}).selectOption('');
+  await gp.getByRole('textbox',{name:'研究问题',exact:true}).fill('我想研究脑成像');
+  await gp.getByRole('button',{name:'发送问题',exact:true}).click();
+  await gp.getByText('通用回答 · 未由本库文献验证',{exact:true}).waitFor();
+  const followupRequest=gp.waitForRequest(request=>new URL(request.url()).pathname==='/api/agent/run'&&request.postDataJSON().question==='那从哪里开始？');
+  await gp.getByRole('textbox',{name:'研究问题',exact:true}).fill('那从哪里开始？');
+  await gp.getByRole('button',{name:'发送问题',exact:true}).click();
+  const followup=(await followupRequest).postDataJSON();
+  assert.deepEqual(followup.context_messages.map(item=>item.role),['user','assistant']);
+  assert.equal(followup.context_messages[0].content,'我想研究脑成像');
+  await gp.reload();await gp.locator('.assistant-conversations summary').click();
+  await gp.getByRole('combobox',{name:'研究对话',exact:true}).selectOption('fixture-conversation');
+  await gp.getByText('通用回答 · 未由本库文献验证',{exact:true}).waitFor();
+  assert.equal(await gp.locator('.ai-chat-citations').count(),0);
+  await general.context.close();report.checks.push("personal API save and session-only key, compact settings, 1366/768 and 1440/900 first-screen send controls, free-form Chinese general answer and reopened history retain unverified label without citations; isolated fixture only");
   assert.deepEqual(unhandled,[]);assert.deepEqual(errors,[]);report.passed=true;
 }finally{
   await browser.close();writeFileSync(join(output,"report.json"),JSON.stringify({...report,unhandled,errors},null,2));console.log(JSON.stringify({...report,output,unhandled,errors}));

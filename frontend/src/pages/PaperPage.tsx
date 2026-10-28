@@ -41,7 +41,7 @@ export function PaperPage() {
   const [readingSearch,setReadingSearch]=useState("");
   const [citationStyle,setCitationStyle]=useState<CitationStyle>("apa");
   const [pdfOpen,setPdfOpen]=useState(false);
-  const [converting,setConverting]=useState(false);
+  const [downloading,setDownloading]=useState(false);
   const {isFavorite,toggleFavorite,recordView,notify,workspaceReady,motionPaused,reducedMotion}=useStudio();
   const evidenceTarget=useMemo(()=>evidenceTargetFromHash(location.hash),[location.hash]);
   const evidenceMatch=useMemo(()=>paper?.paper_id===paperId&&evidenceTarget?resolveEvidenceLocation(paper,evidenceTarget):null,[paper,paperId,evidenceTarget]);
@@ -117,7 +117,7 @@ export function PaperPage() {
           {canOpenPdf?<button className="button button-secondary" onClick={()=>setPdfOpen(!pdfOpen)}>
             <FileText size={17}/>{pdfOpen?"收起 PDF":"在线阅读 PDF"}
           </button>:<span className="button button-disabled" aria-disabled="true"><FileText size={17}/> PDF 尚不可用</span>}
-          {canOpenPdf&&<button className="button button-secondary" disabled={converting} onClick={async()=>{setConverting(true);try{const blob=await backend<Blob>("/papers/"+encodeURIComponent(paper.paper_id)+"/docx",{blob:true});const url=URL.createObjectURL(blob),link=document.createElement("a");link.href=url;link.download=paper.title.replace(/[\\/:*?"<>|]/g,"_").slice(0,100)+".docx";link.click();window.setTimeout(()=>URL.revokeObjectURL(url),60000);notify("DOCX 已下载：文本转换，不保留复杂版式");}catch(cause){notify(cause instanceof Error?cause.message:"转换失败");}finally{setConverting(false);}}}><Download size={16}/>{converting?"正在转换…":"下载 DOCX"}</button>}
+          {canOpenPdf&&<button className="button button-secondary" disabled={downloading} onClick={async()=>{setDownloading(true);try{const blob=await backend<Blob>("/papers/"+encodeURIComponent(paper.paper_id)+"/pdf",{blob:true});const url=URL.createObjectURL(blob),link=document.createElement("a");link.href=url;link.download=paper.title.replace(/[\\/:*?"<>|]/g,"_").slice(0,100)+".pdf";link.click();window.setTimeout(()=>URL.revokeObjectURL(url),60000);notify("PDF 原件下载已发起");}catch(cause){notify(cause instanceof Error?cause.message:"下载失败");}finally{setDownloading(false);}}}><Download size={16}/>{downloading?"正在下载…":"下载 PDF"}</button>}
           <Link className="button button-secondary" to={"/assistant?paper="+encodeURIComponent(paper.paper_id)}>
             <Sparkles size={16}/> 查看原文证据
           </Link>

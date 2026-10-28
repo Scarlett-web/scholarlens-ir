@@ -25,6 +25,7 @@ from fastapi.openapi.utils import get_openapi
 from backend.config import Settings, make_client
 from backend.pdf_access import resolve_pdf, resolve_document_pdf
 from backend.schema import SEARCH_FIELDS
+from backend.search_text import has_cjk, canonical_highlights
 from backend.discovery import router as discovery_router
 from backend.retrieval import search_extended, validate_extended
 from backend.accounts import Store, router as accounts_router
@@ -91,6 +92,15 @@ def build_search(params: SearchParams) -> dict:
                 options["operator"] = "or"
         match = {"match_phrase" if params.phrase else "match": {field: options}}
         named.append({"constant_score": {"filter": match, "boost": 0}})
+    cjk = has_cjk(params.q)
+    if cjk:
+        # Auxiliary fields may be absent in legacy generations: keep their standard path.
+        cjk_query = {"multi_match": {"query": params.q,
+            "fields": [f"{field}.cjk^{WEIGHTS[field]}" for field in fields],
+            "type": "phrase" if params.phrase else "best_fields", "operator": "and"}}
+        lexical_query = {"bool": {"should": [lexical_query, cjk_query], "minimum_should_match": 1}}
+        named.extend({"constant_score": {"filter": {"match": {field + ".cjk": {
+            "query": params.q, "_name": field + ".cjk"}}}, "boost": 0}} for field in fields)
     query = {"must": [lexical_query], "should": named}
     year_range = {}
     if params.year_from is not None:
@@ -117,13 +127,14 @@ def build_search(params: SearchParams) -> dict:
         "sort": sort,
         "track_total_hits": True,
         "track_scores": True,
-        "_source": ["paper_id", "title", "authors", "year", "abstract"],
+        "_source": ["paper_id", "title", "authors", "year", "date", "affiliation", "address", "abstract"],
         "highlight": {
             "encoder": "html",
             "max_analyzed_offset": 1000000,
             "pre_tags": ["<em>"],
             "post_tags": ["</em>"],
-            "fields": {field: {"number_of_fragments": 2, "fragment_size": 180} for field in fields},
+            "fields": {field: {"number_of_fragments": 2, "fragment_size": 180}
+                       for field in [*fields, *([field + ".cjk" for field in fields] if cjk else [])]},
         },
     }
 
@@ -299,15 +310,19 @@ def create_app(settings: Settings | None = None, client=None) -> FastAPI:
         hits = []
         for hit in result["hits"]["hits"]:
             doc = hit["_source"]
-            matched = [field for field in SEARCH_FIELDS if field in hit.get("matched_queries", [])]
+            matched = [field for field in SEARCH_FIELDS if field in hit.get("matched_queries", [])
+                       or field + ".cjk" in hit.get("matched_queries", [])]
             hits.append(
                 {
                     "paper_id": doc["paper_id"],
                     "title": doc.get("title", ""),
                     "authors": doc.get("authors", []),
                     "year": doc.get("year"),
+                    "date": doc.get("date", ""),
+                    "affiliation": doc.get("affiliation", []),
+                    "address": doc.get("address", []),
                     "abstract_snippet": doc.get("abstract", "")[:240],
-                    "highlights": hit.get("highlight", {}),
+                    "highlights": canonical_highlights(hit.get("highlight", {})),
                     "score": hit.get("_score"),
                     "matched_fields": matched,
                     "explanation": {"retrieval": "bm25", "reason": ", ".join(matched) + " match"},

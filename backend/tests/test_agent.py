@@ -89,13 +89,40 @@ def test_agent_endpoint_counts_actual_evidence_and_calls(agent_api):
     assert "fixture-only" not in response.text and "provider.example" not in response.text
 
 
-def test_agent_endpoint_does_not_generate_when_no_evidence(agent_api, monkeypatch):
+def test_agent_unscoped_natural_question_can_get_labelled_general_answer(agent_api, monkeypatch):
     monkeypatch.setattr(rag, "retrieve_evidence", lambda *args: [])
-    data = run(agent_api).json()
-    assert data["evidence_status"] == "insufficient_evidence"
-    assert not data["answer"] and not data["agent"]["grounded"]
-    assert not any(name == "generate" for name, _ in agent_api.calls)
+    def general(config, question, evidence, **kwargs):
+        assert kwargs['general'] and not evidence
+        assert question == '你好，我想聊聊怎么开始研究'
+        return '可以从你关心的研究主题开始。'
+    monkeypatch.setattr(rag, "generate", general)
+    data = run(agent_api, question='你好，我想聊聊怎么开始研究').json()
+    assert data["evidence_status"] == "general_answer"
+    assert data["answer"] and not data["agent"]["grounded"]
+    assert not data['citations'] and not data['evidence']
+    assert data['model']['status'] == 'generated'
     assert "grounded_answer" not in [s["tool"] for s in data["agent"]["steps"]]
+    assert 'general_answer' in [s['tool'] for s in data['agent']['steps']]
+
+
+def test_scoped_missing_evidence_never_becomes_unscoped_general_answer(agent_api, monkeypatch):
+    monkeypatch.setattr(rag, 'retrieve_evidence', lambda *args: [])
+    data=run(agent_api, paper_ids=['fixture-paper']).json()
+    assert data['evidence_status']=='insufficient_evidence' and not data['answer']
+    assert not any(name=='generate' for name,_ in agent_api.calls)
+
+
+def test_no_evidence_provider_error_is_not_reported_as_bad_question(agent_api, monkeypatch):
+    monkeypatch.setattr(rag, 'retrieve_evidence', lambda *args: [])
+    def fail(*args,**kwargs):
+        raise problem(502,'ai_authentication_failed','untrusted secret provider body')
+    monkeypatch.setattr(rag,'generate',fail)
+    response=run(agent_api)
+    assert response.status_code==200
+    data=response.json()
+    assert data['evidence_status']=='provider_unavailable'
+    assert '认证失败' in data['agent']['warnings'][-1]
+    assert 'untrusted secret' not in response.text and not data['answer']
 
 
 @pytest.mark.parametrize("operation,papers", [("summarize", None), ("compare", ["fixture-paper"])])
@@ -285,3 +312,53 @@ def test_agent_tool_and_deadline_budgets_block_callbacks():
     with pytest.raises(ValueError):
         runner.call("shell", "unknown", lambda: called.append(True))
     assert not called
+
+
+def test_unrelated_evidence_can_yield_general_answer_without_false_saved_citations(agent_api, monkeypatch):
+    calls = []
+    def unsupported(config, question, evidence, **kwargs):
+        calls.append(kwargs.get("general", False))
+        return "可以先明确研究目标。" if kwargs.get("general") else '{"answer":"","citations":[]}'
+    monkeypatch.setattr(rag, "generate", unsupported)
+    conversation = agent_api.api.post("/api/ai/conversations", headers=personal(), json={"title": "自由追问"}).json()["id"]
+    data = run(agent_api, question="我还没想好，怎么开始？", conversation_id=conversation).json()
+    assert calls == [False, True]
+    assert data["evidence_status"] == "general_answer" and data["answer"]
+    assert data["evidence"] and not data["citations"] and not data["agent"]["grounded"]
+    rows = agent_api.api.get(f"/api/ai/conversations/{conversation}/messages", headers=personal()).json()
+    assert rows[1]["content"] == data["answer"] and not rows[1]["citations"]
+
+
+def test_temporary_followup_context_reaches_model_without_becoming_source(agent_api, monkeypatch):
+    monkeypatch.setattr(rag, "retrieve_evidence", lambda *args: [])
+    context = [{"role":"user","content":"想研究脑成像"}, {"role":"assistant","content":"可以先了解 MRI。"}]
+    def followup(config, question, evidence, **kwargs):
+        assert kwargs["history"] == context and kwargs["general"] and not evidence
+        assert question == "那从哪里开始？"
+        return "先从研究问题和基本方法开始。"
+    monkeypatch.setattr(rag, "generate", followup)
+    data=run(agent_api,question="那从哪里开始？",context_messages=context).json()
+    assert data["evidence_status"] == "general_answer" and data["retrieval"]["context_messages"] == 2
+    assert not data["citations"]
+    assert run(agent_api,context_messages=[{"role":"system","content":"not allowed"}]).status_code == 422
+
+
+@pytest.mark.parametrize("content", ["你好，可以先聊聊你的研究兴趣。", "可以，接着上一条问题我们继续讨论。"])
+def test_general_provider_accepts_plain_chinese_and_followups(content):
+    settings = replace(Settings(), ai_base_url="https://provider.example/v1", ai_api_key="fixture-only", ai_model="fixture-model")
+    def provider(request):
+        body = json.loads(request.content)
+        assert "NO verified library evidence" in body["messages"][0]["content"]
+        prompt = json.loads(body["messages"][1]["content"])
+        assert not prompt["evidence"] and prompt["conversation_context"][0]["content"] == "研究怎么入门"
+        return httpx.Response(200, json={"choices": [{"message": {"content": content}}]})
+    assert generate_from_provider(settings, "那继续？", [], general=True, history=[{"role":"user","content":"研究怎么入门"}], transport=httpx.MockTransport(provider)) == content
+
+
+@pytest.mark.parametrize("content", ["", "伪造引用 [chunk:not-real]", "过长" * 10001], ids=["empty", "forged-citation", "oversized"])
+def test_general_provider_rejects_empty_forged_citations_and_oversized_response(content):
+    settings = replace(Settings(), ai_base_url="https://provider.example/v1", ai_api_key="fixture-only", ai_model="fixture-model")
+    transport = httpx.MockTransport(lambda request: httpx.Response(200, json={"choices": [{"message": {"content": content}}]}))
+    with pytest.raises(HTTPException) as error:
+        generate_from_provider(settings, "随便聊聊", [], general=True, transport=transport)
+    assert error.value.detail["code"] == "ai_invalid_response"

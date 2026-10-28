@@ -111,7 +111,7 @@ try {
   await page.locator('.server-upload-row[data-status="approved"]').first().getByRole("button",{name:"解析并入库",exact:true}).click();
   await page.locator('.server-upload-row[data-status="processing"]').nth(1).waitFor();
   assert.equal(await page.getByRole("status").filter({hasText:"处理任务已提交，完成状态以队列为准。"}).count(),1,"HTTP 202 is accepted work, not completed indexing");
-  const downloading=page.waitForEvent("download");await page.getByRole("button",{name:"下载 DOCX",exact:true}).first().click();assert.match((await downloading).suggestedFilename(),/\.docx$/);
+  const downloading=page.waitForEvent("download");await page.getByRole("button",{name:"下载 PDF",exact:true}).first().click();assert.match((await downloading).suggestedFilename(),/\.pdf$/);
   page.once("dialog",dialog=>dialog.accept());await page.locator('.server-upload-row[data-status="rejected"]').getByRole("button",{name:"归档",exact:true}).click();
   await page.waitForFunction(()=>document.querySelectorAll('.server-upload-row[data-status="rejected"]').length===0);assert.equal(state.archives[0],"fixture-rejected");
   const queueCountBeforeFailedRefresh=await page.locator(".server-upload-row").count();

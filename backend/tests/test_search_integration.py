@@ -151,7 +151,8 @@ def test_stats_no_private_fields_and_unimplemented_mode(environment):
     stats = api.get("/api/stats").json()
     assert stats["status"] == "mock" and stats["papers"] == 6 and stats["indexed"] == 5
     assert stats["parser"] == {"success": 0, "partial": 2, "failed": 1, "unknown": 3}
-    assert stats["index"]["mapping_version"] == "papers-p0-v1"
+    from backend.mapping import MAPPING_VERSION
+    assert stats["index"]["mapping_version"] == MAPPING_VERSION
     body = api.get("/api/search", params={"q": "quasar"}).json()
     assert set(body) == {"query", "total", "page", "page_size", "took_ms", "results"}
     assert all("pdf_path" not in r and "fulltext" not in r for r in body["results"])

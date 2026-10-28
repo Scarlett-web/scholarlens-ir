@@ -90,7 +90,7 @@ export function UploadWorkflowDesk({admin, user, authLoading}: {admin: boolean; 
     try {
       const result = await action();
       if (!alive.current || contextKeyRef.current !== actionContext) return;
-      const feedback: Record<string,string> = {"提交审核":"文件已提交，等待管理员审核。","解析与入库":"处理任务已提交，完成状态以队列为准。","批准审核":"审核已批准，等待解析。","拒绝审核":"审核结果已保存。","归档记录":"记录已归档，原文和已有索引保留。","读取 PDF":"PDF 预览已打开。","下载 DOCX":"DOCX 下载已发起。"};
+      const feedback: Record<string,string> = {"提交审核":"文件已提交，等待管理员审核。","解析与入库":"处理任务已提交，完成状态以队列为准。","批准审核":"审核已批准，等待解析。","拒绝审核":"审核结果已保存。","归档记录":"记录已归档，原文和已有索引保留。","读取 PDF":"PDF 预览已打开。","下载 PDF":"PDF 原件下载已发起。"};
       setMessage(result && typeof result === "object" && "status" in result && "chunks" in result
         ? result.status === "ready" ? "向量处理完成 · " + String(result.chunks) + " 个片段" : "向量处理暂未完成，请检查服务状态或稍后重试。"
         : feedback[label] ?? "操作已提交，请查看最新状态。");
@@ -128,11 +128,11 @@ export function UploadWorkflowDesk({admin, user, authLoading}: {admin: boolean; 
   };
   const download = (row: ServerUpload) => {
     const actionContext = contextKey;
-    void run("下载 DOCX", async () => {
-      const blob = await uploadApi.docx(row.id);
+    void run("下载 PDF", async () => {
+      const blob = await uploadApi.preview(row.id);
       if (!alive.current || contextKeyRef.current !== actionContext) return;
     const url = URL.createObjectURL(blob), link = document.createElement("a");
-    link.href = url; link.download = row.original_name.replace(/\.pdf$/i,"") + ".docx"; link.click();
+    link.href = url; link.download = row.original_name.replace(/\.pdf$/i,"") + ".pdf"; link.click();
     window.setTimeout(() => URL.revokeObjectURL(url),60000);
     },false);
   };
@@ -188,7 +188,7 @@ export function UploadWorkflowDesk({admin, user, authLoading}: {admin: boolean; 
             {row.reason && <p className="upload-reason"><AlertCircle size={15}/>{uploadReason(row.reason)}</p>}
             <div className="upload-row-meta"><span>最后更新 {new Date(row.updated_at).toLocaleString("zh-CN")}</span><span>已发起处理 {row.attempts} 次</span>{row.status === "indexed" && <span>向量状态单独确认</span>}</div>
             {admin && row.status === "pending" && <label className="review-note server-review-note">审核意见<textarea maxLength={1000} rows={2} placeholder="填写来源、格式或质量方面的核对意见…" value={notes[row.id]||""} onChange={event=>setNotes(old=>({...old,[row.id]:event.target.value}))}/></label>}
-            <div className="upload-row-footer"><div className="detail-buttons"><button className="button button-secondary" disabled={Boolean(busy)} onClick={event=>{previewTrigger.current=event.currentTarget;previewFile(row);}}>查看 PDF</button><button className="text-action" disabled={Boolean(busy)} onClick={()=>download(row)}>下载 DOCX</button>{row.paper_id && <Link className="text-action" to={"/paper/"+encodeURIComponent(row.paper_id)}>打开论文 <ArrowRight size={14}/></Link>}</div>
+            <div className="upload-row-footer"><div className="detail-buttons"><button className="button button-secondary" disabled={Boolean(busy)} onClick={event=>{previewTrigger.current=event.currentTarget;previewFile(row);}}>查看 PDF</button><button className="text-action" disabled={Boolean(busy)} onClick={()=>download(row)}>下载 PDF</button>{row.paper_id && <Link className="text-action" to={"/paper/"+encodeURIComponent(row.paper_id)}>打开论文 <ArrowRight size={14}/></Link>}</div>
               {admin && <div className="detail-buttons review-decision-actions">{row.status === "pending" && <><button className="button review-reject" disabled={Boolean(busy)} onClick={()=>void run("拒绝审核",()=>uploadApi.review(row.id,"reject",notes[row.id]||""))}>拒绝</button><button className="button button-primary" disabled={Boolean(busy)} onClick={()=>void run("批准审核",()=>uploadApi.review(row.id,"approve",notes[row.id]||""))}>批准</button></>}{canProcessUpload(row.status) && <button className="button button-primary" disabled={Boolean(busy)} onClick={()=>void run("解析与入库",()=>uploadApi.process(row.id))}>{row.status === "approved" ? "解析并入库" : "重试解析与入库"}</button>}{row.status !== "processing" && <button className="text-action" disabled={Boolean(busy)} onClick={()=>{if(window.confirm("归档此审核记录？源 PDF 和已有索引会保留。"))void run("归档记录",()=>uploadApi.archive(row.id));}}>归档</button>}</div>}
             </div>
           </article>)}

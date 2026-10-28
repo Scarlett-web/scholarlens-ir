@@ -1,6 +1,6 @@
 {
   "name": "evidence-grounded-answer",
-  "version": 2,
+  "version": 3,
   "purpose": "有界检索、原文核对、生成和引用修复；JSON 兼容 YAML",
   "limits": {"max_queries": 3, "max_tool_calls": 10, "max_evidence": 10, "max_repairs": 1, "timeout_seconds": 120},
   "tools": [
@@ -8,7 +8,8 @@
     {"name": "search_papers", "label": "检索论文来源"},
     {"name": "verify_sources", "label": "核对原文"},
     {"name": "grounded_answer", "label": "生成回答"},
-    {"name": "citation_guard", "label": "校验引用"}
+    {"name": "citation_guard", "label": "校验引用"},
+    {"name": "general_answer", "label": "通用交流（未由本库验证）"}
   ],
-  "failure": {"insufficient_evidence": "只返回可核对原文", "provider_unavailable": "保留证据，不公开未校验草稿"}
+  "failure": {"insufficient_evidence": "限定论文的任务保留原文；无证据且未限定论文的问答可通用交流并明确标注", "provider_unavailable": "保留证据，显示脱敏原因，不公开未校验草稿"}
 }

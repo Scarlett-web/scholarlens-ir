@@ -11,7 +11,7 @@ export function Highlight({ text, query }: { text: string; query: string }) {
     match ? <mark key={index}>{part}</mark> : <span key={index}>{part}</span>)}</>;
 }
 
-function ServerHighlight({text}: {text: string}) {
+export function ServerHighlight({text}: {text: string}) {
   return <>{serverHighlightParts(text).map((part, index) => part.match ? <mark key={index}>{part.text}</mark> : <span key={index}>{part.text}</span>)}</>;
 }
 
@@ -36,7 +36,7 @@ export function PaperCard({ paper, query = "", dense = false, order }: { paper: 
       <Link className="paper-title-link" to={"/paper/" + encodeURIComponent(paper.paper_id)}>
         <h3><Highlight text={paper.title} query={query} /></h3><ArrowUpRight size={18} />
       </Link>
-      <div className="paper-authors">{paper.authors.length ? paper.authors.join(" · ") : "作者信息暂缺"}</div>
+      <div className="paper-authors">{paper.highlight?.authors?.length?<ServerHighlight text={paper.highlight.authors.join(" · ")}/>:<Highlight text={paper.authors.length?paper.authors.join(" · "):"作者信息暂缺"} query={query}/>}</div>
       <p className="paper-abstract">{snippet ? <ServerHighlight text={snippet}/> : <><Highlight text={excerpt} query={query} />{(paper.abstract || paper.fulltext).length > excerpt.length ? "…" : ""}</>}</p>
       <div className="paper-card-footer">
         <div className="paper-keywords">{paper.keywords.slice(0, 3).map((term) => <span key={term}>{term}</span>)}</div>
@@ -56,12 +56,13 @@ export function SearchRecord({paper,query,order}:{paper:Paper;query:string;order
   const excerpt=safePlainText(paper.abstract||paper.fulltext||"暂无摘要或正文片段").slice(0,260);
   const scored=typeof paper.score==="number"&&Number.isFinite(paper.score);
   return <article className="paper-card paper-record" data-paper-id={paper.paper_id}>
-    <div className="paper-record-rail"><span className="paper-list-index" aria-label={"结果 "+order}>{String(order).padStart(2,"0")}</span><span className={"paper-record-year"+(!paper.year?" is-unknown":"")} aria-label={paper.year?"年份："+paper.year:"年份未提供"}>{paper.year??"未提供"}</span></div>
+      <div className="paper-record-rail"><span className="paper-list-index" aria-label={"结果 "+order}>{String(order).padStart(2,"0")}</span><span className={"paper-record-year"+(!paper.year?" is-unknown":"")} aria-label={paper.year?"年份："+paper.year:"年份未提供"}><Highlight text={String(paper.year??"未提供")} query={query}/></span></div>
     <div className="paper-record-content">
       <div className="paper-meta-line">{paper.paper_id.startsWith("demo-")?<DemoBadge/>:<span className="paper-source-tag">论文记录</span>}{paper.pdf_available&&<span>PDF 原件可用</span>}{scored&&<span title="检索引擎返回的原始评分，仅用于当前查询排序，不代表置信度">检索分数 {paper.score!.toLocaleString("zh-CN",{maximumFractionDigits:3})}</span>}</div>
-      <Link className="paper-title-link" to={detail}><h3><Highlight text={paper.title} query={query}/></h3></Link>
-      <div className="paper-authors">{paper.authors.length?paper.authors.join(" · "):"作者信息暂缺"}</div>
-      <p className="paper-abstract">{snippet?<ServerHighlight text={snippet}/>:<><Highlight text={excerpt} query={query}/>{(paper.abstract||paper.fulltext).length>excerpt.length?"…":""}</>}</p>
+      <Link className="paper-title-link" to={detail}><h3>{paper.highlight?.title?.[0]?<ServerHighlight text={paper.highlight.title[0]}/>:<Highlight text={paper.title} query={query}/>}</h3></Link>
+      <div className="paper-authors" data-field="authors">{paper.highlight?.authors?.length?<ServerHighlight text={paper.highlight.authors.join(" · ")}/>:<Highlight text={paper.authors.length?paper.authors.join(" · "):"作者信息暂缺"} query={query}/>}</div>
+      <div className="paper-record-metadata">{([['date','日期',paper.date],['affiliation','机构',paper.affiliation.join(" · ")],['address','地址',paper.address.join(" · ")]] as const).map(([field,label,text])=>(text||paper.highlight?.[field]?.length)?<p key={field} data-field={field}><span>{label}</span>{paper.highlight?.[field]?.length?<ServerHighlight text={paper.highlight[field].join(" · ")}/>:<Highlight text={text} query={query}/>}</p>:null)}</div>
+      <p className="paper-abstract" data-field={paper.highlight?.fulltext?.length?"fulltext":"abstract"}>{paper.highlight?.fulltext?.length?<><span className="paper-hit-label">全文命中</span><ServerHighlight text={paper.highlight.fulltext[0]}/></>:snippet?<ServerHighlight text={snippet}/>:<><Highlight text={excerpt} query={query}/>{(paper.abstract||paper.fulltext).length>excerpt.length?"…":""}</>}</p>
       {paper.keywords.length>0&&<div className="paper-keywords paper-record-keywords">{paper.keywords.slice(0,3).map(term=><span key={term}>{term}</span>)}</div>}
     </div>
     <div className="paper-record-actions">
