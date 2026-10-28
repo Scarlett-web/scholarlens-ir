@@ -233,6 +233,9 @@ async function run(){
  report.checks.push('personal-api-session-only-persistence-logout-clear-and-two-user-isolation');
 
  await navigate('/search?q=magnetic');await waitFor("document.querySelectorAll('.paper-card').length===6");
+ // Results render before the asynchronous history write completes, especially over HTTPS.
+ // Wait for that first query to persist before measuring whether pagination adds records.
+ await waitFor("fetch('/api/me/history',{headers:{Authorization:'Bearer '+sessionStorage.getItem('scholarlens-session')}}).then(async r=>r.ok&&(await r.json()).results.some(item=>item.q==='magnetic'&&item.field==='all'&&item.mode==='keyword'))");
  const count=(await api('/me/history','GET',undefined,a.token)).data.total;
  await click('.pagination button:last-child');await waitFor("new URLSearchParams(location.search).get('page')==='2' && document.querySelectorAll('.paper-card').length===6");
  assert.equal((await api('/me/history','GET',undefined,a.token)).data.total,count,'Pagination must not create search-history records');report.checks.push('search-history-deduplication');
