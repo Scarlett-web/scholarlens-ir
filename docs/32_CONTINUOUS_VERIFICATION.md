@@ -42,3 +42,15 @@ PyYAML解析并核对触发器、3平台矩阵、只读权限和40位Actions SHA
 - 上传界面夹具验证刷新 503 保留旧记录、重试、身份失效清除和迟到预览隔离，通过 `upload-workflow-2026-10-28T08-51-07-924Z`。证据界面与能力原因脱敏通过 `evidence-workflow-2026-10-28T08-52-40-053Z`。前者不代替文档31的真实解析/索引链，后者不代替真实供应商生成。
 - 一次并行复核违背只读分工执行了普通 `npm run build`，覆盖本机生产 dist 为 demo，导致关系检查等待详情超时。已停止该并行任务并由主代理重建生产包；线上没有发布过该演示包。另一次新详情组件触发了旧证据 fixture 未定义的 `GET /discover`，已显式补合成响应后重跑通过；没有关闭未知请求断言。
 - CSP 下真实隔离账户浏览器通过，报告 `account-security-2026-10-28T09-00-53-961Z`：注册/登录、真实笔记持久化、改密/停用、旧会话迟到401以及本机合成 Blob PDF 载入均通过，策略违例0。初次工具把 Chrome 自带 PDF 阅读器的 `chrome://resources` / 固定 PDF 扩展资源误归为外网，失败报告保留；现仅将这两个精确浏览器内部来源记录为内部资源，外部 HTTP/HTTPS 仍拒绝，最终外网请求0。此验证不证明所有原始 PDF 的渲染质量。
+
+## 推送与既有服务发布
+
+应用提交 `42c81c9c8020aaee9b2457bb87ad8c6f32bfc07c` 已推送到 `origin/zjl`，未合并其他分支。暂存的29个源码/文档/工具文件经 Gitleaks 100% 脱敏检查，无命中；`.serena/`、运行报告、数据库、模型、原件与密钥均未提交。
+
+华为云 release：`/opt/scholarlens/releases/20261028T090257Z-42c81c9`。前端 HTML、3个JS/CSS资源、`build-info.json`及背景图按 SHA-256 校验；生产构建为真实 API 同源 `/api`。前置校验包含 Agent/Skill/Workflow资源与18项受控供应商格式检查，未调用真实模型。
+
+发布前一致性数据库和环境副本：`/opt/scholarlens/backups/20261028T090257Z-42c81c9/`；数据库 integrity_check=ok，备份权限仅服务管理者。上一 release `20261028T074402Z-6c9eaa7` 保留，回滚脚本只切 `current` 并重启本 API，不恢复/覆盖发布后的用户数据。Tunnel PID 和 ES 容器/启动时间前后相同；用户25、论文859不变。
+
+公网 `https://scholarlens.lingion.cc.cd/` 只读验收通过：构建及资源哈希匹配，859篇、magnetic关键词61条、Agent原文证据5段且model=not_called、PDF206/64字节与原始PDF魔数、robots纯文本和2张背景图哈希均匹配。额外核对 `/account` CSP 已生效，`/api/discover?limit=20` 20条摘要均有真实非空机构数组。公网没有注册账号、上传、审批、调用个人模型或操作原索引。
+
+发布证据位于外层忽略目录 `output/parallel-release-20261028/`：`release-manifest.json`、`origin-deployment-report.json`、`public-checks.json`、`public-new-contract-checks.json`。本节后续文档提交不改变已部署应用哈希，无需重复重启服务。GitHub自动三平台检查仍为待启用草稿，不因这次普通代码推送而自动生效。
