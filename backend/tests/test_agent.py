@@ -5,12 +5,14 @@ from types import SimpleNamespace
 
 from fastapi import FastAPI, HTTPException
 from fastapi.testclient import TestClient
+import httpx
 import pytest
 
 from backend.accounts import Store, problem
 from backend.agent_runtime import ResearchAgent
 from backend.chunks import chunks
 from backend.config import Settings
+from backend.rag import generate as generate_from_provider
 import backend.rag as rag
 
 
@@ -181,6 +183,46 @@ def test_agent_provider_failure_preserves_evidence(agent_api, monkeypatch):
     assert len(data["evidence"]) == 3 and not data["answer"]
     assert data["model"]["status"] == "attempted"
     assert sum(s["tool"] == "grounded_answer" for s in data["agent"]["steps"]) == 1
+
+
+@pytest.mark.parametrize("content", [None, {"UNVERIFIED": "DRAFT"}, []])
+def test_agent_malformed_provider_response_preserves_evidence(agent_api, monkeypatch, content):
+    def malformed(config, question, refs, **kwargs):
+        transport = httpx.MockTransport(lambda request: httpx.Response(200, json={
+            "choices": [{"message": {"content": content}}]}))
+        return generate_from_provider(config, question, refs, transport=transport, **kwargs)
+
+    monkeypatch.setattr(rag, "generate", malformed)
+    response = run(agent_api)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["evidence_status"] == "provider_unavailable" and len(data["evidence"]) == 3
+    assert not data["answer"] and not data["citations"] and data["model"]["status"] == "attempted"
+    assert [step["status"] for step in data["agent"]["steps"] if step["tool"] == "grounded_answer"] == ["error"]
+    assert "UNVERIFIED" not in response.text and "fixture-only" not in response.text
+
+
+@pytest.mark.parametrize("draft", [None, [], {"answer": "UNVERIFIED DRAFT"}])
+def test_agent_non_text_draft_is_rejected_without_losing_sources(agent_api, monkeypatch, draft):
+    monkeypatch.setattr(rag, "generate", lambda *args, **kwargs: draft)
+    response = run(agent_api)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["evidence_status"] == "insufficient_evidence" and len(data["evidence"]) == 3
+    assert not data["answer"] and not data["citations"] and "UNVERIFIED DRAFT" not in response.text
+    assert sum(step["tool"] == "citation_guard" and step["status"] == "error"
+               for step in data["agent"]["steps"]) == 2
+
+
+def test_agent_deep_plan_falls_back_to_original_question(agent_api, monkeypatch):
+    nested = '{"queries":' + "[" * 2000 + '"UNVERIFIED"' + "]" * 2000 + "}"
+    monkeypatch.setattr(rag, "model_plan", lambda *args, **kwargs: nested)
+    response = run(agent_api)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["evidence_status"] == "sufficient" and data["agent"]["warnings"]
+    assert data["agent"]["steps"][0]["status"] == "error"
+    assert ("retrieve", "fixture") in agent_api.calls and "UNVERIFIED" not in response.text
 
 
 def test_agent_compare_requires_citations_from_every_paper(agent_api, monkeypatch):

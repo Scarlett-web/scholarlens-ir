@@ -6,5 +6,8 @@
   {"id":"citation-repair","pytest":"backend/tests/test_agent.py::test_agent_repairs_invalid_citations_once_without_leaking_draft"},
   {"id":"evidence-only","pytest":"backend/tests/test_agent.py::test_agent_evidence_mode_never_uses_a_model"},
   {"id":"provider-failure","pytest":"backend/tests/test_agent.py::test_agent_provider_failure_preserves_evidence"},
-  {"id":"execution-budget","pytest":"backend/tests/test_agent.py::test_agent_tool_and_deadline_budgets_block_callbacks"}
+  {"id":"execution-budget","pytest":"backend/tests/test_agent.py::test_agent_tool_and_deadline_budgets_block_callbacks"},
+  {"id":"malformed-provider","pytest":"backend/tests/test_agent.py::test_agent_malformed_provider_response_preserves_evidence"},
+  {"id":"malformed-draft","pytest":"backend/tests/test_agent.py::test_agent_non_text_draft_is_rejected_without_losing_sources"},
+  {"id":"malformed-plan","pytest":"backend/tests/test_agent.py::test_agent_deep_plan_falls_back_to_original_question"}
 ]

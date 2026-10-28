@@ -13,6 +13,7 @@ from fastapi import HTTPException
 import httpx
 
 from backend.accounts import problem
+from backend.ai_responses import chat_content, json_object
 from backend.personal_ai import PublicAITransport
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -69,7 +70,7 @@ def model_plan(settings, question, operation, skill, transport=None, deadline=No
                     content.extend(part)
                     if len(content) > 65536:
                         raise ValueError("Planner output too large")
-                return json.loads(content)["choices"][0]["message"]["content"]
+                return chat_content(content)
     except HTTPException:
         raise
     except (httpx.HTTPError, ValueError, KeyError, IndexError, TypeError):
@@ -116,7 +117,7 @@ class ResearchAgent:
         warnings = []
         if provider_ready and operation != "evidence":
             def plan_queries():
-                value = json.loads(self.planner(question, operation, self.skill))
+                value = json_object(self.planner(question, operation, self.skill))
                 proposed = value["queries"]
                 if not isinstance(proposed, list) or not 1 <= len(proposed) <= self.policy.max_queries:
                     raise ValueError("Invalid query plan")

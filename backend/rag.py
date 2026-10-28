@@ -16,6 +16,7 @@ import httpx
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from backend.accounts import problem
+from backend.ai_responses import chat_content, json_object
 from backend.personal_ai import personal_settings, PublicAITransport
 from backend.chunks import chunks
 from backend.retrieval import vector_candidates, rrf
@@ -330,7 +331,7 @@ def generate(settings, question: str, evidence: list[dict], transport=None, hist
                         data.extend(block)
                         if len(data) > 1000000:
                             raise problem(502, "ai_invalid_response", "AI响应超过限制")
-                    decoded = json.loads(data)["choices"][0]["message"]["content"]
+                    decoded = chat_content(data)
                     result = validate_answer(decoded, evidence) if validate else decoded
                     if transport is None:
                         mark_provider(settings, True)
@@ -348,11 +349,11 @@ def generate(settings, question: str, evidence: list[dict], transport=None, hist
 
 def validate_answer(content: str, evidence: list[dict]):
     """Reject unknown/altered quotes and missing inline citations; never fabricate a fix."""
+    if not isinstance(content, str):
+        raise ValueError("Expected answer text")
     if content.startswith("```"):
         content = re.sub(r"^```(?:json)?\s*|\s*```$", "", content)
-    data = json.loads(content)
-    if not isinstance(data, dict):
-        raise ValueError("answer must be an object")
+    data = json_object(content)
     answer = data.get("answer", "")
     if not isinstance(answer, str) or len(answer) > 16000:
         raise ValueError("answer shape")
@@ -366,7 +367,8 @@ def validate_answer(content: str, evidence: list[dict]):
     for ref in entries:
         if not isinstance(ref, dict):
             raise ValueError("citation must be an object")
-        chunk = allowed.get(ref.get("chunk_id"))
+        chunk_id = ref.get("chunk_id")
+        chunk = allowed.get(chunk_id) if isinstance(chunk_id, str) else None
         quote = ref.get("quote", "")
         if (
             chunk is None
