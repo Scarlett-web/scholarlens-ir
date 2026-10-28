@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
-import { BarChart3, BookOpen, Check, ChevronRight, Compass, FilePlus2, FolderCheck, Home, Layers, Menu, Monitor, Pause, Play, Search, Sparkles, X } from "lucide-react";
+import { BarChart3, BookOpen, Check, ChevronDown, Compass, FilePlus2, FolderCheck, Home, Layers, Menu, Monitor, Pause, Play, Search, Sparkles, X } from "lucide-react";
 import { Brand } from "./Brand";
 import { MotionEffects } from "./MotionEffects";
 import { DATA_SOURCE, getLibraryStats } from "../services/papers";
@@ -24,6 +24,8 @@ export function SiteLayout({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
   const { favorites, presentation, setPresentation, toast, notify, motionPaused, setMotionPaused, glass, setGlass, reducedMotion } = useStudio();
   const [menu, setMenu] = useState(false);
+  const [toolsOpen, setToolsOpen] = useState(false);
+  const isToolActive = TOOL_NAV.some(({ to }) => to === pathname);
   const [dataStatus, setDataStatus] = useState(DATA_SOURCE === "demo" ? "演示空间 · 18 篇虚构论文" : "正在连接论文库…");
   useEffect(() => {
     if (DATA_SOURCE === "demo") return;
@@ -35,7 +37,7 @@ export function SiteLayout({ children }: { children: ReactNode }) {
   const menuRef = useRef<HTMLElement>(null);
   const menuButton = useRef<HTMLButtonElement>(null);
   const current = [...MAIN_NAV,...TOOL_NAV].find(({to})=>to===pathname)?.label ?? (pathname==="/account"?"研究账户":pathname.startsWith("/paper/")?"论文阅读":"页面");
-  useEffect(() => { setMenu(false); }, [pathname]);
+  useEffect(() => { setMenu(false); setToolsOpen(false); }, [pathname]);
   useEffect(() => { document.title = (current === "页面" ? "页面未找到" : current) + " · ScholarLens"; }, [current, pathname]);
   useEffect(() => {
     if (!menu) return;
@@ -98,14 +100,112 @@ export function SiteLayout({ children }: { children: ReactNode }) {
     <div className="app-stage" data-space={pathname.startsWith("/paper/")?"reading":pathname==="/"?"home":"workspace"}>
       <header className="site-header header-light">
         <div className="header-inner content-wrap">
-          <div className="workspace-breadcrumb"><span>研究空间</span><ChevronRight size={14}/><strong>{current}</strong></div>
-          <div className="mobile-brand"><Brand/></div>
+          <div className="header-brand-wrap">
+            <Brand />
+            <span className="header-brand-divider" aria-hidden="true">/</span>
+            <span className="header-brand-desc">学术研究与核验</span>
+          </div>
+          <nav className="header-dock-nav" aria-label="主要导航">
+            {MAIN_NAV.map(({ to, label, Icon }) => (
+              <NavLink
+                key={to}
+                to={to}
+                end={to === "/"}
+                className={({ isActive }) =>
+                  "header-dock-pill" + (isActive ? " active" : "") + (to === "/library" ? " account-link" : "")
+                }
+              >
+                <Icon size={15} strokeWidth={1.8} />
+                <span>{label}</span>
+                {to === "/library" && favorites.length > 0 && (
+                  <small className="dock-pill-badge">{favorites.length}</small>
+                )}
+              </NavLink>
+            ))}
+            <div
+              className="header-tools-menu"
+              onMouseEnter={() => setToolsOpen(true)}
+              onMouseLeave={() => setToolsOpen(false)}
+            >
+              <button
+                type="button"
+                className={"header-dock-pill header-tools-trigger" + (isToolActive ? " active" : "")}
+                onClick={() => setToolsOpen(!toolsOpen)}
+                aria-expanded={toolsOpen}
+              >
+                <Sparkles size={15} strokeWidth={1.8} />
+                <span>研究工具</span>
+                <ChevronDown size={13} className={"tools-caret" + (toolsOpen ? " open" : "")} />
+              </button>
+              {toolsOpen && (
+                <div className="header-tools-popover" role="menu">
+                  {TOOL_NAV.map(({ to, label, Icon }) => (
+                    <NavLink
+                      key={to}
+                      to={to}
+                      className={({ isActive }) => "tools-popover-item" + (isActive ? " active" : "")}
+                      onClick={() => setToolsOpen(false)}
+                    >
+                      <Icon size={15} strokeWidth={1.8} />
+                      <span>{label}</span>
+                      {to === "/assistant" && <small className="popover-tag">可配置</small>}
+                    </NavLink>
+                  ))}
+                </div>
+              )}
+            </div>
+          </nav>
           <div className="header-actions">
-            <Link to="/account" className="button button-secondary account-entry" title={user?.username||"登录研究账户"}><span>{user?.username||"登录"}</span></Link>
-            <span className="header-data-status"><span className="env-dot"/>{dataStatus}</span>
-            <Link to="/search" className="header-search" aria-label="前往论文检索"><Search size={17}/></Link>
-            <button ref={menuButton} className="mobile-menu-button icon-button" onClick={()=>setMenu(!menu)} aria-label={menu?"收起导航":"展开导航"} aria-controls="mobile-navigation" aria-expanded={menu}>
-              {menu?<X size={22}/>:<Menu size={22}/>}</button>
+            <button
+              className="header-action-pill site-glass-toggle"
+              type="button"
+              onClick={cycleGlass}
+              title="调整页面玻璃通透度：通透 / 标准 / 厚雾"
+            >
+              <Layers size={14} />
+              <span>{glassLabel}</span>
+            </button>
+            <button
+              className="header-action-icon site-motion-toggle"
+              type="button"
+              disabled={reducedMotion}
+              aria-pressed={motionPaused || reducedMotion}
+              onClick={() => setMotionPaused(!motionPaused)}
+              title={reducedMotion ? "已跟随系统静态显示" : motionPaused ? "开启网站动效" : "暂停网站动效"}
+            >
+              {motionPaused || reducedMotion ? <Play size={14} /> : <Pause size={14} />}
+            </button>
+            <button
+              className={"header-action-icon presentation-toggle" + (presentation ? " active" : "")}
+              type="button"
+              onClick={togglePresentation}
+              aria-pressed={presentation}
+              title="放大论文标题与正文"
+            >
+              <Monitor size={14} />
+            </button>
+            <span className="header-data-status">
+              <span className="env-dot" />
+              {dataStatus}
+            </span>
+            <Link
+              to="/account"
+              className="button button-secondary account-entry"
+              title={user?.username || "登录研究账户"}
+            >
+              <span className="account-initial-mark">{user?.username[0].toUpperCase() || "S"}</span>
+              <span>{user?.username || "登录"}</span>
+            </Link>
+            <button
+              ref={menuButton}
+              className="mobile-menu-button icon-button"
+              onClick={() => setMenu(!menu)}
+              aria-label={menu ? "收起导航" : "展开导航"}
+              aria-controls="mobile-navigation"
+              aria-expanded={menu}
+            >
+              {menu ? <X size={22} /> : <Menu size={22} />}
+            </button>
           </div>
         </div>
         {menu&&<div className="mobile-navigation-layer">
