@@ -34,3 +34,13 @@
 - 真实服务浏览器回归覆盖检索、排序/筛选、详情、收藏/笔记、关系图、阅读进度和评估；证据保存在未提交的本机 `output/research-fixes-20261028/` 与 `tools/audit/reports/`。
 
 未使用用户真实 API 密钥，因此不宣称任何指定供应商已实测成功回答。服务器原件、账户、数据库、索引与模型的保留和实际发布版本见本文件后续发布记录。
+
+## 仓库与线上发布
+
+应用提交 `b81dbdfd19c1285858105b0463bd00dad4916fc6` 已推送 `origin/zjl`。线上现用 release：`20261028T141350Z-b81dbdf`，公开地址 `https://scholarlens.lingion.cc.cd/`。后续验收记录和审计脚本属于非运行时文件，无需再次重启服务。
+
+发布前通过 SQLite 在线 backup 保留一致性副本并执行 integrity_check，另保存环境文件；上一版本 `/opt/scholarlens/releases/20261028T130409Z-bd0f2b9` 保留。备份与回滚脚本位于 `/opt/scholarlens/backups/20261028T141350Z-b81dbdf/`。本次只切换应用 current 并重启 `scholarlens-api`，依赖锁文件未变；Cloudflare 隧道 PID 和 Elasticsearch 容器启动标识未变，用户数量发布前后均为 26、论文数均为 859。
+
+公网复核通过：页面和三个 JS/CSS 资源哈希与构建产物一致；两张冰川背景图片哈希一致；关键词 magnetic 仍为 61 篇；六字段前后端高亮可见；证据检索返回 5 条并确认不调用模型；PDF 范围请求返回 206，完整下载 3,215,996 字节且 SHA-256 为 `3921e19189b53b701836b3373b1bb9aa5407a677b8eab056d12f6c85eddaba57`。桌面助手发送按钮首屏可见，390px 检索无横向溢出。
+
+验收证据：本机 `output/research-fixes-20261028/public-checks.json`、`origin-deployment-report.json`；公网浏览器截图/报告位于 `tools/audit/reports/research-usability-2026-10-28T14-15-11-389Z/`。最初使用 Node HTTP 请求的公网测试遇到本机网络重置，改用 Chrome 自身网络路径后全部通过；该失败不计为应用验收成功。

@@ -23,8 +23,16 @@ if(process.env.SCHOLARLENS_PDF_ORIGIN){
 }
 const page=await context.newPage(),errors=[];
 page.on("pageerror",error=>errors.push(error.message));
-const get=async path=>{const r=await context.request.get(origin+path);assert.ok(r.ok(),path+": "+r.status());return r.json();};
+const get=async path=>{
+  // Chrome follows the Windows network route; the standalone Node client may not.
+  if(new URL(origin).hostname==='scholarlens.lingion.cc.cd'){
+    const result=await page.evaluate(async path=>{const r=await fetch(path);return {status:r.status,body:await r.json()};},path);
+    assert.equal(result.status,200,path);return result.body;
+  }
+  const r=await context.request.get(origin+path);assert.ok(r.ok(),path+": "+r.status());return r.json();
+};
 try{
+  if(new URL(origin).hostname==='scholarlens.lingion.cc.cd')await page.goto(origin,{waitUntil:'domcontentloaded'});
   const stats=await get('/api/stats');assert.equal(stats.papers,859);
   let pdfPaper;
   for(const [field,q] of [['title','magnetic'],['authors','Archibald'],['date','2004'],['affiliation','CSIRO'],['address','Nedlands'],['fulltext','magnetic']]){
