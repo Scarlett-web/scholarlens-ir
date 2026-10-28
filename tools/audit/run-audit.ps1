@@ -2,7 +2,7 @@
 param(
   [string]$TargetUrl = "http://127.0.0.1:4173",
   [switch]$AllowLive,
-  [int]$MaxPages = 30
+  [ValidateRange(1,50)][int]$MaxPages = 30
 )
 
 $ErrorActionPreference = "Stop"
@@ -11,7 +11,9 @@ $stamp = Get-Date -Format "yyyyMMdd-HHmmss"
 $report = Join-Path $PSScriptRoot "reports/$stamp"
 New-Item -ItemType Directory -Force -Path $report | Out-Null
 
-if ($TargetUrl -match "^https://scholarlens\.lingion\.cc\.cd" -and -not $AllowLive) {
+$target = [uri]$TargetUrl
+if ($target.Scheme -notin @("http","https") -or $target.UserInfo) { throw "只允许无内嵌凭证的 HTTP/HTTPS 页面 URL。" }
+if (-not $target.IsLoopback -and -not $AllowLive) {
   throw "线上目标需要显式指定 -AllowLive；默认只检查本机预览。"
 }
 
@@ -44,11 +46,19 @@ if (-not $semgrep) {
 } else {
   # Semgrep writes its human-readable banner/findings to stdout even with --quiet.
   # Use --json-output so the report stays valid JSON and keep console output in the log.
-  & $semgrep.Source "scan" "--quiet" "--config" (Join-Path $PSScriptRoot "semgrep.yml") "--json-output=$semgrepOut" "--exclude" "node_modules" "--exclude" "dist" "--exclude" "tools/audit" $root 1> $semgrepLog 2>&1
+  & $semgrep.Source "scan" "--quiet" "--metrics=off" "--config" (Join-Path $PSScriptRoot "semgrep.yml") "--json-output=$semgrepOut" "--exclude" "node_modules" "--exclude" "dist" "--exclude" ".venv" "--exclude" "tests" "--exclude" "output" (Join-Path $root "backend") (Join-Path $root "frontend/src") 1> $semgrepLog 2>&1
   $manifest.tools.semgrep = @{ status=if ($LASTEXITCODE -eq 0) { "completed" } else { "findings_or_failed" }; command="semgrep"; exit_code=$LASTEXITCODE; output=(Split-Path $semgrepOut -Leaf); log=(Split-Path $semgrepLog -Leaf) }
 }
 $gitleaksOut = Join-Path $report "gitleaks.json"
-Run-Optional "gitleaks" "gitleaks" @("detect","--source=$root","--redact","--report-format","json","--report-path=$gitleaksOut","--no-banner") $gitleaksOut
+$gitleaks = Join-Path $PSScriptRoot "bin/gitleaks.exe"
+if (-not (Test-Path $gitleaks)) { $gitleaks = "gitleaks" }
+Run-Optional "gitleaks" $gitleaks @("git",$root,"--redact=100","--log-opts=HEAD","--report-format=json","--report-path=$gitleaksOut","--no-banner") $gitleaksOut
+$pipAudit = Join-Path $PSScriptRoot ".venv/Scripts/python.exe"
+if (Test-Path $pipAudit) {
+  $pipOut = Join-Path $report "pip-audit.json"
+  & $pipAudit -m pip_audit --no-deps --disable-pip -r (Join-Path $root "backend/requirements-lock.txt") --format=json --output=$pipOut *> (Join-Path $report "pip-audit.log")
+  $manifest.tools.pip_audit = @{ status=if ($LASTEXITCODE -eq 0) { "completed" } else { "findings_or_failed" }; exit_code=$LASTEXITCODE; output="pip-audit.json" }
+} else { $manifest.tools.pip_audit = @{ status="not_installed" } }
 
 $localBin = Join-Path $PSScriptRoot "node_modules/.bin"
 $lighthouse = Join-Path $localBin "lighthouse.cmd"

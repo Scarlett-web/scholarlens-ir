@@ -9,11 +9,22 @@
 | Squirrelscan | 页面、SEO、无障碍和响应头初筛 | 本地安装，需显式指定目标后运行 |
 | Playwright CLI | 独立浏览器流程和截图 | 本地安装，优先使用测试账号 |
 | Lighthouse | 性能、SEO、可访问性基线 | 本地安装，默认只扫本机预览 |
-| Semgrep | 前后端静态安全模式 | 仅探测本机已有命令，不上传云端 |
-| Gitleaks | 当前仓库和历史凭据线索 | 仅探测本机已有命令 |
+| Semgrep | 代码执行、SQL 拼接、不安全反序列化、TLS、DOM/React 原始 HTML 等模式 | 复用已有命令，关闭 metrics，不上传云端 |
+| Gitleaks 8.30.1 | 当前分支全部可达历史中的凭据线索 | `bin/gitleaks.exe`，官方 release SHA-256 校验，100% 脱敏 |
+| pip-audit 2.9.0 | 后端锁文件已知依赖公告 | 独立 `.venv`，只查公告，不安装或升级应用依赖 |
 | OWASP ZAP | 动态安全 | 不随项目启动；只在隔离测试环境被动运行 |
 
 ## 运行
+
+局部工具可重建，命令不会改全局配置：
+
+```powershell
+python tools/audit/install-gitleaks.py
+uv venv tools/audit/.venv
+uv pip install --python tools/audit/.venv/Scripts/python.exe -r tools/audit/requirements.txt
+```
+
+Gitleaks 安装器固定官方 Windows x64 压缩包和可执行文件哈希，已有不同文件时拒绝覆盖。pip-audit 按完全锁定版本使用 `--no-deps --disable-pip`，查询 PyPI 公告会发送公开包名/版本，不发送源码或凭据。Semgrep 规则命中必须人工追踪输入边界；无命中不证明不存在漏洞。
 
 在仓库根目录执行：
 

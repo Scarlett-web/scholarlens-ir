@@ -10,3 +10,59 @@ rules:
       exclude:
         - "**/tests/**"
         - "**/tools/audit/**"
+  - id: scholarlens-python-dynamic-code
+    message: Dynamic Python execution needs a source-to-input review; this match alone is not a confirmed vulnerability.
+    severity: WARNING
+    languages: [python]
+    pattern-either:
+      - pattern: eval(...)
+      - pattern: exec(...)
+  - id: scholarlens-shell-execution
+    message: Review shell=True and trace every interpolated value to its trust boundary.
+    severity: WARNING
+    languages: [python]
+    pattern: subprocess.$FUNC(..., shell=True, ...)
+  - id: scholarlens-unsafe-deserialization
+    message: Unsafe deserialization must never consume uploaded or remotely supplied data.
+    severity: WARNING
+    languages: [python]
+    pattern-either:
+      - pattern: pickle.loads(...)
+      - pattern: pickle.load(...)
+      - pattern: yaml.unsafe_load(...)
+      - pattern: yaml.load(..., Loader=yaml.UnsafeLoader, ...)
+  - id: scholarlens-sql-construction
+    message: Review interpolated SQL; parameters must be bound, and dynamic identifiers must use a fixed allowlist.
+    severity: WARNING
+    languages: [python]
+    pattern-either:
+      - pattern: $DB.execute(f"...", ...)
+      - pattern: $DB.execute($STR + $VALUE, ...)
+      - pattern: $DB.execute($STR % $VALUE, ...)
+  - id: scholarlens-disabled-tls
+    message: TLS verification is disabled; check whether the path is reachable in the shipped application.
+    severity: WARNING
+    languages: [python]
+    pattern-either:
+      - pattern: requests.$FUNC(..., verify=False, ...)
+      - pattern: httpx.$FUNC(..., verify=False, ...)
+  - id: scholarlens-browser-code-execution
+    message: Trace data reaching JavaScript code execution before classifying this match.
+    severity: WARNING
+    languages: [javascript, typescript]
+    pattern-either:
+      - pattern: eval(...)
+      - pattern: new Function(...)
+  - id: scholarlens-raw-dom-html
+    message: Raw HTML insertion requires explicit sanitization of lower-trust content.
+    severity: WARNING
+    languages: [javascript, typescript]
+    pattern-either:
+      - pattern: $EL.innerHTML = $HTML
+      - pattern: $EL.outerHTML = $HTML
+      - pattern: document.write(...)
+  - id: scholarlens-react-raw-html
+    message: Verify the sanitizer and source trust for React raw HTML.
+    severity: WARNING
+    languages: [javascript, typescript]
+    pattern: <$TAG ... dangerouslySetInnerHTML={...} ... />

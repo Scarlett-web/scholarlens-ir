@@ -11,4 +11,4 @@ python-multipart>=0.0.20,<1
 pypdf>=5,<7
 filelock>=3,<5
 python-docx>=1.1,<2
-pillow>=11,<13
+pillow>=13,<14
