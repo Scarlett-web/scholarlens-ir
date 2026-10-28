@@ -21,3 +21,11 @@
 完整上传解析/检索链及其他私有路由的完整所有权矩阵仍属于总账中的独立待验事项。本轮未对生产账户执行并发或写入测试。
 
 - 构建完成后独立浏览器重新验收通过，报告 `tools/audit/reports/account-security-2026-10-28T06-56-34-735Z/report.json`：注册、错误重试、真实会话撤销、配置保留/清理、笔记持久化及用户隔离均通过；无页面异常和外部请求，临时服务已结束。
+
+## 发布与公网记录
+
+- 应用提交 `3fc28bcce176b5d923afa5b9f4f58f639d440bf3` 已推送 `origin/zjl`，华为云当前release为 `/opt/scholarlens/releases/20261028T065832Z-3fc28bc`。250个发布文件逐一校验哈希；源站供应商格式离线预检18项通过，实际供应商仍未调用。
+- SQLite一致性备份、环境副本及回滚脚本位于 `/opt/scholarlens/backups/20261028T065832Z-3fc28bc/`，上一版 `/opt/scholarlens/releases/20261028T063118Z-354a638` 保留。用户25、论文859保持；环境哈希、Tunnel进程和检索容器身份/启动时间均未变，应用active且NRestarts=0。匿名账户读取仍401。
+- 公网 `https://scholarlens.lingion.cc.cd/` 最新build-info及三份JS/CSS哈希匹配；真实magnetic查询61条、Agent5段来源且model=not_called、PDF Range206、robots和两张背景资源通过。本轮账户写入与并发验收均在本机隔离数据库，未对生产执行。
+- 本批暂存差异Gitleaks扫描无命中。扩大全部可达历史扫描39次提交、约41.39MB，原始退出码1，有3条generic-api-key线索；逐条精确重建原始匹配，均为旧数据提交46d27bc的论文来源CSV文件名及其后pdf_sha256列，检测值全部为该列的64位十六进制哈希，判定为数据哈希误报。未调整扫描规则或整文件忽略；原报告及独立复核JSON保留在外层审计目录。不能将原始扫描描述为零命中。
+- 本轮发布证据：外层忽略目录 `output/deploy-admin-transactions-20261028-1458/`，含manifest、源站与公网验收。发布记录为文档变更，无需再次重启网站。总账其余缺口保留，未宣告全局审计完成。
