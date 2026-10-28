@@ -123,7 +123,27 @@ export function RecentReadingDeck() {
           <button type="button" className="recent-next" aria-label="下一篇阅读记录" disabled={!canRotate || !!turn} onClick={() => step(1)}><ChevronRight size={18}/></button>
           {canRotate && <button type="button" className="recent-autoplay" aria-label={automatic ? "暂停自动翻页" : "开启自动翻页"} aria-pressed={!automatic} disabled={!motionEnabled} onClick={() => setAutomatic(!automatic)}>{automatic ? <Pause size={13}/> : <Play size={13}/>}</button>}
         </div>
-      </> : <div className="hero-paper-empty"><BookOpen size={40} strokeWidth={1}/><h2>你的阅读，<br/>从这里开始。</h2><p>打开一篇论文，最近阅读会留在这里。<br/>最多展示最近看过的 5 篇。</p><Link to="/search">找一篇论文 <ArrowRight size={16}/></Link></div>}
+      </> : <div className="empty-artifact-box">
+        <div className="empty-artifact-glow">
+          <BookOpen size={32} strokeWidth={1.6}/>
+        </div>
+        <div className="hero-capsule-badge" style={{marginBottom: "12px", padding: "4px 14px"}}>
+          <span className="badge-dot"/>
+          <span className="badge-title">3D 透镜空间</span>
+          <span className="badge-sep">·</span>
+          <span>探索就绪</span>
+        </div>
+        <h3>开启你的学术阅读</h3>
+        <p>检索文献并打开原文，你的最近阅读足迹与笔记进度将在此以 3D 叠层形式实时呈现。</p>
+        <div className="empty-artifact-features">
+          <span>✦ 18+ 经典论文库</span>
+          <span>✦ 毫秒级原文定位</span>
+          <span>✦ 多维证据链核查</span>
+        </div>
+        <Link to="/search" className="button button-primary" style={{display: "inline-flex", alignItems: "center", gap: "8px", textDecoration: "none"}}>
+          开始探索文献 <ArrowRight size={16}/>
+        </Link>
+      </div>}
     </div>
   </div>;
 }

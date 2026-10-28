@@ -1,13 +1,24 @@
 /* Glacier observatory: landscape, clear navigation glass, and quiet paper surfaces. */
 :root{
- --app-canvas:#edf4f8;--app-surface:#fff;--app-ink:#193348;--app-muted:#304d61;
- --glass-clear:rgba(247,252,255,.2);--glass-soft:rgba(249,253,255,.72);--paper:#fbfdfe;
+ --app-canvas:#edf4f8;--app-surface:#fff;--app-ink:#142d42;--app-muted:#385266;
+ --glass-clear:rgba(247,252,255,.2);--glass-soft:rgba(249,253,255,.72);--paper:transparent;
  --glass-edge:rgba(255,255,255,.8);--glass-shadow:0 16px 48px #173d5614, inset 0 1px 0 #ffffffb3;
- --app-hairline:rgba(70,109,134,.16);--app-blue:#0969a9;--app-blue-soft:#e1f1fb;--app-rail:224px;
- --r-control:8px;--r-panel:16px;--r-feature:24px;--app-easing:cubic-bezier(.22,1,.36,1);
+ --app-hairline:rgba(70,109,134,.16);--app-blue:#0866c6;--app-blue-soft:#e3f1fb;--app-rail:224px;
+ --r-control:10px;--r-panel:18px;--r-feature:26px;--app-easing:cubic-bezier(.16,1,.3,1);
  --motion-control:200ms;--motion-base:500ms;--motion-scene:700ms;--motion-route:420ms;
- font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+ --glass-card-bg:rgba(255,255,255,.62);
+ --glass-card-hover:rgba(255,255,255,.78);
+ --glass-card-border:rgba(255,255,255,.75);
+ --glass-card-rim:inset 0 1px 1px 0 rgba(255,255,255,.95), inset 0 -1px 1px 0 rgba(10,40,70,.04);
+ --glass-card-shadow:0 16px 44px -10px rgba(15,45,75,.12), 0 2px 10px rgba(15,45,75,.04);
+ --glass-card-shadow-hover:0 24px 60px -12px rgba(15,45,75,.2), 0 4px 16px rgba(15,45,75,.06);
+ --glass-card-blur:blur(20px) saturate(1.35);
+ --btn-primary-gradient:linear-gradient(180deg,#1882ea 0%,#0866c6 100%);
+ --btn-primary-shadow:inset 0 1px 0 rgba(255,255,255,.35), 0 6px 18px rgba(8,102,198,.32);
+ --btn-primary-shadow-hover:inset 0 1px 0 rgba(255,255,255,.45), 0 8px 24px rgba(8,102,198,.45);
+ font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
  color:var(--app-ink);background:#d5e5ee;font-variant-numeric:tabular-nums;
+ -webkit-font-smoothing:antialiased;
 }
 body{background:#081b2a;color:var(--app-ink)}
 button,input,select,textarea{font-family:inherit}
@@ -110,17 +121,17 @@ button,input,select,textarea{font-family:inherit}
 .page-heading-extra{flex-shrink:0}
 .eyebrow,.section-kicker{font-size:12px;font-weight:500;letter-spacing:.04em;color:#86868b}
 h2,h3{color:var(--app-ink)}
-.button,.search-submit{border-radius:8px;font-size:14px;font-weight:550;min-height:44px;gap:8px;box-shadow:none;transition:background 300ms var(--app-easing),transform 300ms var(--app-easing),border-color 300ms var(--app-easing)}
-.button:hover:not(:disabled){transform:none}
-.search-submit>svg,.button-primary>svg{transition:transform 500ms var(--app-easing)}
+.button,.search-submit{border-radius:12px;font-size:14px;font-weight:600;min-height:44px;gap:8px;box-shadow:none;transition:all 260ms cubic-bezier(.16,1,.3,1);cursor:pointer}
+.button:hover:not(:disabled){transform:translateY(-1px)}
+.search-submit>svg,.button-primary>svg{transition:transform 400ms var(--app-easing)}
 .search-submit:hover>svg,.button-primary:hover:not(:disabled)>svg{transform:translateX(4px)}
-@keyframes workspace-enter{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-@keyframes route-enter{from{opacity:.82;transform:translateY(4px)}to{opacity:1;transform:none}}
-.button:active:not(:disabled),.search-submit:active:not(:disabled){transform:scale(.98)}
-.button-primary,.search-submit,.ai-compose-footer .button-primary{background:var(--app-blue);color:#fff;border-color:var(--app-blue);box-shadow:none}
-.button-primary:hover,.search-submit:hover,.ai-compose-footer .button-primary:hover{background:#0758b2}
-.button-secondary{background:#ffffffb3;color:#365369;border:1px solid #ffffffd9;box-shadow:0 2px 8px #173d5608}
-.button-secondary:hover:not(:disabled){background:var(--app-canvas);border-color:#b7b7bd}
+@keyframes workspace-enter{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes route-enter{from{opacity:.82;transform:translateY(6px)}to{opacity:1;transform:none}}
+.button:active:not(:disabled),.search-submit:active:not(:disabled){transform:scale(.97)}
+.button-primary,.search-submit,.ai-compose-footer .button-primary{background:var(--btn-primary-gradient);color:#fff;border:1px solid rgba(255,255,255,.25);box-shadow:var(--btn-primary-shadow);text-shadow:0 1px 2px rgba(0,20,60,.25)}
+.button-primary:hover,.search-submit:hover,.ai-compose-footer .button-primary:hover{background:linear-gradient(180deg,#228ef8 0%,#0a73dc 100%);box-shadow:var(--btn-primary-shadow-hover);color:#fff}
+.button-secondary{background:rgba(255,255,255,.65);color:#193a52;border:1px solid rgba(255,255,255,.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 2px 8px rgba(15,45,75,.05),inset 0 1px 0 #fff;border-radius:12px;font-weight:550}
+.button-secondary:hover:not(:disabled){background:rgba(255,255,255,.9);border-color:#fff;color:var(--app-blue);box-shadow:0 6px 20px rgba(15,45,75,.1),inset 0 1px 0 #fff;transform:translateY(-1px)}
 .button-disabled{background:var(--app-canvas);border-radius:8px;color:#86868b}
 .icon-button{border-radius:8px;min-width:40px;min-height:40px}
 .icon-button:hover:not(:disabled){background:var(--app-canvas)}
@@ -202,9 +213,9 @@ dialog.pdf-viewer-backdrop::backdrop{background:#16384e66;backdrop-filter:blur(1
 /* Daylight glacier: white glass panels floating over the lagoon photograph.
    --glass-* variables are the only transparency knobs; [data-glass] on the shell
    switches the whole set so the surface never mixes two levels by accident. */
-.workspace-shell{--glass-sidebar:.36;--glass-stage:.54;--glass-home:.46;--glass-header:.5;--glass-shell:.18}
-.workspace-shell[data-glass=clear]{--glass-sidebar:.22;--glass-stage:.34;--glass-home:.28;--glass-header:.34;--glass-shell:.1}
-.workspace-shell[data-glass=solid]{--glass-sidebar:.6;--glass-stage:.76;--glass-home:.68;--glass-header:.72;--glass-shell:.4}
+.workspace-shell{--glass-sidebar:.36;--glass-stage:.54;--glass-home:.46;--glass-header:.5;--glass-shell:.18;--glass-card-bg:rgba(255,255,255,.62);--glass-card-hover:rgba(255,255,255,.78);--glass-card-border:rgba(255,255,255,.75);--glass-card-blur:blur(20px) saturate(1.35);--glass-card-shadow:0 16px 44px -10px rgba(15,45,75,.12), 0 2px 10px rgba(15,45,75,.04)}
+.workspace-shell[data-glass=clear]{--glass-sidebar:.2;--glass-stage:.3;--glass-home:.24;--glass-header:.3;--glass-shell:.08;--glass-card-bg:rgba(255,255,255,.38);--glass-card-hover:rgba(255,255,255,.54);--glass-card-border:rgba(255,255,255,.55);--glass-card-blur:blur(24px) saturate(1.55);--glass-card-shadow:0 14px 36px -10px rgba(10,35,60,.1), inset 0 1px 1px 0 rgba(255,255,255,.85)}
+.workspace-shell[data-glass=solid]{--glass-sidebar:.68;--glass-stage:.82;--glass-home:.76;--glass-header:.8;--glass-shell:.45;--glass-card-bg:rgba(255,255,255,.88);--glass-card-hover:rgba(255,255,255,.95);--glass-card-border:rgba(255,255,255,.9);--glass-card-blur:blur(16px) saturate(1.2);--glass-card-shadow:0 18px 48px -12px rgba(12,38,64,.16)}
 .observatory-backdrop{background:#cfe4f0}
 .observatory-backdrop img{filter:brightness(1.02) saturate(1.16) contrast(1.06);transform:scale(1.05);animation:glacier-drift 52s ease-in-out infinite alternate;will-change:transform}
 .observatory-backdrop:before{content:"";position:absolute;inset:0;background:radial-gradient(120% 82% at 14% -10%,#ffffff5c,transparent 56%),linear-gradient(180deg,#f6fcff2e,#ecf7fd0a 62%,#e3f2f95c)}

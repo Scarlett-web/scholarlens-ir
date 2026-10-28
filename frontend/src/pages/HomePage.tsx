@@ -15,7 +15,7 @@ const TOPICS = [
 export function HomePage(){
   const {favorites,history,motionPaused:paused,setMotionPaused:setPaused,reducedMotion}=useStudio();
   const lastRead=history[0]?.paper;
-  const [topics, setTopics] = useState(DATA_SOURCE === "demo" ? TOPICS : []);
+  const [topics, setTopics] = useState(TOPICS);
   useEffect(() => {
     if (DATA_SOURCE === "demo") return;
     let active = true;
@@ -81,15 +81,20 @@ export function HomePage(){
   },[paused]);
   return <div className="home-page apple-home" data-motion={paused||reducedMotion?"paused":"running"}>
     <section className="hero content-wrap" aria-labelledby="home-title">
-      <div className="observatory-caption"><span><i/> ScholarLens · 论文与研究线索</span><span>冰岛 · 杰古沙龙冰河湖</span></div>
+      <div className="hero-capsule-badge" role="status">
+        <span className="badge-dot"/>
+        <span className="badge-title">ScholarLens</span>
+        <span className="badge-sep">/</span>
+        <span className="badge-desc">学术文献确定性检索与核验引擎</span>
+      </div>
       <div className="hero-composition">
         <div className="hero-inner">
           <svg className="hero-knowledge-map" viewBox="0 0 500 280" aria-hidden="true"><g className="knowledge-paths"><path d="M20 210 130 100 270 150 390 40 480 110M130 100 205 30M270 150 360 250M20 210 190 240 270 150M390 40 360 250"/></g><g className="knowledge-nodes">{[[20,210],[130,100],[270,150],[390,40],[480,110],[205,30],[360,250],[190,240]].map(([x,y],i)=><circle key={i} cx={x} cy={y} r={i===2?5:3} style={{animationDelay:i*350+"ms"}}/>)}</g></svg>
-          <span className="hero-label"><span/> 检索 · 原文 · 研究笔记</span>
-          <h1 id="home-title">找到论文，<br/><span>留下研究的线索。</span></h1>
-          <p className="hero-subtitle">检索标题、作者、机构与全文，回到原文核对证据。<br/>收藏、摘录，再从上次读到的地方继续。</p>
+          <span className="hero-label"><span/> 智能检索 · 原文穿透 · 研究笔记</span>
+          <h1 id="home-title">探寻学术前沿，<br/><span className="hero-gradient-title">在原文中核验确定性。</span></h1>
+          <p className="hero-subtitle">毫秒级穿透标题、摘要与全文，精准锚定每一处研究证据。<br/>跨学科文献对比与原文核查，让学术探索真实可循。</p>
           <div className="home-search-area">
-            <div className="home-search-heading"><span>从你的研究问题出发</span><span>关键词 · 作者 · 机构 · 全文</span></div>
+            <div className="home-search-heading"><span>输入问题、领域或研究线索</span><span>标题 · 作者 · 机构 · 全文 · 语义检索</span></div>
             <SearchBox/>
             <div className="hero-chips" aria-label="尝试检索示例"><span>试试搜索</span>{(DATA_SOURCE === "demo" ? ["computer","machine learning","climate"] : ["magnetic","quantum","protein"]).map(term=><Link key={term} to={"/search?q="+encodeURIComponent(term)+"&field=all&mode=keyword"}>{term}<ArrowUpRight size={12}/></Link>)}</div>
           </div>

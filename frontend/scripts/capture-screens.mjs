@@ -29,6 +29,7 @@ const glass = argValue("--glass", "");
 
 const TARGETS = [
   { name: "home", url: "/", width: 1440, height: 900 },
+  { name: "home-full", url: "/", width: 1440, height: 1400 },
   { name: "home-mobile", url: "/", width: 390, height: 844, mobile: true },
   { name: "search", url: "/search", width: 1440, height: 900 },
   { name: "search-mobile", url: "/search", width: 390, height: 844, mobile: true },
