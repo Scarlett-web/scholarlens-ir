@@ -27,4 +27,4 @@ These files were obtained from public third-party repositories and are untrusted
 
 Run npm run build, npm run test, npm run verify:structure; when preview is active, npm run test:browser. Check screenshots at desktop and 390px mobile widths. Static compilation alone does not prove visual correctness.
 
-Do not commit, push, publish or modify a real index without explicit direction.
+Delivery authorization updated 2026-10-28: the user explicitly requested that this project be pushed now and future verified changes be pushed promptly. After relevant checks pass, commit and push authorized project changes to origin/zjl without asking again for routine pushes. Preserve unrelated work; exclude secrets, original papers and runtime data; do not force-push or merge other branches. Website deployment and changes to a real index still require their own explicit direction.
