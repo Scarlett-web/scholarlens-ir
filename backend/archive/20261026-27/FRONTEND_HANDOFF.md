@@ -1,10 +1,10 @@
 # ScholarLens 前端联调交接
 
-> 2026-10-27 V2更新：本页保留P0历史记录，当前完整接口请使用[FRONTEND_API_GUIDE](FRONTEND_API_GUIDE.md)及运行中的/docs。V2新增建议/发现、语义/RRF、证据/AI配置、SQLite与审核上传；实际可用状态以/api/capabilities及BACKEND_V2_VERIFICATION为准，不用下方历史Mock说明推断当前状态。
+> 2026-10-27 V2更新：本页保留P0历史记录，当前完整接口请使用[FRONTEND_API_GUIDE](../../FRONTEND_API_GUIDE.md)及运行中的/docs。V2新增建议/发现、语义/RRF、证据/AI配置、SQLite与审核上传；实际可用状态以/api/capabilities及BACKEND_V2_VERIFICATION为准，不用下方历史Mock说明推断当前状态。
 
 > 2026-10-27更新：8000正常API已切换真实859篇，8001亦提供真实验收服务；stats.status与响应头应为real。下方Mock响应保留为协议形状示例，重启Mock需显式指定`-Index scholarlens-papers-mock`。真实查询可用`/api/search?q=dynamic%20magnetic%20resonance&field=title`；真实ID和限制见[REAL_DATA_VERIFICATION](REAL_DATA_VERIFICATION.md)。PDF尚未交付，接口如实返回不可用状态。
 
-以下为2026-10-26的P0历史快照；当前请使用V2手册。历史记录配合 [API Contract](../docs/04_API_CONTRACT.md) 使用。当前是真实 Elasticsearch + FastAPI，只有 **2条Mock论文**，正式JSONL和PDF尚未交付。下列响应来自当前索引的实际HTTP请求，耗时随请求变化。
+以下为2026-10-26的P0历史快照；当前请使用V2手册。历史记录配合 [API Contract](../../../docs/04_API_CONTRACT.md) 使用。当前是真实 Elasticsearch + FastAPI，只有 **2条Mock论文**，正式JSONL和PDF尚未交付。下列响应来自当前索引的实际HTTP请求，耗时随请求变化。
 
 ## 1. 启动后端
 
@@ -17,7 +17,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File infra/start-elasticsearch.ps
 powershell -NoProfile -ExecutionPolicy Bypass -File infra/start-backend.ps1
 ```
 
-端口占用先检查已有服务，避免重复启动。API基础地址：`http://127.0.0.1:8000`；交互文档：`http://127.0.0.1:8000/docs`。先请求`/api/stats`，预期papers=2、indexed=2、status=mock。API重启先执行`infra/stop-backend.ps1`再start-backend，索引保留。全新电脑安装见[README](README.md)。
+端口占用先检查已有服务，避免重复启动。API基础地址：`http://127.0.0.1:8000`；交互文档：`http://127.0.0.1:8000/docs`。先请求`/api/stats`，预期papers=2、indexed=2、status=mock。API重启先执行`infra/stop-backend.ps1`再start-backend，索引保留。全新电脑安装见[README](../../README.md)。
 
 ## 2. Vite代理与localhost
 

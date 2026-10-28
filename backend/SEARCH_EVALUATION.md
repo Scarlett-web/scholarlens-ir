@@ -2,6 +2,8 @@
 
 日期2026-10-27。keyword是真实ES BM25；semantic是真实MiniLM CPU嵌入、ES精确cosine扫描、按paper_id聚合；hybrid执行真实两路召回及RRF(k=60)。评分尺度不同，不能跨模式直接比较。
 
+> 本页耗时表是 2026-10-27 Windows 历史基准，不是当前华为云或公网 SLA。最新源站顺序测量和未标注边界见[总报告](../docs/PROJECT_REPORT_20261028.md)与[当前观察](../docs/33_PASSIVE_CHECKS_AND_RESIDUALS.md)。V2.1 已实现上传独立向量，是否就绪取决于实际 generation 对齐；当前生产没有批准上传，不能因能力已实现就声称生产有上传向量数据。
+
 ## 方法与复现
 
 固定8条查询见backend/evaluate_search.py，覆盖脑成像、信息检索、DNA修复、分布式系统、土壤、图像学习和物理。每模式预热1次，再执行8查询×3轮，共24次；记录每次HTTP墙钟耗时、候选数和Top5 ID/标题。耗时包含嵌入、ES和序列化；不包含首次模型加载。p95使用nearest-rank。
@@ -31,4 +33,4 @@ Invoke-RestMethod 'http://127.0.0.1:8000/api/evaluation' | ConvertTo-Json -Depth
 
 没有人工qrels，Precision@5、nDCG@10保持null；不从标题重叠、单条查询或模型相似度猜标注，不虚构效果提升。后续由数据组/组长对固定结果独立标注0/1/2，再在固定语料版本计算相关性指标，时间待会议确认。
 
-[all-MiniLM-L6-v2模型卡](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2)说明该模型是英文通用语义模型；本项目固定revision并使用CPU ONNX，不宣称医学专门训练或中文效果。原论文抽取遗漏、重音断词和4条正文隔离仍会影响召回，见REAL_DATA_VERIFICATION.md。上传论文目前进入独立BM25索引，尚未向量化，metrics明确区分覆盖范围。
+[all-MiniLM-L6-v2模型卡](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2)说明该模型是英文通用语义模型；本项目固定revision并使用CPU ONNX，不宣称医学专门训练或中文效果。原论文抽取遗漏、重音断词和4条正文隔离仍会影响召回，见[真实数据历史验收](archive/20261026-27/REAL_DATA_VERIFICATION.md)。上传语义/混合能力的后续实现与验收见[V2.1增补](FRONTEND_API_GUIDE_V21.md)和[隔离上传链](../docs/31_ISOLATED_UPLOAD_AND_OWNERSHIP.md)，不能沿用本页早期阶段的“尚未向量化”限制描述当前代码。

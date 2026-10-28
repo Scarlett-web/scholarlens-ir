@@ -6,7 +6,7 @@
 
 ### V2.1 业务与AI增补（负责人组长）
 
-输入/输出、认证和验收以backend/V21_PARITY_GOAL.md及FRONTEND_API_GUIDE_V21.md为准。新增profile/avatar/password、绑定邮箱验证与密码找回、收藏夹、七日浏览记录、随机推荐、受控DOCX下载、管理员用户管理、审核预览/通知、我的文献、AI会话/总结/比较，以及上传向量化。原搜索/收藏接口保持兼容。SQLite使用幂等加法迁移、迁移前backup与本地恢复命令；不删除旧索引或原数据。邮件/AI未配置503，不伪造发送、生成、解析或原PDF读取。stream=true采用校验完整回答后分段SSE，未通过引用校验不发送内容；不冒充上游token流。用户及会话数据隔离、转换限时/清理、双路真实上传召回须通过新增测试。
+输入/输出、认证和验收以backend/archive/20261026-27/V21_PARITY_GOAL.md及FRONTEND_API_GUIDE_V21.md为准。新增profile/avatar/password、绑定邮箱验证与密码找回、收藏夹、七日浏览记录、随机推荐、受控DOCX下载、管理员用户管理、审核预览/通知、我的文献、AI会话/总结/比较，以及上传向量化。原搜索/收藏接口保持兼容。SQLite使用幂等加法迁移、迁移前backup与本地恢复命令；不删除旧索引或原数据。邮件/AI未配置503，不伪造发送、生成、解析或原PDF读取。stream=true采用校验完整回答后分段SSE，未通过引用校验不发送内容；不冒充上游token流。用户及会话数据隔离、转换限时/清理、双路真实上传召回须通过新增测试。
 
 ### 2026-10-28 二次凭证确认与会话失效
 
@@ -48,11 +48,11 @@ V2 all多词检索允许查询词分布在不同的六字段：普通查询采�
 
 ### P0 实现约定（2026-10-26）
 
-2026-10-27真实数据Goal：组长放行20篇隔离验收后全量导入；接口字段不变，real通过导入元数据和X-ScholarLens-Data-Status标记，stats数值来自真实索引。正式开发启动默认alias切换为scholarlens-papers-real，Mock可显式指定scholarlens-papers-mock；8001先验收再重启8000。PDF未交付仍404，不扩展阅读能力；责任人组长，验收记录见backend/REAL_DATA_VERIFICATION.md。
+2026-10-27真实数据Goal：组长放行20篇隔离验收后全量导入；接口字段不变，real通过导入元数据和X-ScholarLens-Data-Status标记，stats数值来自真实索引。正式开发启动默认alias切换为scholarlens-papers-real，Mock可显式指定scholarlens-papers-mock；8001先验收再重启8000。PDF未交付仍404，不扩展阅读能力；责任人组长，验收记录见backend/archive/20261026-27/REAL_DATA_VERIFICATION.md。
 
 负责人：组长；输入为下述 search 参数和通过校验的 JSONL 索引，输出沿用本页 JSON 结构。历史P0仅实现keyword，当时semantic/hybrid返回503；V2已实现三模式，依赖状态见/api/capabilities。search 响应通过 `X-ScholarLens-Data-Status: mock|real` 标记数据来源，保持 JSON 顶层字段不变；stats 的 status 使用同一来源标记。Mock 表示论文内容为模拟数据，检索引擎仍是真实 Elasticsearch。page_size 上限固定为 100，分页窗口上限 10000；非法参数（包括 FastAPI 类型校验失败）、反向年份范围以及 phrase/fuzzy 同时启用统一返回 400 invalid_parameter。仅允许本页六字段，all 不搜索 abstract。date 使用标准文本分析支持年份/日期词项；year_from/year_to 使用整数 year 过滤。排序缺失年份置后，同分以 paper_id 稳定排序；高亮使用 HTML 转义，仅添加 em 标签。
 
-stats 的 papers 表示本次输入非空行数，indexed 为当前实际文档数；parser 保留 success/failed，并增加 partial/unknown，unknown 表示输入没有解析状态。fields_completeness 为已索引文档的六字段及摘要、年份非空率；正文隔离后按实际入索引值统计。index.last_built_at、mapping_version 来自导入元数据。ES 未启动或索引尚未导入返回 503；服务内部错误返回 500 统一结构，不返回路径、密钥或堆栈。验收命令与实际结果见 backend/README.md 和 backend/VERIFICATION.md。
+stats 的 papers 表示本次输入非空行数，indexed 为当前实际文档数；parser 保留 success/failed，并增加 partial/unknown，unknown 表示输入没有解析状态。fields_completeness 为已索引文档的六字段及摘要、年份非空率；正文隔离后按实际入索引值统计。index.last_built_at、mapping_version 来自导入元数据。ES 未启动或索引尚未导入返回 503；服务内部错误返回 500 统一结构，不返回路径、密钥或堆栈。验收命令与实际结果见 backend/README.md 和 backend/archive/20261026-27/VERIFICATION.md。
 
 - 请求与响应使用 `application/json; charset=utf-8`；时间为 ISO-8601。
 - 成功响应直接包含业务字段；错误统一为 `{"error":{"code":"...","message":"...","details":{}}}`。
@@ -102,7 +102,7 @@ Mock 响应：
 
 ### P0 第二阶段详情约定（2026-10-26）
 
-组长明确放行 D-12 的后端读取部分；负责人组长。输入为当前 alias 中的 paper_id；输出为下列字段，验收为现有 Mock 详情可读、缺论文/缺 PDF 分别404、错误结构统一、响应不含本地路径，测试与样例见 backend/FRONTEND_HANDOFF.md。
+组长明确放行 D-12 的后端读取部分；负责人组长。输入为当前 alias 中的 paper_id；输出为下列字段，验收为现有 Mock 详情可读、缺论文/缺 PDF 分别404、错误结构统一、响应不含本地路径，测试与样例见 backend/archive/20261026-27/FRONTEND_HANDOFF.md。
 
 详情固定返回 paper_id/title/authors/date/year/affiliation/address/abstract/fulltext/pages，以及 pdf_available（boolean）、source_status（对象：pdf=available或pdf_not_available，parse_status=success/partial/error/unknown）、chunks（本阶段为空数组）、available_actions（PDF 可访问时为["view_pdf"]，否则[]）。保留各核心字段的原类型和缺失约定；不返回内部 pdf_path、source_file、date_value 或原始 errors，避免泄露文件系统信息。论文正文来自当前已索引版本；已隔离正文为空，不用猜测文本替代。
 

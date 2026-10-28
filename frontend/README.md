@@ -1,69 +1,56 @@
-# ScholarLens — 冰川观测站与玻璃研究桌
+# ScholarLens 前端
 
-当前版本已连接账户、三模式检索、收藏笔记、最近阅读、上传审核和研究助手。登录用户可独立填写个人 API，密钥仅在标签页会话内保存。当前集成状态见 docs/BACKEND_INTEGRATION.md 与 docs/AI_API_INTEGRATION.md，下方纯前端内容为设计历史。
+React 18 + Vite 6 + TypeScript + React Router 7。桌面优先的冰岛照片、玻璃导航、研究书架和清晰纸面阅读，主流程为搜索 → 阅读 → 保存与标注。
 
-当前桌面版使用冰岛杰古沙龙冰河湖实景、连贯的玻璃框架与导航、开放首页与清晰纸面阅读区。保留系统字体、蓝色主动作和检索 → 阅读 → 收藏整理的完整流程；最近五篇仍来自实际阅读记录。鼠标局部高光与已有动效支持暂停及减少动态设置。设计规范见 docs/DESIGN_SYSTEM.md；图片来源见 docs/UI_GLACIER_OBSERVATORY_20261027.md；最新的通透材质与容器精简见 docs/UI_CLEAR_GLASS_20261027.md。
+当前页面已连接真实 API，涵盖账户、三模式检索、收藏笔记、最近阅读、上传审核、证据助手与评测。[项目总报告](../docs/PROJECT_REPORT_20261028.md)包含完整现状和汇报材料，旧设计过程在 `docs/archive/20261027-28/`。
 
-## 启动与校验
+## 开发与正式构建
 
-在 Windows PowerShell 中：
+进入本目录：
 
-    cd frontend
-    npm install
-    npm run dev
+```powershell
+npm ci
+npm run dev
+```
 
-打开 Vite 控制台给出的本地网址。检查项目：
+正式发布：
 
-    npm run test
-    npm run verify:structure
-    npm run build
+```powershell
+npm run typecheck
+npm run test
+npm run verify:structure
+npm run build:production
+```
 
-## 最近阅读与动效
+默认 demo 使用 18 篇明确标记的虚构样本，不能称为 BM25 或真实检索。普通 `npm run build` 不应直接上传生产；`build:production` 固定 `VITE_DATA_SOURCE=api`、`VITE_API_BASE_URL=/api`，输出 `build-info.json` 记录 JS/CSS hash。生产仍须验证页面显示真实论文，不只检查构建退出码。
 
-首页 3D 卡片展示自己最近打开过的最多 5 篇不同论文，最近看过的排在前面；不足 5 篇按实际数量显示，没有记录时显示空状态。支持纸张翻页、7 秒自动切换、前后按钮、页码跳转与键盘方向键。悬停、键盘焦点、离屏或页面隐藏时暂停自动翻页。阅读记录继续使用原浏览器本地存储，刷新保留；同一浏览器的新标签页阅读后，首页会同步更新。
+API、ES、SQLite 分别运行；Vite 代理只连接后端，浏览器不直接访问 ES 或数据库。现有预览进程和端口可能属于其他工作，先核对再操作。
 
-动效扩展到知识连线、侧栏导航、搜索聚焦、按钮点击波纹、收藏反馈、列表滚动入场和探索卡片。侧栏可以暂停/开启网站动效，设置会记住；系统减少动态效果时自动停用运动，手动翻页仍可操作。没有增加动画依赖、WebGL 或远程媒体。本轮按用户要求以电脑端为设计和验收重点，详见 docs/UI_READING_DECK_20261027.md。
+## 页面与交互
 
-## 如何找到功能
+- 首页首屏搜索、玻璃研究棱镜、最多五篇真实最近阅读。自动翻页可暂停，支持前后/页码/键盘。
+- 搜索字段/年份/排序/分页/建议/分享链接；关键词、语义、混合遵守服务端能力限制。
+- 详情、正文窗口、专注模式、位置恢复、选文摘录、PDF 与文本 DOCX、来源证据。
+- 发现列表与按真实字段连接的关系图；关系不表示引用次数或语义距离。
+- 书架分类、笔记、导入导出；加载/同步失败保留已知数据和恢复入口。
+- 账户、安全、通知、个人 API 配置；上传和审核按角色隔离。
+- 评测使用 0/1/2 人工标注，满足当前前缀要求后才展示 Precision/nDCG。
+- 动效暂停与系统减少动态效果始终生效；390px 只做回归。
 
-- 桌面左侧常驻：**首页 / 论文检索 / 探索论文 / 我的文献**。
-- 左侧“研究工具”分组：**检索评测 / PDF 工作区 / 审核工作台 / AI 助手**；手机端使用收起式全功能导航；三个工具页面之间保留页内切换。
-- 首页只有一个主搜索框，右上方可翻阅最近五篇阅读记录，下方集中放置主题入口和个人阅读空间。
-- 搜索页左侧筛选、右侧连续文献列表；探索页使用首篇突出、其余双列的浏览布局。手机端筛选与收藏分类默认收起，展开后可正常使用。
-- AI 默认为空 API，未接入时禁用发送按钮。
+## 数据保存
 
-## 已经可以独立使用的前端功能
+游客空间和阅读位置使用浏览器本地存储；登录工作区同步服务器，失败保留本机恢复草稿。阅读位置不是跨设备同步进度。
 
-1. 检索：全部字段及标题、作者、日期、机构、地址、全文六字段；查询历史、搜索建议、URL 分享、年份筛选、分页、排序和关键词高亮。
-2. 论文详情：摘要与全文、文中查词、全文展开、引用整理与导出、收藏、主题相关论文、PDF 可用时内嵌阅读。
-3. 文献探索：按领域、关键词、年份和随机顺序浏览，卡片直达详情。
-4. 我的空间：收藏分类创建/重命名/删除、笔记、本地历史、JSON 导出与恢复。
-5. 本地 PDF 工作区：校验 PDF 文件头、15MB 限制、SHA-256 去重、IndexedDB 存文件、原文阅读与删除。
-6. 本地审核：按状态与文件名筛选、看 PDF、写备注、通过/拒绝/恢复待审、删除文件。
-7. 检索评测：运行当前搜索，对返回论文人工标注 0/1/2，满足标注要求后才计算 Precision@k 和 nDCG@k，支持 JSON 导出。
-8. AI：聊天界面已准备发送、停止、错误处理和来源回链；**模型和 API 完全空白，未配置时不会发请求或伪造答案**。具体说明见 docs/AI_API_INTEGRATION.md。
+每用户 API URL/模型偏好存 `localStorage`；API key 仅存标签页 `sessionStorage`，退出/会话失效清除，按请求传给同源后端，不进 Vite 变量或服务器数据库。默认不配置共享供应商；无模型时真实 API 证据检索可用，demo 模式该入口禁用并说明原因。
 
-## 数据真实性与隔离
+本机 PDF 使用 IndexedDB，与服务器上传队列不同；本机审核通过不表示正式进入 ES。原始论文 PDF 由后端受控读取，不由 JSONL 合成。
 
-- 默认模式只有 18 篇虚构演示论文。模拟字符串检索不是 Elasticsearch BM25。
-- 接入 FastAPI 使用 VITE_DATA_SOURCE=api，但请求字段和响应结构仍须与原项目契约核对。
-- Semantic / Hybrid 模式没有后端前不开放操作，不冒充已完成。
-- 本地 PDF 的上传与审核只影响当前浏览器。审核通过也不会进入 ES 正式索引。
-- AI 模型和供应商由你自己决定，个人密钥仅保存在标签页 sessionStorage，请求时交给同源后端转发，不应写进 Vite 变量。
-- 真实检索和真实评测必须使用正式论文和人工标注集，不能用演示数据代替。
+## 维护入口
 
-## 关键文件
+- [当前 QA 清单](docs/QA_CHECKLIST.md)
+- [设计规范](docs/DESIGN_SYSTEM.md)、[功能范围](docs/FEATURE_SPEC.md)
+- [前后端契约](docs/FULL_STACK_CONTRACT.md)、[后端集成](docs/BACKEND_INTEGRATION.md)、[个人 API](docs/AI_API_INTEGRATION.md)
+- [设计参考审计](docs/DESIGN_SKILL_AUDIT.md)和[图片来源](public/images/SOURCES.md)
+- [历史设计与验收](docs/archive/20261027-28/README.md)
 
-- src/pages/：完整页面。
-- src/components/：组件与本地 PDF 阅读器。
-- src/services/papers.ts：FastAPI 论文适配层。
-- src/services/ai.ts：AI 空配置适配层。
-- src/lib/pdfStore.ts：PDF 本地存储与内容校验。
-- src/lib/evaluation.ts：标注指标计算。
-- src/design-core.css、src/design-pages.css、src/design-workspaces.css：V6 设计规范，直接维护已有 CSS，不再新增叠加的补丁层。
-- docs/：功能、设计、API 对接和验收资料。
-- tests/：纯函数测试及结构检查。
-
-可选浏览器交互回归：先运行 npm run build，再启动 npm run preview -- --port 4173；在另一终端运行 npm run test:browser（本机 Chrome）。
-
-已在项目下安装 .agents/skills/landing-page-design 与 .agents/skills/redesign-existing-projects；AGENTS.md 告诉后续 Codex 如何组合使用。两套技能按 MIT 许可提供，来源是公开的 GitHub 仓库；其设计约束服从 ScholarLens 的真实产品要求。本轮桌面与真实 390px 手机模拟截图见 output/playwright/，最新改版说明见 docs/UI_REFRESH_V6_20261027.md。根目录 qa-skill-*.png 为旧版验收图（浏览器测试会更新其中的手机图）。正式课堂演示前仍应按 docs/QA_CHECKLIST.md 检查投影效果与真实后端。
+样式直接维护现有 canonical CSS；不追加覆盖表。图片本地提供，不在运行中请求摄影网站。第三方设计 Skill 是参考，服从实际产品和用户要求。

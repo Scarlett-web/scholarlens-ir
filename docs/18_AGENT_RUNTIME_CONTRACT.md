@@ -44,9 +44,9 @@ Linux/macOS 对应解释器为 `.venv/bin/python`。可选 MCP SDK 不加入 Web
 
 应用发布包必须包含 `agent/workflows/evidence-grounded-answer.yaml` 和 `.agents/skills/scholarlens-evidence-agent/SKILL.md`，切换版本前运行 `resources()` 检查。MCP 的局部虚拟环境、Harness 运行输出、用户库和密钥不打包。
 
-## 后续仍需完成
+## 当时的后续计划（历史快照）
 
-此运行时更新不代表两份参考文档的全部设计与全局审计任务已完成。首页研究棱镜、真实论文关系视图、阅读专注模式、评测图形和上传审核时间线仍需逐项实现验收；安全工具缺口及性能改进也继续以实际报告为准。真实个人模型生成尚未验收，不配置替代共享密钥。
+此处保留运行时初次更新后的计划时间点。棱镜、关系图、专注阅读、评测图形和上传时间线后来已有对应实现及限定验收，最新以[项目总报告](PROJECT_REPORT_20261028.md)、[持续验证](32_CONTINUOUS_VERIFICATION.md)和[剩余边界](33_PASSIVE_CHECKS_AND_RESIDUALS.md)为准。不能据本页旧release描述当前线上，也不据后续发布声称全局审计或真实个人模型生成全部完成。
 
 ## 线上发布记录（2026-10-28 11:06 北京时间）
 

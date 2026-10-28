@@ -1,5 +1,7 @@
 # ScholarLens V2 前端接口手册
 
+> 基础协议手册，包含 2026-10-27 的示例快照。当前公开网站和859份正式 PDF 已交付，上传增量向量/会话等同名限制由[V2.1增补](FRONTEND_API_GUIDE_V21.md)及后续契约取代。最新实际状态见[项目总报告](../docs/PROJECT_REPORT_20261028.md)、[个人配置契约](../docs/10_RELEASE_AND_PERSONAL_AI.md)、[Agent运行契约](../docs/18_AGENT_RUNTIME_CONTRACT.md)、[凭证边界](../docs/28_ACCOUNT_CREDENTIAL_BOUNDARIES.md)。旧示例的 localhost/缺 PDF/无会话不代表当前线上状态，完整方法清单以运行中的 OpenAPI 为准。
+
 2026-10-27，负责人组长。后端独立于React开发，未修改frontend。此文配合docs/04_API_CONTRACT.md和运行中的/docs使用。历史FRONTEND_HANDOFF的Mock示例不代表当前真实状态。验收状态以BACKEND_V2_VERIFICATION.md为准。
 
 ## 启动与地址

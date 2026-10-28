@@ -1,100 +1,55 @@
-﻿# ScholarLens — 智能学术论文检索与分析平台
+# ScholarLens — 学术论文检索与研究工作台
 
-ScholarLens 是《信息检索》课程大作业，实现真实学术论文的关键词、语义和混合检索，以及可追溯问答的后端接口。项目名称与课程要求中的 **Scholar IR System** 对应。
+ScholarLens 是《信息检索》课程项目（对应 Scholar IR System），连接真实论文、三模式检索、原文阅读、收藏笔记、账户与受审核上传，并提供可核验的原文证据。
 
-## 完整网站交付（2026-10-28）
+**在线访问：[ScholarLens](https://scholarlens.lingion.cc.cd/)**。网站运行于华为云，经 Cloudflare Tunnel 提供 HTTPS，个人电脑关机后仍可访问。
 
-在线访问：[ScholarLens](https://scholarlens.lingion.cc.cd)。已部署到华为云，电脑关机后仍可访问。公网三模式检索与14项账户浏览器流程通过；首次使用请注册，测试用户未迁移。详细证明和未测边界见 [验收记录](docs/12_RELEASE_ACCEPTANCE.md)。
+## 汇报与文档
 
-最新证据智能体运行时、局部 stdio MCP 插件和可执行 Harness 见 [运行契约及验收范围](docs/18_AGENT_RUNTIME_CONTRACT.md)。以下初次交付数量为历史记录；每次更新的当前验证与线上发布单独登记，不据此宣称真实个人供应商已通过。
+- [项目总报告](docs/PROJECT_REPORT_20261028.md)：现有资产、逐功能说明、检索原理、数据库、实现过程、优化、安全、测试、部署、局限和答辩。
+- [PPT 逐页底稿](docs/PPT_OUTLINE_20261028.md)：22 页结构、可复制页面文字、配图和讲稿。
+- [文档索引](docs/README.md)：维护入口、历史归档及清理清单。
+- [当前验证与发布](docs/32_CONTINUOUS_VERIFICATION.md)、[剩余边界](docs/33_PASSIVE_CHECKS_AND_RESIDUALS.md)。
 
-- frontend/ 已纳入冰岛玻璃风格的完整 React 界面，连接检索、账户、收藏笔记、最近阅读、上传审核和研究助手；源码默认 demo。真实部署在 frontend/ 运行 `npm run build:production`，固定使用本站 `/api` 并生成可校验的 `dist/build-info.json`；普通 `npm run build` 的结果不能直接当作线上真实数据构建。发布后还须在浏览器确认显示 859 篇真实论文。
-- 每个登录用户可独立填写 OpenAI 兼容 URL、模型及密钥；密钥只保存在标签页 sessionStorage，退出清除，按请求使用，不写服务器数据库。默认配置空，未做真实供应商调用。
-- 本轮本机后端 161 passed、1 deselected；前端 build、15 tests、structure、真实检索浏览器和14项账户流程通过。被排除的是独立 API 重启测试，不把历史结果当本轮证明。
-- FastAPI 支持 FRONTEND_DIST 同源托管，服务器与 Cloudflare 独立部署见 [部署说明](docs/11_SERVER_DEPLOYMENT.md)。本机测试不代表外网已发布，外网状态以实际部署验收为准。
-- 正式库 859 份原始 PDF 已接通在线阅读与下载；逐份来源哈希、源站及公网浏览器 Range 检查通过，原件共 22,686 页。完整 999 份原包和元数据独立存档于 [GitHub 数据 Release](https://github.com/Scarlett-web/scholarlens-ir/releases/tag/papers-originals-2026-10-28)，大文件不进入源码历史；恢复、验收和回滚见 [原件交付说明](docs/13_ORIGINAL_PDF_DELIVERY.md)。
-- 邮件、真实 AI 上游调用、XML 和首次管理员指定仍待后续；PDF 阅读无需 XML。原件清晰度与扫描质量按原文件，不从正文重造 PDF。
+## 当前状态（2026-10-28）
 
-## 上一版本后端状态（2026-10-27，历史）
+| 项目 | 当前事实 |
+| --- | --- |
+| 正式论文 | 859 篇；215 success、644 partial；4 篇正文因严重乱码隔离，元数据保留 |
+| 向量 | 49,420 个片段，384 维 MiniLM CPU ONNX；RRF k=60 |
+| 原件 | 正式库 859 份 PDF 已接通，共 22,686 页；完整 999 份原包和正式元数据在独立[数据 Release](https://github.com/Scarlett-web/scholarlens-ir/releases/tag/papers-originals-2026-10-28) |
+| 页面 | 搜索、论文、探索、书架、账户、助手、评测、上传、审核与 404 |
+| 接口 | FastAPI 0.2.1；本轮公网 OpenAPI 列出 63 个路径、79 个操作 |
+| 验证 | 最新前端 35 项；10 个独立后端模块 135 项；Chrome/Edge 44 组检查，范围见验证记录 |
+| 线上应用 | `20261028T090257Z-42c81c9`；本轮只读核对服务 active/running、NRestarts=0 |
+| 保留能力 | 个人 AI URL/模型/密钥自行配置；真实上游与邮件未验收；XML 未交付；GitHub CI 为待启用草稿 |
 
-- 已在组长Windows本机验收859篇真实论文、49420个向量片段，完整测试131项通过。
-- Elasticsearch 8.19.23、Python 3.11、FastAPI、MiniLM CPU ONNX与SQLite；本地运行无需Docker。
-- 提供六字段BM25、语义/RRF、建议/发现、详情/片段、用户/收藏/历史、审核上传与独立增量索引。
-- RAG证据链和模型适配器已有实现；真实AI Key、原论文PDF、运行中的GROBID仍需配置，能力接口如实返回状态。受控测试不代表这些外部资源已经交付。
-- 当前代码在组长分支`zjl`，数据组和前端分支不自动合并；本仓库没有部署公网API。
+## 运行
 
-已有本机环境日常启动（不重新导入论文）：
+在已配置依赖、数据和模型的 Windows 克隆根目录：
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File infra/start-scholarlens.ps1
 Invoke-RestMethod 'http://127.0.0.1:8000/api/stats'
 ```
 
-本机接口文档为`http://127.0.0.1:8000/docs`，能力状态为`/api/capabilities`。首次在新电脑使用时，先按[Windows启动说明](backend/BACKEND_STARTUP.md)安装依赖、配置数据与索引；Git 源码不包含虚拟环境、原论文、数据库、ES索引或模型缓存；原件和正式 JSONL/来源 CSV 需从独立数据 Release 恢复，克隆源码不会自动拥有索引或模型。
+首次运行按[后端启动与恢复](backend/BACKEND_STARTUP.md)准备环境。克隆源码不会自动得到模型、数据库、运行索引和原始论文；原件与元数据从独立数据 Release 恢复，索引按受控导入流程重建。
 
-- [后端说明](backend/README.md)
-- [前端API手册](backend/FRONTEND_API_GUIDE.md)
-- [V2完整验收与分阶段文件清单](backend/BACKEND_V2_VERIFICATION.md)
-- [AI服务配置](backend/AI_CONFIGURATION.md)
-- [三模式评价与限制](backend/SEARCH_EVALUATION.md)
+前端开发见[前端说明](frontend/README.md)。**正式发布必须执行 `npm run build:production`**；普通 build 默认可能生成 18 篇明确标记的虚构演示包。生产入口固定使用同源 `/api`，生成 `dist/build-info.json`；发布后同时检查页面真实数据和资源 hash。
 
-## 历史阶段记录
+## 代码目录
 
-> 2026-10-27：859篇正式JSONL已完成结构与来源清单验收，真实倒排检索API已运行，启动默认real索引，Mock保留。详见[真实数据验收](backend/REAL_DATA_VERIFICATION.md)和[持续任务](backend/REAL_DATA_GOAL.md)。PDF尚未实物交付，数据质量限制已记录。
+| 目录 | 职责 |
+| --- | --- |
+| `frontend/` | React/Vite/TypeScript 页面、状态管理、浏览器存储和交互检查 |
+| `backend/` | FastAPI、BM25/向量/RRF、账户、工作区、上传、证据与转换 |
+| `agent/` | Workflow、MCP 客户端配置示例 |
+| `.agents/skills/` | 项目设计参考与证据 Agent 运行规则 |
+| `infra/` | 本机启动、服务器 systemd/Tunnel 示例、CI 草稿 |
+| `tools/audit/`、`tools/agent/` | 局部验证工具与 Harness；运行输出被忽略 |
+| `docs/` | 总报告、PPT、协议、交付与归档索引 |
+| `scripts/`、`data/` | 数据组约定与样本；原始大数据不进入源码历史 |
 
-> 2026-10-26 更新：组长已启动后端 P0，Elasticsearch 8.19.23 + FastAPI 的 Mock 检索链路和运行说明见 [backend/README.md](backend/README.md)，实测见 [backend/VERIFICATION.md](backend/VERIFICATION.md)。下方 2026-10-22 内容保留为初始化阶段记录，不能代表当前后端状态。真实论文 JSONL 尚未交付，数据组 PR 未合并。
+## 维护边界
 
-- 当前 Git 分支：`zjl`（组长个人开发分支）。
-- 本次仅完成项目规划、协议文档和目录初始化；尚未安装依赖、启动服务、下载 PDF、解析数据或创建索引。
-- GROBID、Elasticsearch、Sentence Transformers、模型 API、SQLite 以及 Lucene 调用方式均为拟议方案，须在会议中确认。
-- 文档中的 Mock 数据只用于前后端并行开发，不能作为真实检索结果或实验结论。
-
-## 目标与范围
-
-1. 批量解析约 1000 篇 PDF，提取标题、作者、日期、机构、地址、页数、摘要和正文，生成可追溯的 XML/JSONL 数据。
-2. 基于 Elasticsearch（Lucene）建立六字段倒排索引，提供字段检索、BM25、分页、高亮、筛选和排序。
-3. 在数据和依赖条件满足后增加标题/摘要语义检索、BM25+向量的 RRF 混合检索，以及带来源引用的 RAG 问答。
-4. 提供 React 现代化 Web 界面和真实数据演示，并用 Precision@5、nDCG@10、延迟等指标比较检索方法。
-
-## 初始拟议技术栈（历史规划，当前实现以上文为准）
-
-| 层次 | 方案 | 选择理由 | 关键条件/风险 |
-|---|---|---|---|
-| 数据处理 | Python + GROBID + XML/JSONL | GROBID 对学术 PDF 结构化解析成熟，Python 便于批处理和统计 | PDF 版式差异、GROBID 服务资源占用、字段缺失 |
-| 关键词检索 | Elasticsearch（基于 Lucene）+ BM25 | 提供倒排索引、字段权重、高亮和分页，满足课程要求 | 版本兼容、内存、是否必须直接调用 Java Lucene API待确认 |
-| 语义检索 | Sentence Transformers + Elasticsearch 向量能力 | 复用现有索引基础，支持标题/摘要和分块向量 | 模型下载与中文/英文效果、向量维度和存储成本 |
-| 混合检索 | BM25 + 向量 + RRF | 无需手工标定分数，便于对比实验 | 候选集大小与融合参数需通过验证集确定 |
-| API/RAG | FastAPI + 可配置大模型 API | 类型约束清晰、适合异步接口和 Python RAG 编排 | API Key、网络可用性、幻觉与引用完整性 |
-| 用户数据 | SQLite | 课程项目部署简单、零额外服务 | 并发与迁移能力有限 |
-| 前端 | React + Vite + Tailwind CSS + shadcn/ui | 组件化、响应式和快速原型 | 需要统一设计令牌和 API Mock 契约 |
-| 部署 | Docker | 固化运行条件，便于课堂复现 | 镜像体积、Windows 资源分配、服务编排待确认 |
-
-## 目录
-
-```text
-.
-├── AGENTS.md                 # 持续执行规则与协作约束
-├── README.md
-├── docs/                     # 需求、架构、协议、UI、计划和验收文档
-├── backend/                  # 组长：FastAPI、检索、RAG、SQLite、测试与交接文档
-├── frontend/                 # React UI、个人 AI 配置与真实 API 对接
-├── scripts/                  # 组员 A：解析、清洗、评测脚本（当前仅占位）
-├── infra/                    # 组长：Windows Elasticsearch与后端启动/停止配置
-└── data/
-    └── sample/               # 可提交的少量Mock JSONL，正式数据在本机忽略路径
-```
-
-## 文档入口
-
-- [需求清单与验收标准](docs/01_REQUIREMENTS.md)
-- [技术架构与流程](docs/02_ARCHITECTURE.md)
-- [统一论文数据格式](docs/03_DATA_SCHEMA.md)
-- [HTTP API 契约](docs/04_API_CONTRACT.md)
-- [UI 规范](docs/05_UI_SPEC.md)
-- [团队计划与 GitHub 规则](docs/06_TEAM_PLAN.md)
-- [测试、指标与课堂演示](docs/07_TEST_DEMO.md)
-- [会议决策表](docs/08_MEETING_DECISIONS.md)
-
-## 初始化边界（历史）
-
-本次提交范围只包含文档、`.gitkeep` 占位文件和 `.gitignore` 规则。不要把原始 PDF、数据库、模型缓存、依赖目录、密钥或临时输出加入仓库；不自动执行安装、Docker、Git commit、push 或 merge。
+源码分支为 `zjl`，不自动合并其他分支。个人密钥仅在标签页会话中保存，URL/模型偏好按用户保存在浏览器；服务器不保存个人密钥。不提交原始论文、用户库、模型、运行索引、凭据、日志或测试报告。只读验收不代表全部业务或真实供应商已成功。部署和回滚见[服务器说明](docs/11_SERVER_DEPLOYMENT.md)，历史记录从[文档索引](docs/README.md)查阅。

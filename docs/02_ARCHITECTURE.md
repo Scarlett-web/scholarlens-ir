@@ -1,12 +1,12 @@
 # 02 技术架构与数据流程
 
-> 2026-10-26：后端 P0 已放行，使用 Elasticsearch 8.19.23 Windows ZIP（自带 JDK）+ Python 3.11 + FastAPI + Elasticsearch Python 8.19 客户端；本机无 Docker，使用本地进程、loopback 和 512 MB JVM 堆。实际验证见 backend/VERIFICATION.md。历史P0时这些事项待确认；V2已选择MiniLM CPU向量模型，大模型供应商、Java Lucene直接调用与Docker编排仍待会议确认。
+> 2026-10-26：后端 P0 已放行，使用 Elasticsearch 8.19.23 Windows ZIP（自带 JDK）+ Python 3.11 + FastAPI + Elasticsearch Python 8.19 客户端；本机无 Docker，使用本地进程、loopback 和 512 MB JVM 堆。实际验证见 backend/archive/20261026-27/VERIFICATION.md。历史P0时这些事项待确认；V2已选择MiniLM CPU向量模型，大模型供应商、Java Lucene直接调用与Docker编排仍待会议确认。
 
 ## 1. 分层设计
 
-2026-10-27后端V2：组长根据本次Goal附件放行语义/RRF/RAG及SQLite/上传后端。BM25别名保留859篇；MiniLM ONNX CPU2线程生成384维向量到独立scholarlens-vectors-*，按paper_id折叠最佳片段，精确cosine扫描后RRF(k=60)。900字符/重叠100的片段ID和字符locator可追溯。SQLite保存哈希会话、用户隔离收藏历史、上传审核和任务租约；上传审核后发布独立scholarlens-uploads-*，不覆写基础索引。AI服务配置留空，兼容适配器进行引用校验，真实PDF与GROBID缺失独立报告。资源、运行证据和前端接口见backend/BACKEND_V2_GOAL.md与FRONTEND_API_GUIDE.md。
+2026-10-27后端V2：组长根据本次Goal附件放行语义/RRF/RAG及SQLite/上传后端。BM25别名保留859篇；MiniLM ONNX CPU2线程生成384维向量到独立scholarlens-vectors-*，按paper_id折叠最佳片段，精确cosine扫描后RRF(k=60)。900字符/重叠100的片段ID和字符locator可追溯。SQLite保存哈希会话、用户隔离收藏历史、上传审核和任务租约；上传审核后发布独立scholarlens-uploads-*，不覆写基础索引。AI服务配置留空，兼容适配器进行引用校验，真实PDF与GROBID缺失独立报告。资源、运行证据和前端接口见backend/archive/20261026-27/BACKEND_V2_GOAL.md与FRONTEND_API_GUIDE.md。
 
-2026-10-27：实际链路已推进至正式JSONL→独立index-ready文件（原件保留）→样本20篇→859篇real别名→8001验收→8000默认real。复用已有Mapping和导入器，Mock、样本及前代generation保留，未启动GROBID或新增模型。质量与回退详见backend/REAL_DATA_VERIFICATION.md。
+2026-10-27：实际链路已推进至正式JSONL→独立index-ready文件（原件保留）→样本20篇→859篇real别名→8001验收→8000默认real。复用已有Mapping和导入器，Mock、样本及前代generation保留，未启动GROBID或新增模型。质量与回退详见backend/archive/20261026-27/REAL_DATA_VERIFICATION.md。
 
 | 层 | 组件 | 输入 | 输出 | 负责人 | 运行条件与风险 |
 |---|---|---|---|---|---|

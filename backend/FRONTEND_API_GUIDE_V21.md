@@ -1,5 +1,7 @@
 # ScholarLens V2.1 前端接口增补
 
+> 本页记录基础增补协议；当前 PDF 已交付、上传支持本地文本解析、Agent 有 `operation=evidence`。后续[个人配置](../docs/10_RELEASE_AND_PERSONAL_AI.md)、[Agent运行](../docs/18_AGENT_RUNTIME_CONTRACT.md)、[凭证](../docs/28_ACCOUNT_CREDENTIAL_BOUNDARIES.md)、[管理员事务](../docs/30_ADMIN_TRANSACTION_BOUNDARIES.md)和[真实隔离上传](../docs/31_ISOLATED_UPLOAD_AND_OWNERSHIP.md)契约优先于本页旧限制。当前现状看[总报告](../docs/PROJECT_REPORT_20261028.md)。
+
 本页优先于V2手册中同名功能的旧限制。负责人组长，日期2026-10-27；本机API为`http://127.0.0.1:8000`，机器契约`/openapi.json`、交互文档`/docs`。没有修改或依赖React代码。V2原有搜索、统计、建议、详情、登录、收藏、历史、上传接口继续有效，完整基础示例见FRONTEND_API_GUIDE.md。
 
 所有私人接口发送`Authorization: Bearer TOKEN`。服务器从令牌识别用户，客户端不能通过user_id越权。统一错误形状：`{"error":{"code":"...","message":"...","details":{}}}`。新增响应均以实际OpenAPI为准；不向前端返回磁盘路径、密钥、密码/令牌哈希。

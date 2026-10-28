@@ -39,6 +39,6 @@ AI 供应商、模型、端点和密钥保持未配置，前端没有保存供�
 
 ## 验收与恢复
 
-最终结果、命令与证据见 `docs/DESKTOP_API_ACCEPTANCE.md`。认证已在现有本机服务上通过独立 Chrome 临时 profile 完成端到端验收，不访问用户原 Chrome 的账户或 Cookie。QA 只创建普通测试账户，完成后停用，不创建默认管理员；管理员流程在临时 SQLite 与测试索引内验证。
+最终结果、命令与证据见 `docs/archive/20261027-28/DESKTOP_API_ACCEPTANCE.md`。认证已在现有本机服务上通过独立 Chrome 临时 profile 完成端到端验收，不访问用户原 Chrome 的账户或 Cookie。QA 只创建普通测试账户，完成后停用，不创建默认管理员；管理员流程在临时 SQLite 与测试索引内验证。
 
 回滚副本在 `output/backups/full-integration-20261027-222417/`、`output/backups/upstream-v21-20261027/`、`output/backups/completion-20261027-224934/`。前者含 SQLite 在线备份。不要覆盖已有数据库或删除上传原件来回退界面。
