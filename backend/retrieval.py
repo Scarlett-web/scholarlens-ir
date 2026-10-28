@@ -209,11 +209,12 @@ def search_extended(es, settings, base, params, build_search):
             explanation.update(
                 chunk_id=chunk["chunk_id"], locator=chunk["locator"], evidence=chunk["text"][:900]
             )
-        from backend.search_text import canonical_highlights
-        highlights = canonical_highlights(lexical.get("highlight", {}))
+        from backend.search_text import search_highlights
+        highlights = lexical.get("highlight", {})
         # Semantic snippets are escaped text without false exact-match emphasis.
         if not highlights and chunk:
             highlights = {chunk["field"]: [html.escape(chunk["text"][:240])]}
+        highlights = search_highlights(highlights, title=doc.get("title", ""), query=params.q, field=params.field)
         hits.append(
             {
                 "paper_id": paper,

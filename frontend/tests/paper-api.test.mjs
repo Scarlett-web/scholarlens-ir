@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {createPaperApi, normalizePaper, buildSearchParams} from "../src/services/paperApi.ts";
 import {serverHighlightParts} from "../src/lib/serverHighlight.ts";
 import {buildPaperGraph} from "../src/lib/paperRelations.ts";
-import {highlightParts} from "../src/lib/highlight.ts";
+import {highlightParts,isExactTitleQuery,resultHighlightScope} from "../src/lib/highlight.ts";
 import {paginationItems} from "../src/lib/pagination.ts";
 
 const query = {q:" magnetic ",field:"all",page:2,pageSize:6,sort:"newest",mode:"keyword",yearFrom:1990,yearTo:2026};
@@ -114,6 +114,20 @@ test("query highlighting ignores connective noise, respects word boundaries, and
   assert.deepEqual(matches("C++ and C++17", "C++"),["C++"]);
   assert.equal(highlightParts("<script>text</script>",".*").map(p=>p.text).join(""),"text");
   assert.deepEqual(matches("of the", "of the"),["of","the"]);
+});
+
+test("full-title searches highlight the title only, while selected fields and ordinary keywords retain their scope", () => {
+  const title="Simulating the Dynamics of the Dancing Lights";
+  assert.equal(isExactTitleQuery(title,"  simulating  the DYNAMICS of the dancing lights  "),true);
+  assert.equal(resultHighlightScope(title,title,"all"),"title");
+  assert.equal(resultHighlightScope(title,title,"title"),"title");
+  assert.equal(resultHighlightScope(title,title,"fulltext"),"fulltext");
+  assert.equal(resultHighlightScope(title,"Lights","all"),"all");
+  assert.equal(resultHighlightScope(title,"Lights","authors"),"authors");
+  assert.equal(resultHighlightScope("中文文献的信息检索","中文文献的信息检索"),"title");
+  assert.equal(resultHighlightScope("中文文献的信息检索","检索"),"all");
+  assert.equal(resultHighlightScope("",""),"all");
+  assert.equal(isExactTitleQuery(title,"Simulating another title"),false);
 });
 
 test("pagination shows readable first, middle and last windows without silent gaps", () => {

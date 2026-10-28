@@ -198,7 +198,7 @@ export function SearchPage() {
               <button className="button button-secondary" onClick={() => setRetryKey((value)=>value+1)}>重试</button></div> :
             loading ? <div className="paper-skeleton-grid">{Array.from({length:3},(_,i)=><div className="paper-skeleton" key={i}/>)}</div> :
             result && result.papers.length > 0 ? <>
-              <div className="paper-list">{result.papers.map((paper,index) => <SearchRecord key={paper.paper_id} paper={paper} query={q} order={(page-1)*PAGE_SIZE+index+1}/>)}</div>
+              <div className="paper-list">{result.papers.map((paper,index) => <SearchRecord key={paper.paper_id} paper={paper} query={q} field={field} order={(page-1)*PAGE_SIZE+index+1}/>)}</div>
               <nav className="pagination" aria-label="论文结果分页">
                 <button disabled={page <= 1} onClick={() => update("page",String(page-1))}><ArrowLeft size={16}/> 上一页</button>
                 {pages.map((n) => typeof n==="number"?<button className={n===page?"active":""} key={n} aria-label={"第 "+n+" 页"} aria-current={n===page?"page":undefined}

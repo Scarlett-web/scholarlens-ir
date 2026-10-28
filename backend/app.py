@@ -25,7 +25,7 @@ from fastapi.openapi.utils import get_openapi
 from backend.config import Settings, make_client
 from backend.pdf_access import resolve_pdf, resolve_document_pdf
 from backend.schema import SEARCH_FIELDS
-from backend.search_text import has_cjk, canonical_highlights, highlight_query_text
+from backend.search_text import has_cjk, search_highlights, highlight_query_text
 from backend.discovery import router as discovery_router
 from backend.retrieval import search_extended, validate_extended
 from backend.accounts import Store, router as accounts_router
@@ -330,7 +330,8 @@ def create_app(settings: Settings | None = None, client=None) -> FastAPI:
                     "affiliation": doc.get("affiliation", []),
                     "address": doc.get("address", []),
                     "abstract_snippet": doc.get("abstract", "")[:240],
-                    "highlights": canonical_highlights(hit.get("highlight", {})),
+                    "highlights": search_highlights(hit.get("highlight", {}),
+                        title=doc.get("title", ""), query=params.q, field=params.field),
                     "score": hit.get("_score"),
                     "matched_fields": matched,
                     "explanation": {"retrieval": "bm25", "reason": ", ".join(matched) + " match"},

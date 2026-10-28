@@ -1,5 +1,6 @@
 """Optional CJK search paths for new generations; old indexes remain readable."""
 import re
+from html import escape
 
 HIGHLIGHT_STOP_WORDS = frozenset(
     "a an and are as at be by for from in is it of on or that the this to was were with".split()
@@ -26,3 +27,13 @@ def canonical_highlights(values: dict) -> dict:
         result.setdefault(key, [])
         result[key].extend(text for text in fragments if text not in result[key])
     return result
+
+
+def search_highlights(values: dict, *, title: str, query: str, field: str) -> dict:
+    """Present exact-title matches together, without incidental body-word emphasis."""
+    def normalized(value):
+        return " ".join(value.split()).casefold()
+    if field in ("all", "title") and normalized(query) and normalized(query) == normalized(title):
+        return {"title": ["<em>" + escape(title, quote=False) + "</em>"]}
+    highlights = canonical_highlights(values)
+    return highlights if field == "all" else {key: value for key, value in highlights.items() if key == field}

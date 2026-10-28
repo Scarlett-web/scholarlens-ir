@@ -1,4 +1,15 @@
+import type { SearchField } from "../types";
+
 const STOP_WORDS = new Set("a an and are as at be by for from in is it of on or that the this to was were with".split(" "));
+
+export function isExactTitleQuery(title: string, query: string): boolean {
+  const normalize=(value:string)=>value.trim().replace(/\s+/gu," ").toLocaleLowerCase();
+  return Boolean(normalize(query)) && normalize(query)===normalize(title);
+}
+
+export function resultHighlightScope(title: string, query: string, field: SearchField = "all"): SearchField {
+  return field==="all"&&isExactTitleQuery(title,query)?"title":field;
+}
 
 /** HTML-like input stays safe React text, never executable markup. */
 export function safePlainText(value: string): string {

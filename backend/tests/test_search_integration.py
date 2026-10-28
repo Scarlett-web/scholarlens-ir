@@ -22,11 +22,11 @@ def test_title_highlight_noise_and_full_author_metadata(tmp_path):
     authors = ["Mock First Author", "Mock Second Author", "Mock Third Author", "Mock Last Researcher"]
     source = tmp_path / "highlight.jsonl"
     source.write_text(json.dumps({"paper_id": "mock-highlight", "title": title, "authors": authors,
-        "affiliation": ["University of Testing"], "fulltext": "The dynamics of the aurora are simulated."}), encoding="utf-8")
+        "affiliation": ["University of Testing"], "fulltext": "The dynamics of the aurora are simulated. " + title}), encoding="utf-8")
     try:
         records, meta = load_jsonl(source, "mock")
         import_records(client, alias, records, meta)
-        with TestClient(create_app(Settings(index=alias), client)) as api:
+        with TestClient(create_app(Settings(index=alias, runtime_dir=str(tmp_path / "runtime")), client)) as api:
             response = api.get("/api/search", params={"q": title})
             assert response.status_code == 200, response.text
             body = response.json()
@@ -34,11 +34,19 @@ def test_title_highlight_noise_and_full_author_metadata(tmp_path):
             hit = body["results"][0]
             assert hit["score"] > 0 and hit["authors"] == authors
             highlights = hit["highlights"]
+            assert highlights == {"title": ["<em>" + title + "</em>"]}
             assert "affiliation" not in highlights
             marked = re.findall(r"<em>(.*?)</em>", str(highlights))
             assert any("dynamics" in value.lower() for value in marked)
             assert not any(value.lower() in {"the", "of"} for value in marked)
             assert re.sub(r"</?em>", "", highlights["title"][0]) == title
+            for field in ("all", "title"):
+                alternate = api.get("/api/search", params={"q": "  simulating  the DYNAMICS of the dancing lights  ", "field": field}).json()
+                assert alternate["total"] == 1 and alternate["results"][0]["highlights"] == highlights
+            fulltext = api.get("/api/search", params={"q": title, "field": "fulltext"}).json()
+            assert fulltext["total"] == 1 and set(fulltext["results"][0]["highlights"]) == {"fulltext"}
+            keyword = api.get("/api/search", params={"q": "dynamics"}).json()["results"][0]
+            assert {"title", "fulltext"} <= keyword["highlights"].keys()
             author_hit = api.get("/api/search", params={"q": "Researcher", "field": "authors"}).json()["results"][0]
             assert author_hit["authors"] == authors
             assert author_hit["highlights"]["authors"] == ["Mock Last <em>Researcher</em>"]
@@ -50,6 +58,19 @@ def test_title_highlight_noise_and_full_author_metadata(tmp_path):
         for name in client.indices.get(index=f"{alias}-*", allow_no_indices=True):
             client.indices.delete(index=name)
         client.close()
+
+
+def test_title_highlight_scope_uses_original_text_and_selected_field():
+    from backend.search_text import search_highlights
+    title = "中文文献的信息检索"
+    old = {"title.cjk": ["中文文献的信息<em>检索</em>"], "fulltext": ["其他<em>检索</em>正文"]}
+    assert search_highlights(old, title=title, query=title, field="all") == {"title": [f"<em>{title}</em>"]}
+    assert search_highlights(old, title=title, query="检索", field="all") == {"title": old["title.cjk"], "fulltext": old["fulltext"]}
+    assert search_highlights(old, title=title, query=title, field="fulltext") == {"fulltext": old["fulltext"]}
+    literal = 'C++ <Analysis> & "Research"'
+    assert search_highlights({}, title=literal, query=literal, field="all") == {
+        "title": ['<em>C++ &lt;Analysis&gt; &amp; "Research"</em>']}
+    assert search_highlights(old, title=title, query="", field="all")["fulltext"] == old["fulltext"]
 
 
 @pytest.fixture(scope="module")

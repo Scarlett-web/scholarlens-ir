@@ -121,6 +121,28 @@ try{
  state.searchRows=undefined;state.searchTotal=undefined;
  report.checks.push('six original authors expand/collapse; a later matched author stays visible and marked; 37-page first/middle/end windows include ellipses, preserve URL filters and stay within desktop/390 viewport');
 
+ const exactTitle='Simulating the Dynamics of the Dancing Lights';
+ state.searchRows=[{...papers[0],title:exactTitle,authors:['Lights Researcher','Second Author','Third Author','Fourth Author'],date:'2002',affiliation:['Dancing Lights Institute'],address:['Lights City'],abstract:'The lights and dynamics appear in this abstract.',highlights:{title:['<em>Simulating</em> the <em>Dynamics</em> of the <em>Dancing</em> <em>Lights</em>'],authors:['<em>Lights</em> Researcher'],affiliation:['Dancing <em>Lights</em> Institute'],fulltext:['Northern <em>Lights</em> give a linkage between science and art.']}}];state.searchTotal=1;
+ for(const mode of ['keyword','hybrid','semantic'])for(const field of ['all','title']){
+   await page.goto(origin+'/search?'+new URLSearchParams({q:exactTitle,field,mode}));await row.waitFor();
+   assert.deepEqual(await row.locator('mark').allTextContents(),[exactTitle]);
+   assert.equal(await row.locator('.paper-abstract mark,.paper-hit-label').count(),0);
+   assert.equal(await row.locator('.paper-authors mark,.paper-record-metadata mark').count(),0);
+   assert.ok((await row.locator('.paper-abstract').textContent()).includes('lights and dynamics'));
+ }
+ await page.screenshot({path:join(output,'title-only-desktop.png')});
+ await page.setViewportSize({width:390,height:844});await noOverflow(page);await page.screenshot({path:join(output,'title-only-390.png')});await page.setViewportSize({width:1440,height:1000});
+ state.searchRows[0].highlights=undefined;
+ await page.goto(origin+'/search?'+new URLSearchParams({q:exactTitle,field:'all'}));await row.waitFor();assert.deepEqual(await row.locator('mark').allTextContents(),[exactTitle]);
+ state.searchRows[0].highlights={title:['Simulating the Dynamics of the Dancing <em>Lights</em>'],fulltext:['Northern <em>Lights</em> give a linkage between science and art.']};
+ for(const field of ['fulltext','all']){
+   await page.goto(origin+'/search?'+new URLSearchParams({q:'Lights',field}));await row.waitFor();
+   assert.deepEqual(await row.locator('.paper-abstract mark').allTextContents(),['Lights']);
+   assert.equal(await row.locator('.paper-title-link mark').count(),field==='all'?1:0);
+ }
+ state.searchRows=undefined;state.searchTotal=undefined;
+ report.checks.push('complete title yields one whole-title mark and plain abstract across three modes; old split-word responses and empty highlight fallback cannot mark incidental body/metadata/author words; fulltext-only and ordinary keyword queries retain valid body highlights');
+
  await page.goto(origin+'/account');await page.getByRole('heading',{name:'欢迎回来',exact:true}).waitFor();
  await page.getByLabel('用户名',{exact:true}).fill('fixture-user');await page.getByLabel('密码',{exact:true}).fill('fixture-only-password');
  await page.getByRole('button',{name:'显示密码',exact:true}).click();assert.equal(await page.getByLabel('密码',{exact:true}).getAttribute('type'),'text');
