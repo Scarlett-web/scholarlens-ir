@@ -30,3 +30,15 @@
 - 没有运行依赖真实 ES 的旧上传写入测试，没有向线上创建文件、账户、笔记或审批。后端、数据库 schema、两个 requirements 与本批之前相同；macOS 未实跑。Squirrel 原生程序、隔离 ZAP、个人模型生成等原有未验收项仍不计为通过。
 
 发布记录在完成切换和公网只读验收后追加；原始证据保存在外层开发工作区 `output/deploy-upload-review-20261028/`，不提交运行文件。
+
+## 正式发布与公网验收
+
+2026-10-28 12:43（北京时间）将应用提交 `701ff5427a1771da32506c5b07327e84ec0fba1b` 推送至 `origin/zjl` 并部署为 `20261028T044251Z-701ff54`。发布包 233 个文件，SHA-256 为 `7b8a04d7d678f4cb6d9506aac5e6ce961bd503c1623ec293f538ebca1ea791fc`。既有地址仍为 <https://scholarlens.lingion.cc.cd/>。
+
+切换前保留旧版 `/opt/scholarlens/releases/20261028T042155Z-3f8f7dd`，SQLite 一致性备份、环境副本和 rollback 脚本存入 `/opt/scholarlens/backups/20261028T044251Z-701ff54`；完整性与回滚脚本语法检查通过。切换前后均为 859 篇、25 个用户，环境文件哈希一致，ES 容器身份/启动时间与 Cloudflare Tunnel PID 不变；没有升级依赖、修改数据库 schema、索引、模型、原件、域名或其他服务。
+
+- 公网生产标记和全部三个 JS/CSS 资源哈希与发布 manifest 一致，包括关系图按需 chunk。真实检索 `magnetic` 返回 61 条，Agent 0.2.0 返回 5 条证据、模型 `not_called`，原 PDF Range 为 206 且以 `%PDF-` 开始；robots 与两种冰岛背景图片通过。
+- 独立 Chrome 实际加载新版 PDF 工作区和审核入口；显示“真实论文库 · 859 篇”，桌面没有横向溢出。账户/本机模式可切换，游客没有上传输入、私有队列请求或伪造的零计数；管理员入口正确要求身份。页面错误为 0。查看了最终 `public-upload-desktop.png`、`public-admin-guest.png`。
+- 公网检查严格限制 GET/HEAD/OPTIONS，没有真实账户或上传/审批写入。Cloudflare 的 `/cdn-cgi/rum` 统计 POST 被本机验收拦截，单独计为统计请求；首次脚本将其混入业务写入而失败，明确区分后验收通过，没有改动网站统计配置。浏览器 MCP 途中传输关闭，最终验收使用项目局部 Playwright 启动的独立 Chrome 完成，没有修改全局工具。
+
+完整机器证据为外层工作区 `output/deploy-upload-review-20261028/origin-deployment-report.json`、`public-checks.json`、`public-browser-checks.json`。本记录的后续纯文档提交不改变资源，不需要再次重启应用。角色写操作仍只有本机 fixture 证据；未将本次发布表述为真实上传解析端到端验收或全局审计完成。
