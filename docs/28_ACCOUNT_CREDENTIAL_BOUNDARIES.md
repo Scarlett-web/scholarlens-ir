@@ -43,4 +43,3 @@ node tools/audit/account-security-browser.mjs
 - 公网 `https://scholarlens.lingion.cc.cd/` build-info及三个JS/CSS资源哈希均匹配；搜索61条、859篇论文、Agent5段证据且模型not_called、PDF Range206、robots和两份背景资源通过。
 - 独立Chrome公网游客检查搜索、证据入口、登录页、横向分类与相邻笔记通过，无页面错误。笔记只保留在本轮临时浏览器游客空间，不写生产账户。
 - 证据在外层 `output/deploy-account-credentials-20261028-143028/`；此追加记录及总目标验收账本均为文档修改，无需再次重启应用。完整要求和剩余项见 `docs/29_GOAL_REQUIREMENTS_AND_EVIDENCE.md`。
-
