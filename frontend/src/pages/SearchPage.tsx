@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { ArrowLeft, ArrowRight, ChevronDown, Clipboard, Filter, RotateCcw, SlidersHorizontal } from "lucide-react";
-import { PaperCard } from "../components/PaperCard";
+import { ArrowLeft, ArrowRight, ChevronDown, Clipboard, Filter, RotateCcw, SlidersHorizontal, X } from "lucide-react";
+import { SearchRecord } from "../components/PaperCard";
 import { IntegrationNotice, PageHeading } from "../components/Layout";
 import { SearchBox } from "../components/SearchBox";
 import { useStudio } from "../App";
@@ -117,6 +117,18 @@ export function SearchPage() {
     catch { notify("复制失败，请使用浏览器地址栏复制当前链接"); }
   };
 
+  const removeCondition=(keys:string[])=>{
+    const next=new URLSearchParams(params);
+    for(const key of keys)next.delete(key);
+    next.set("page","1");setParams(next);
+  };
+  const conditions=[
+    ...(q?[{label:"关键词："+q,keys:["q"]}]:[]),
+    ...(field!=="all"?[{label:"字段："+FIELD_OPTIONS.find(item=>item.value===field)?.label,keys:["field"]}]:[]),
+    ...(mode!=="keyword"?[{label:mode==="semantic"?"语义检索":"混合检索",keys:["mode"]}]:[]),
+    ...(fromValue||toValue?[{label:"年份："+(fromValue||"不限")+" — "+(toValue||"不限"),keys:["from","to"]}]:[]),
+  ];
+
   const totalPages = Math.max(1, Math.ceil((result?.total ?? 0) / PAGE_SIZE));
   const pages = Array.from({length: totalPages}, (_, i) => i + 1).filter((n) =>
     totalPages <= 7 || n === 1 || n === totalPages || Math.abs(n - page) <= 1);
@@ -155,9 +167,10 @@ export function SearchPage() {
             <details className="filter-data-details"><summary>关于检索数据</summary><p className="filter-small-note">{DATA_SOURCE === "demo" ?
               "本地演示按字符串出现次数排序，不属于 BM25。接入 FastAPI 后以服务器评分为准。" :
               "当前使用 API 模式，结果取决于实际后端索引和参数。"}</p></details>
+            <p className="filter-small-note">检索分数来自当前查询，不代表置信度，不宜跨查询比较。</p>
           </div>
         </aside>
-        <section className="results-section" aria-live="polite">
+        <section className="results-section" aria-live="polite" aria-busy={loading}>
           <div className="results-topbar">
             <div><span className="eyebrow">SEARCH RESULTS</span><h2>{label}</h2>
               <p>{loading ? "正在检索…" : result ?
@@ -177,6 +190,7 @@ export function SearchPage() {
               </label>
             </div>
           </div>
+          {conditions.length>0&&<div className="search-conditions" aria-label="已选检索条件"><span>当前条件</span>{conditions.map(condition=><button key={condition.keys.join("-")} onClick={()=>removeCondition(condition.keys)} aria-label={"移除"+condition.label}><span>{condition.label}</span><X size={13}/></button>)}</div>}
           {invalidYears ? <div className="empty-state"><h3>年份范围无效</h3><p>请在左侧调整年份并点击应用筛选。</p>
             <button className="button button-secondary" onClick={() => applyPreset()}>清空年份范围</button></div> :
             blocked ? <div className="empty-state"><h3>此模式暂不可用</h3><p>{capabilities?.[mode].reason || capabilityError || "正在检查检索服务。"}</p>
@@ -185,7 +199,7 @@ export function SearchPage() {
               <button className="button button-secondary" onClick={() => setRetryKey((value)=>value+1)}>重试</button></div> :
             loading ? <div className="paper-skeleton-grid">{Array.from({length:3},(_,i)=><div className="paper-skeleton" key={i}/>)}</div> :
             result && result.papers.length > 0 ? <>
-              <div className="paper-list">{result.papers.map((paper,index) => <PaperCard key={paper.paper_id} paper={paper} query={q} order={(page-1)*PAGE_SIZE+index+1}/>)}</div>
+              <div className="paper-list">{result.papers.map((paper,index) => <SearchRecord key={paper.paper_id} paper={paper} query={q} order={(page-1)*PAGE_SIZE+index+1}/>)}</div>
               <nav className="pagination" aria-label="论文结果分页">
                 <button disabled={page <= 1} onClick={() => update("page",String(page-1))}><ArrowLeft size={16}/> 上一页</button>
                 {pages.map((n) => <button className={n===page?"active":""} key={n} aria-current={n===page?"page":undefined}

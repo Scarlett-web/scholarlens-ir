@@ -1,11 +1,10 @@
 import {PasswordRecovery} from "../components/PasswordRecovery";
 import {AccountSettings} from "../components/AccountSettings";
-import {useEffect,useState} from "react";
+import {AccountSearchHistory} from "../components/AccountSearchHistory";
+import {useState} from "react";
 import {Link,useNavigate,useSearchParams} from "react-router-dom";
 import {ArrowRight,BookOpen,Eye,EyeOff,FolderOpen,StickyNote} from "lucide-react";
 import {useAuth} from "../services/AuthContext";
-import {accountApi} from "../services/backend";
-import type {QueryHistory} from "../services/backend";
 import {PageHeading} from "../components/Layout";
 import {useStudio} from "../App";
 import {DATA_SOURCE} from "../services/papers";
@@ -16,13 +15,7 @@ export function AccountPage(){
   const navigate=useNavigate(),[params]=useSearchParams();
   const [register,setRegister]=useState(false),[username,setUsername]=useState(""),[password,setPassword]=useState("");
   const [showPassword,setShowPassword]=useState(false),[capsLock,setCapsLock]=useState(false);
-  const [busy,setBusy]=useState(false),[error,setError]=useState(""),[queries,setQueries]=useState<QueryHistory[]>([]),[page,setPage]=useState(1),[total,setTotal]=useState(0);
-  useEffect(()=>{
-    if(!user)return;
-    let active=true;
-    accountApi.history(page).then(data=>{if(active){setQueries(data.results);setTotal(data.total);}}).catch(cause=>{if(active)setError(cause instanceof Error?cause.message:"历史加载失败");});
-    return()=>{active=false;};
-  },[user,page]);
+  const [busy,setBusy]=useState(false),[error,setError]=useState("");
   const switchMode=(value:boolean)=>{setRegister(value);setError("");setPassword("");setShowPassword(false);setCapsLock(false);};
   const submit=async()=>{
     if(busy)return;
@@ -39,11 +32,11 @@ export function AccountPage(){
     {!user?<div className="auth-surface">
       <aside className="auth-intro">
         <Link to="/" className="auth-wordmark"><BookOpen size={24} strokeWidth={1.6}/>ScholarLens</Link>
-        <div><h2>留住每一次阅读。</h2><p>登录后，在不同设备上继续整理你的文献。</p>
+        <div className="auth-story"><span className="eyebrow">你的研究空间</span><h2>留住每一次阅读。</h2><p>登录后，在不同设备上继续整理你的文献。</p>
           <ul className="auth-benefits">
-            <li><FolderOpen size={18}/><span><strong>收藏与分类</strong><small>把值得读的论文整理在一起</small></span></li>
-            <li><StickyNote size={18}/><span><strong>阅读笔记</strong><small>记录想法，下次打开接着写</small></span></li>
-            <li><BookOpen size={18}/><span><strong>最近阅读</strong><small>回到上次读过的那篇论文</small></span></li>
+            <li><span className="auth-layer-icon"><FolderOpen size={18}/></span><span><strong>收藏与分类</strong><small>把值得读的论文整理在一起</small></span><small className="auth-layer-order" aria-hidden="true">01</small></li>
+            <li><span className="auth-layer-icon"><StickyNote size={18}/></span><span><strong>阅读笔记</strong><small>记录想法，下次打开接着写</small></span><small className="auth-layer-order" aria-hidden="true">02</small></li>
+            <li><span className="auth-layer-icon"><BookOpen size={18}/></span><span><strong>最近阅读</strong><small>回到上次读过的那篇论文</small></span><small className="auth-layer-order" aria-hidden="true">03</small></li>
           </ul>
         </div>
         <Link to="/search" className="auth-guest-link">先以游客身份浏览 <ArrowRight size={16}/></Link>
@@ -72,10 +65,7 @@ export function AccountPage(){
         <button className="button button-secondary account-logout" disabled={busy||workspaceSyncing} onClick={async()=>{setBusy(true);try{await logout();setError("");}catch(cause){setError(cause instanceof Error?cause.message:"退出失败");}finally{setBusy(false);}}}>退出登录</button></div>
       </section>
       <AccountSettings/>
-      <section className="account-panel account-search-history"><details><summary>搜索历史 <span>{total} 条</span></summary><div className="results-topbar"><p>点击关键词，可继续上次的检索。</p><button className="button button-secondary" disabled={!total||busy} onClick={async()=>{if(!window.confirm("清空当前账户的搜索历史？阅读历史和收藏不受影响。"))return;setBusy(true);try{await accountApi.clearHistory();setQueries([]);setTotal(0);setPage(1);}catch(cause){setError(cause instanceof Error?cause.message:"清空失败");}finally{setBusy(false);}}}>清空搜索历史</button></div>
-        {queries.length?queries.map(item=><Link className="account-history-link" key={item.id} to={"/search?"+new URLSearchParams({q:item.q,field:item.field,mode:item.mode})}><strong>{item.q}</strong><span> {({keyword:"关键词",semantic:"语义",hybrid:"混合"} as Record<string,string>)[item.mode]||item.mode} · {new Date(item.created_at).toLocaleString("zh-CN")}</span></Link>):<p>还没有搜索记录。检索论文后会显示在这里。</p>}
-        {total>20&&<nav className="pagination" aria-label="搜索历史分页"><button disabled={page<=1} onClick={()=>setPage(page-1)}>上一页</button><span>{page} / {Math.max(1,Math.ceil(total/20))}</span><button disabled={page*20>=total} onClick={()=>setPage(page+1)}>下一页</button></nav>}
-      </details></section>
+      <AccountSearchHistory key={user.id}/>
     </>}
   </div>;
 }

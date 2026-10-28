@@ -56,7 +56,7 @@ export const accountApi = {
     version:data.version,collections:data.collections,
     favorites:data.favorites.map(item=>({paper_id:item.paper.paper_id,collection:item.collection,note:item.note??"",savedAt:item.savedAt})),
     history:data.history.map(item=>({paper_id:item.paper.paper_id,viewedAt:item.viewedAt}))}}),
-  history: (page=1) => backend<{results:QueryHistory[];total:number}>("/me/history?page_size=20&page="+page),
+  history: (page=1,signal?:AbortSignal) => backend<{results:QueryHistory[];total:number}>("/me/history?page_size=20&page="+page,{signal}),
   recordQuery: (q: string, field: string, mode: string) => backend("/me/history", {method:"POST",body:{q,field,mode}}),
   clearHistory: () => backend("/me/history", {method:"DELETE"})
 };

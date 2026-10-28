@@ -6,31 +6,50 @@ import {useStudio} from "../App";
 interface Profile {username:string;display_name:string;email:string;email_verified:boolean;avatar_available:boolean}
 interface Notification {id:number;message:string;read:boolean;created_at:string}
 interface ManagedUser {id:number;username:string;role:string;disabled:boolean}
+function useAccountRead<T>(path:string,enabled=true){
+  const [data,setData]=useState<T|null>(null),[loading,setLoading]=useState(enabled),[error,setError]=useState("");
+  const [revision,setRevision]=useState(0);
+  useEffect(()=>{
+    if(!enabled){setData(null);setLoading(false);setError("");return;}
+    const abort=new AbortController();let active=true;setData(null);setLoading(true);setError("");
+    backend<T>(path,{signal:abort.signal}).then(value=>{if(active)setData(value);}).catch(cause=>{if(active)setError(cause instanceof Error?cause.message:"读取失败，请重试");}).finally(()=>{if(active)setLoading(false);});
+    return()=>{active=false;abort.abort();};
+  },[path,enabled,revision]);
+  return {data,setData,loading,error,reload:()=>setRevision(value=>value+1)};
+}
 export function AccountSettings(){
   const {user}=useAuth();
   const {workspaceSyncing}=useStudio();
-  const [profile,setProfile]=useState<Profile|null>(null),[notices,setNotices]=useState<Notification[]>([]);
-  const [users,setUsers]=useState<ManagedUser[]>([]),[userPage,setUserPage]=useState(1),[userTotal,setUserTotal]=useState(0);
+  const [userPage,setUserPage]=useState(1);
   const [busy,setBusy]=useState(false),[message,setMessage]=useState(""),[error,setError]=useState("");
   const [currentPassword,setCurrentPassword]=useState(""),[newPassword,setNewPassword]=useState(""),[code,setCode]=useState("");
-  const [noticePage,setNoticePage]=useState(1),[noticeTotal,setNoticeTotal]=useState(0);
-  const [avatar,setAvatar]=useState("");
+  const [noticePage,setNoticePage]=useState(1);
+  const [avatar,setAvatar]=useState(""),[avatarRevision,setAvatarRevision]=useState(0),[avatarError,setAvatarError]=useState(false);
   const [section,setSection]=useState("profile");
   const [disableName,setDisableName]=useState(""),[disablePassword,setDisablePassword]=useState("");
-  useEffect(()=>{let active=true;backend<Profile>("/me/profile").then(data=>{if(active)setProfile(data);}).catch(cause=>{if(active)setError(cause.message);});return()=>{active=false;};},[]);
-  useEffect(()=>{let active=true;backend<{results:Notification[];total:number}>("/me/notifications?page_size=20&page="+noticePage).then(data=>{if(active){setNotices(data.results);setNoticeTotal(data.total);}}).catch(cause=>{if(active)setError(cause.message);});return()=>{active=false;};},[noticePage]);
-  useEffect(()=>{if(!profile?.avatar_available)return;let active=true;let url="";backend<Blob>("/me/avatar",{blob:true}).then(blob=>{url=URL.createObjectURL(blob);if(active)setAvatar(url);else URL.revokeObjectURL(url);}).catch(()=>{});return()=>{active=false;if(url)URL.revokeObjectURL(url);};},[profile]);
-  useEffect(()=>{if(user?.role!=="admin")return;let active=true;backend<{results:ManagedUser[];total:number}>("/admin/users?page_size=20&page="+userPage).then(data=>{if(active){setUsers(data.results);setUserTotal(data.total);}}).catch(cause=>{if(active)setError(cause.message);});return()=>{active=false;};},[user,userPage]);
+  const profileRead=useAccountRead<Profile>("/me/profile",Boolean(user)),{data:profile,setData:setProfile}=profileRead;
+  const noticeRead=useAccountRead<{results:Notification[];total:number}>("/me/notifications?page_size=20&page="+noticePage,Boolean(user));
+  const userRead=useAccountRead<{results:ManagedUser[];total:number}>("/admin/users?page_size=20&page="+userPage,user?.role==="admin");
+  const notices=noticeRead.data?.results??[],noticeTotal=noticeRead.data?.total;
+  const users=userRead.data?.results??[],userTotal=userRead.data?.total;
+  useEffect(()=>{
+    setAvatar("");setAvatarError(false);if(!profile?.avatar_available)return;
+    const abort=new AbortController();let active=true,url="";
+    backend<Blob>("/me/avatar",{blob:true,signal:abort.signal}).then(blob=>{url=URL.createObjectURL(blob);if(active)setAvatar(url);else URL.revokeObjectURL(url);}).catch(()=>{if(active)setAvatarError(true);});
+    return()=>{active=false;abort.abort();if(url)URL.revokeObjectURL(url);};
+  },[profile?.avatar_available,avatarRevision]);
   const run=async(action:()=>Promise<void>)=>{if(busy)return;setBusy(true);setError("");setMessage("");try{await action();}catch(cause){setError(cause instanceof Error?cause.message:"操作失败");}finally{setBusy(false);}};
   if(!user)return null;
   return <div className="account-settings">
     <nav className="account-settings-nav" aria-label="账户设置分组">{([['profile','个人资料'],['security','账户安全'],['notifications','通知'],...(user.role==='admin'?[['users','账户管理']]:[])]).map(([id,label])=><button key={id} aria-current={section===id?'page':undefined} onClick={()=>setSection(id)}>{label}{id==='notifications'&&notices.some(item=>!item.read)&&<span className="unread-dot" aria-label="有未读通知"/>}</button>)}</nav>
     {error&&<p className="inline-error" role="alert">{error}</p>}{message&&<p className="account-feedback" role="status">{message}</p>}
     <section hidden={section!=="profile"} className="account-panel"><h2>个人资料</h2>
-      {!profile&&!error&&<p role="status">正在读取个人资料…</p>}
+      {profileRead.loading&&<p role="status">正在读取个人资料…</p>}
+      {profileRead.error&&<div className="account-read-error" role="alert"><p>{profileRead.error}</p><button className="text-action" onClick={profileRead.reload}>重新读取个人资料</button></div>}
       {profile&&<form className="account-form account-profile-form" onSubmit={event=>{event.preventDefault();void run(async()=>{const result=await backend<Profile>("/me/profile",{method:"PATCH",body:{username:profile.username,display_name:profile.display_name,email:profile.email}});setProfile(result);setMessage("资料已保存");if(result.username!==user.username)window.location.reload();});}}>
         {avatar&&<img src={avatar} width={64} height={64} className="account-avatar" alt="我的头像"/>}
-        <label>头像（PNG/JPEG，最多2MiB）<input type="file" accept="image/png,image/jpeg" disabled={busy} onChange={event=>{const file=event.target.files?.[0];event.target.value="";if(!file)return;if(file.size>2*1048576){setError("头像不能超过2MiB");return;}void run(async()=>{const form=new FormData();form.append("file",file);setProfile(await backend<Profile>("/me/avatar",{method:"POST",body:form}));setMessage("头像已更新");});}}/></label>
+        {avatarError&&<p className="field-help">头像暂时无法读取。<button type="button" className="text-action" onClick={()=>setAvatarRevision(value=>value+1)}>重新读取头像</button></p>}
+        <label>头像（PNG/JPEG，最多2MiB）<input type="file" accept="image/png,image/jpeg" disabled={busy} onChange={event=>{const file=event.target.files?.[0];event.target.value="";if(!file)return;if(file.size>2*1048576){setError("头像不能超过2MiB");return;}void run(async()=>{const form=new FormData();form.append("file",file);setProfile(await backend<Profile>("/me/avatar",{method:"POST",body:form}));setAvatarRevision(value=>value+1);setMessage("头像已更新");});}}/></label>
         <label>用户名<input required minLength={3} maxLength={64} pattern="[a-zA-Z0-9_.\-]+" autoComplete="username" value={profile.username} onChange={event=>setProfile({...profile,username:event.target.value})}/></label>
         <label>显示名称<input aria-label="显示名称" maxLength={120} value={profile.display_name} onChange={event=>setProfile({...profile,display_name:event.target.value})}/></label>
         <label>邮箱<input type="email" value={profile.email||""} onChange={event=>setProfile({...profile,email:event.target.value})}/></label>
@@ -42,7 +61,15 @@ export function AccountSettings(){
       <details open><summary>修改密码</summary><form className="account-form" onSubmit={event=>{event.preventDefault();void run(async()=>{await backend("/auth/password",{method:"POST",body:{current_password:currentPassword,new_password:newPassword}});setSession("");window.location.reload();});}}><p>修改成功后所有设备均需重新登录。</p><label>当前密码<input type="password" required autoComplete="current-password" value={currentPassword} onChange={event=>setCurrentPassword(event.target.value)}/></label><label>新密码<input type="password" required minLength={10} maxLength={128} autoComplete="new-password" value={newPassword} onChange={event=>setNewPassword(event.target.value)}/></label><button className="button button-secondary" disabled={busy||workspaceSyncing}>修改并重新登录</button></form></details>
       <details><summary>停用账户</summary><form className="account-form" onSubmit={event=>{event.preventDefault();if(!window.confirm("确认停用此账户并退出所有设备？论文、收藏和审计记录将保留，重新启用需管理员处理。"))return;void run(async()=>{await backend("/auth/deactivate",{method:"POST",body:{username:disableName,password:disablePassword}});setSession("");window.location.reload();});}}><p>停用后无法登录；已有数据保留。请输入当前用户名和密码确认。</p><label>确认用户名<input required autoComplete="username" value={disableName} onChange={event=>setDisableName(event.target.value)}/></label><label>确认密码<input required type="password" autoComplete="current-password" value={disablePassword} onChange={event=>setDisablePassword(event.target.value)}/></label><button className="button button-secondary" disabled={busy||workspaceSyncing||disableName!==user.username}>确认停用</button></form></details>
     </section>
-    <section hidden={section!=="notifications"} className="account-panel"><h2>通知</h2>{!notices.length&&<p>暂无通知。上传审核和入库结果会出现在这里。</p>}{notices.map(item=><article className="account-notification" key={item.id}><div><strong>{item.message}</strong><p>{new Date(item.created_at).toLocaleString()}</p></div><button className="button button-secondary" disabled={item.read||busy} onClick={()=>void run(async()=>{await backend("/me/notifications/"+item.id+"/read",{method:"POST"});setNotices(old=>old.map(n=>n.id===item.id?{...n,read:true}:n));})}>{item.read?"已读":"标记已读"}</button></article>)}{noticeTotal>20&&<nav className="pagination" aria-label="审核通知分页"><button disabled={noticePage<=1} onClick={()=>setNoticePage(noticePage-1)}>上一页</button><span>{noticePage} / {Math.max(1,Math.ceil(noticeTotal/20))}</span><button disabled={noticePage*20>=noticeTotal} onClick={()=>setNoticePage(noticePage+1)}>下一页</button></nav>}</section>
-    {user.role==="admin"&&<section hidden={section!=="users"} className="account-panel"><h2>账户管理 · {userTotal}</h2><p>角色与停用操作由服务端校验，至少保留一名有效管理员。</p>{users.map(item=><article key={item.id} className="account-notification"><strong>{item.username} · {item.role} · {item.disabled?"已停用":"可用"}</strong><div className="detail-buttons">{([{disabled:!item.disabled},{role:item.role==="admin"?"user":"admin"}] as const).map((change,index)=><button key={index} className="button button-secondary" disabled={busy||item.id===user.id} onClick={()=>{if(window.confirm("确认更改账户 "+item.username+" 的"+(index?"角色":"可用状态")+"？"))void run(async()=>{const updated=await backend<ManagedUser>("/admin/users/"+item.id,{method:"PATCH",body:change});setUsers(old=>old.map(u=>u.id===item.id?updated:u));});}}>{index?(item.role==="admin"?"设为研究账户":"设为管理员"):(item.disabled?"启用":"停用")}</button>)}</div></article>)}<nav className="pagination" aria-label="账户列表分页"><button disabled={userPage<=1} onClick={()=>setUserPage(userPage-1)}>上一页</button><span>{userPage}</span><button disabled={userPage*20>=userTotal} onClick={()=>setUserPage(userPage+1)}>下一页</button></nav></section>}
+    <section hidden={section!=="notifications"} className="account-panel"><h2>通知</h2>
+      {noticeRead.loading?<p role="status">正在读取通知…</p>:noticeRead.error?<div className="account-read-error" role="alert"><p>{noticeRead.error}</p><button className="text-action" onClick={noticeRead.reload}>重新读取通知</button></div>:!notices.length&&<p>暂无通知。上传审核和入库结果会出现在这里。</p>}
+      {notices.map(item=><article className="account-notification" key={item.id}><div><strong>{item.message}</strong><p>{new Date(item.created_at).toLocaleString()}</p></div><button className="button button-secondary" disabled={item.read||busy} onClick={()=>void run(async()=>{await backend("/me/notifications/"+item.id+"/read",{method:"POST"});noticeRead.setData(old=>old?{...old,results:old.results.map(n=>n.id===item.id?{...n,read:true}:n)}:old);})}>{item.read?"已读":"标记已读"}</button></article>)}
+      {noticeTotal!==undefined&&noticeTotal>20&&<nav className="pagination" aria-label="审核通知分页"><button disabled={noticePage<=1} onClick={()=>setNoticePage(noticePage-1)}>上一页</button><span>{noticePage} / {Math.max(1,Math.ceil(noticeTotal/20))}</span><button disabled={noticePage*20>=noticeTotal} onClick={()=>setNoticePage(noticePage+1)}>下一页</button></nav>}
+    </section>
+    {user.role==="admin"&&<section hidden={section!=="users"} className="account-panel"><h2>账户管理 · {userTotal??"—"}</h2><p>角色与停用操作由服务端校验，至少保留一名有效管理员。</p>
+      {userRead.loading&&<p role="status">正在读取账户列表…</p>}{userRead.error&&<div className="account-read-error" role="alert"><p>{userRead.error}</p><button className="text-action" onClick={userRead.reload}>重新读取账户列表</button></div>}
+      {users.map(item=><article key={item.id} className="account-notification"><strong>{item.username} · {item.role} · {item.disabled?"已停用":"可用"}</strong><div className="detail-buttons">{([{disabled:!item.disabled},{role:item.role==="admin"?"user":"admin"}] as const).map((change,index)=><button key={index} className="button button-secondary" disabled={busy||item.id===user.id} onClick={()=>{if(window.confirm("确认更改账户 "+item.username+" 的"+(index?"角色":"可用状态")+"？"))void run(async()=>{const updated=await backend<ManagedUser>("/admin/users/"+item.id,{method:"PATCH",body:change});userRead.setData(old=>old?{...old,results:old.results.map(u=>u.id===item.id?updated:u)}:old);});}}>{index?(item.role==="admin"?"设为研究账户":"设为管理员"):(item.disabled?"启用":"停用")}</button>)}</div></article>)}
+      {userTotal!==undefined&&<nav className="pagination" aria-label="账户列表分页"><button disabled={userPage<=1} onClick={()=>setUserPage(userPage-1)}>上一页</button><span>{userPage} / {Math.max(1,Math.ceil(userTotal/20))}</span><button disabled={userPage*20>=userTotal} onClick={()=>setUserPage(userPage+1)}>下一页</button></nav>}
+    </section>}
   </div>;
 }

@@ -185,14 +185,14 @@ async function runApi() {
   await waitFor("new URLSearchParams(location.search).get('page')==='2' && document.querySelector('.paper-card')?.dataset.paperId!=="+q(firstId));
   await evaluate("(()=>{const el=document.querySelector('[aria-label=排序方式]');el.value='newest';el.dispatchEvent(new Event('change',{bubbles:true}));})()");
   await waitFor("new URLSearchParams(location.search).get('sort')==='newest' && document.querySelectorAll('.paper-card').length===6");
-  await waitFor("(()=>{const years=Array.from(document.querySelectorAll('.paper-card .paper-meta-line')).map(el=>Number(el.textContent.match(/\\d{4}/)?.[0])).filter(Number.isFinite);return years.length>1&&years.every((year,i)=>!i||years[i-1]>=year)})()");
-  const years=await evaluate("Array.from(document.querySelectorAll('.paper-card .paper-meta-line')).map(el=>Number(el.textContent.match(/\\d{4}/)?.[0])).filter(Number.isFinite)");
+  await waitFor("(()=>{const years=Array.from(document.querySelectorAll('.paper-record-year')).map(el=>Number(el.textContent)).filter(Number.isFinite);return years.length>1&&years.every((year,i)=>!i||years[i-1]>=year)})()");
+  const years=await evaluate("Array.from(document.querySelectorAll('.paper-record-year')).map(el=>Number(el.textContent)).filter(Number.isFinite)");
   assert.ok(years.every((year,i)=>!i||years[i-1]>=year));
   await fill(".year-inputs label:first-child input","2000");
   await click(".filter-apply-button");
   await waitFor("new URLSearchParams(location.search).get('from')==='2000' && document.querySelectorAll('.paper-card').length>0");
-  await waitFor("document.querySelectorAll('.paper-card').length>0 && Array.from(document.querySelectorAll('.paper-meta-line')).every(el=>Number(el.textContent.match(/\\d{4}/)?.[0])>=2000)");
-  assert.ok(await evaluate("Array.from(document.querySelectorAll('.paper-meta-line')).every(el=>Number(el.textContent.match(/\\d{4}/)?.[0])>=2000)"));
+  await waitFor("document.querySelectorAll('.paper-record').length>0 && Array.from(document.querySelectorAll('.paper-record-year')).every(el=>Number(el.textContent)>=2000)");
+  assert.ok(await evaluate("Array.from(document.querySelectorAll('.paper-record-year')).every(el=>Number(el.textContent)>=2000)"));
   const shot=await send("Page.captureScreenshot",{format:"png",captureBeyondViewport:false});
   fs.mkdirSync("output/api-integration",{recursive:true});
   fs.writeFileSync("output/api-integration/search-desktop.png",Buffer.from(shot.data,"base64"));

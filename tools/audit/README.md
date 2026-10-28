@@ -61,3 +61,12 @@ node tools/audit/evidence-workflow-browser.mjs
 ```
 
 此脚本同样只接受 localhost，并显式拦截全部 API。覆盖逐字核对、Unicode 偏移、来源上下文、复制、笔记追加与容量、独立阅读页定位、坏定位、停止与迟到响应、账户失效隔离，以及同帧布局测量和滚动时的阅读位置保存。合成论文和账户仅用于界面契约验证，不会写入真实服务，也不代表供应商生成或真实账户持久化已通过。报告与桌面/390px 截图保存在忽略目录；契约及真实 API 验收见 `docs/24_EVIDENCE_READING_WORKFLOW.md`。
+
+## 搜索记录流与账户读取回归
+
+```powershell
+$env:SCHOLARLENS_URL='http://127.0.0.1:4175'
+node tools/audit/search-account-browser.mjs
+```
+
+仅访问 localhost，全部 API 使用明确 fixture，未知调用使检查失败。检查记录行、真实字段与零评分、条件移除和分页参数、游客收藏、登录输入和失败恢复、动态暂停、账户资料/通知/用户列表的失败重试、历史清空与迟到分页隔离，以及编辑资料不重复读取头像。不会向真实服务注册、登录、上传或清空历史；头像内容与账户写入均为接口 fixture，不能据此声称后端端到端通过。契约及发布证据见 `docs/25_SEARCH_ACCOUNT_WORKFLOW.md`。

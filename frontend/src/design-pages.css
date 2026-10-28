@@ -207,6 +207,29 @@
 .search-page .paper-card{background:transparent;border:0;border-radius:0;box-shadow:none;border-bottom:1px solid var(--app-hairline);padding:24px 0 24px 40px;margin:0;transform:none!important}
 .search-page .paper-card:last-child{border-bottom:0}
 .search-page .paper-card:hover{background:#e8f4fb45;box-shadow:none}
+.search-page .paper-record{display:grid;grid-template-columns:64px minmax(0,1fr) 96px;gap:16px;padding:24px 0;align-items:start}
+.paper-record::before{content:"";position:absolute;top:24px;bottom:24px;left:-12px;width:2px;background:var(--app-blue);opacity:0;transition:opacity 200ms}
+.paper-record:hover::before,.paper-record:focus-within::before{opacity:1}
+.paper-record-rail{display:grid;gap:12px;padding-top:4px;font-variant-numeric:tabular-nums}
+.search-page .paper-record .paper-list-index{position:static;font-size:12px;color:var(--app-blue)}
+.paper-record-year{font-size:18px;letter-spacing:-.025em;color:var(--app-ink);font-weight:600}
+.paper-record-year.is-unknown{font-size:12px;line-height:1.5;max-width:48px;font-weight:400;color:var(--app-muted)}
+.paper-record-content{min-width:0}
+.paper-record .paper-title-link{margin-top:8px}
+.paper-record .paper-meta-line{font-size:12px;line-height:1.6}
+.paper-record .paper-meta-line .paper-source-tag{padding:0;background:none}
+.paper-record .paper-abstract{-webkit-line-clamp:3}
+.paper-record-keywords{display:flex;margin-top:12px}
+.paper-record-actions{display:flex;flex-direction:column;align-items:flex-end;gap:16px;padding-top:4px}
+.paper-record-actions a,.paper-record-save{display:inline-flex;align-items:center;justify-content:flex-end;gap:4px;min-height:32px;font-size:12px;white-space:nowrap}
+.paper-record-save{padding:4px 8px;border:1px solid var(--app-hairline);border-radius:8px;background:transparent;color:var(--app-muted);cursor:pointer;gap:8px}
+.paper-record-save:hover,.paper-record-save.saved{background:var(--app-blue-soft);color:var(--app-blue);border-color:#bad6e8}
+.paper-record-evidence{color:var(--app-muted)}.paper-record-evidence:hover{color:var(--app-blue)}
+.search-conditions{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:16px 0;border-bottom:1px solid var(--app-hairline);font-size:12px;color:var(--app-muted)}
+.search-conditions>span{margin-right:4px}
+.search-conditions button{display:flex;align-items:center;gap:8px;max-width:100%;min-height:32px;padding:4px 8px;border:1px solid #d0e2ed;border-radius:8px;background:var(--app-blue-soft);color:var(--app-ink);font-size:12px;text-align:left;cursor:pointer}
+.search-conditions button>span{overflow-wrap:anywhere;min-width:0}.search-conditions button>svg{flex-shrink:0}
+.search-conditions button:hover{border-color:var(--app-blue)}
 .paper-list-index{font-size:12px;font-weight:400;color:#648094;letter-spacing:.04em}
 .search-page .paper-list-index{position:absolute;left:0;top:32px}
 .paper-card-top{align-items:center}
@@ -365,6 +388,9 @@
  .search-page .filters-panel.filters-open{display:block}
  .search-page .results-topbar{align-items:flex-start;flex-direction:column;padding-bottom:16px}
  .search-page .paper-card{padding:24px 0 24px 32px}
+ .search-page .paper-record{grid-template-columns:36px minmax(0,1fr);gap:12px;padding:24px 0}
+ .paper-record-year{font-size:14px}.paper-record-year.is-unknown{font-size:12px}
+ .paper-record-actions{grid-column:2;flex-direction:row;align-items:center;justify-content:flex-start;gap:12px;flex-wrap:wrap;padding:0}
  .paper-title-link h3{font-size:18px}
  .paper-abstract{font-size:14px;line-height:1.7}
  .paper-card-footer{align-items:flex-start;flex-direction:column;gap:12px}

@@ -45,3 +45,29 @@ export function PaperCard({ paper, query = "", dense = false, order }: { paper: 
     </article>
   );
 }
+
+
+/** Search rows keep the returned order and metadata separate from reading actions. */
+export function SearchRecord({paper,query,order}:{paper:Paper;query:string;order:number}) {
+  const {isFavorite,toggleFavorite,workspaceReady}=useStudio();
+  const saved=isFavorite(paper.paper_id);
+  const detail="/paper/"+encodeURIComponent(paper.paper_id);
+  const snippet=paper.highlight?.abstract?.[0]||paper.highlight?.fulltext?.[0];
+  const excerpt=safePlainText(paper.abstract||paper.fulltext||"暂无摘要或正文片段").slice(0,260);
+  const scored=typeof paper.score==="number"&&Number.isFinite(paper.score);
+  return <article className="paper-card paper-record" data-paper-id={paper.paper_id}>
+    <div className="paper-record-rail"><span className="paper-list-index" aria-label={"结果 "+order}>{String(order).padStart(2,"0")}</span><span className={"paper-record-year"+(!paper.year?" is-unknown":"")} aria-label={paper.year?"年份："+paper.year:"年份未提供"}>{paper.year??"未提供"}</span></div>
+    <div className="paper-record-content">
+      <div className="paper-meta-line">{paper.paper_id.startsWith("demo-")?<DemoBadge/>:<span className="paper-source-tag">论文记录</span>}{paper.pdf_available&&<span>PDF 原件可用</span>}{scored&&<span title="检索引擎返回的原始评分，仅用于当前查询排序，不代表置信度">检索分数 {paper.score!.toLocaleString("zh-CN",{maximumFractionDigits:3})}</span>}</div>
+      <Link className="paper-title-link" to={detail}><h3><Highlight text={paper.title} query={query}/></h3></Link>
+      <div className="paper-authors">{paper.authors.length?paper.authors.join(" · "):"作者信息暂缺"}</div>
+      <p className="paper-abstract">{snippet?<ServerHighlight text={snippet}/>:<><Highlight text={excerpt} query={query}/>{(paper.abstract||paper.fulltext).length>excerpt.length?"…":""}</>}</p>
+      {paper.keywords.length>0&&<div className="paper-keywords paper-record-keywords">{paper.keywords.slice(0,3).map(term=><span key={term}>{term}</span>)}</div>}
+    </div>
+    <div className="paper-record-actions">
+      <button className={"paper-record-save bookmark-button"+(saved?" saved":"")} aria-label={saved?"取消收藏论文":"收藏论文"} aria-pressed={saved} disabled={!workspaceReady} onClick={()=>toggleFavorite(paper)}><Bookmark size={16} fill={saved?"currentColor":"none"}/><span>{saved?"已收藏":"收藏"}</span></button>
+      <Link className="paper-read-link" to={detail}>阅读论文 <ArrowUpRight size={14}/></Link>
+      <Link className="paper-record-evidence" to={"/assistant?"+new URLSearchParams({paper:paper.paper_id})}>查原文证据 <ArrowUpRight size={14}/></Link>
+    </div>
+  </article>;
+}
