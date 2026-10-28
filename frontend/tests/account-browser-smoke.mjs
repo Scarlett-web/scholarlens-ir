@@ -118,6 +118,10 @@ async function register(){
  await navigate('/account');await waitFor("document.querySelector('.account-form input[name=username]')!==null");
  await click('.account-panel .segmented button:last-child');
  await fill('[name=username]',account.username);await fill('[name=password]',account.password);
+ await pointerClick('[aria-label=显示密码]');
+ assert.equal(await evaluate("document.querySelector('[name=password]').type"),'text');
+ await pointerClick('[aria-label=隐藏密码]');
+ assert.equal(await evaluate("document.querySelector('[name=password]').type"),'password');
  await click('.account-form button[type=submit], .account-form button.button-primary');
  await waitFor("document.querySelector('.account-page h1')?.textContent==='你的研究账户'");
  await waitFor("document.querySelector('.account-page')?.textContent.includes('阅读空间已连接')");
@@ -151,7 +155,7 @@ async function run(){
  await click('.note-edit-button');await fill('.reading-note textarea','End-to-end persistence note');
  await waitFor("document.querySelector('.toast')===null",6000).catch(()=>{});
  let snapshot;
- for(let i=0;i<50;i++){snapshot=(await api('/me/workspace','GET',undefined,a.token)).data;if(snapshot.favorites?.[0]?.note==='End-to-end persistence note')break;await delay(150);}
+ for(let i=0;i<50;i++){snapshot=(await api('/me/workspace','GET',undefined,a.token)).data;if(snapshot.favorites?.[0]?.note==='End-to-end persistence note'&&snapshot.history?.[0]?.paper.paper_id===paperId)break;await delay(150);}
  assert.equal(snapshot.favorites?.[0]?.note,'End-to-end persistence note');
  assert.equal(snapshot.history?.[0]?.paper.paper_id,paperId);
  assert.equal((await api('/me/favorites','GET',undefined,a.token)).data.total,1);
@@ -185,8 +189,20 @@ async function run(){
  await click('.account-form button.button-primary');
  await waitFor("document.querySelector('.account-page')?.textContent.includes('资料已保存')");
  assert.equal((await api('/me/profile','GET',undefined,a.token)).data.display_name,'Acceptance researcher');report.checks.push('profile-update-through-ui');
+ await pointerClick('.account-settings-nav button:nth-child(2)');
+ assert.ok(await evaluate("[...document.querySelectorAll('.account-settings section')].some(el=>!el.hidden&&el.textContent.includes('修改密码'))"));
+ assert.equal(await evaluate("document.querySelector('[aria-label=显示名称]').closest('section').hidden"),true);
+ await pointerClick('.account-settings-nav button:first-child');
+ assert.equal(await evaluate("document.querySelector('[aria-label=显示名称]').closest('section').hidden"),false);
+ report.checks.push('password-visibility-and-account-section-navigation');
  await navigate('/assistant');await waitFor("document.querySelector('[aria-label=研究对话]')!==null");
- await evaluate("[...document.querySelectorAll('button')].find(b=>b.textContent==='保存新对话').click()");
+ await waitFor("document.querySelector('.ai-compose button[type=submit]')?.textContent.includes('检索原文')");
+ assert.ok(await evaluate("document.querySelector('.ai-compose button[type=submit]').getBoundingClientRect().bottom<=innerHeight"),'Assistant primary action must be visible on the desktop first screen');
+ await fill('[aria-label=研究问题]','magnetic resonance imaging');await pointerClick('.ai-compose button[type=submit]');
+ await waitFor("document.querySelectorAll('.evidence-result').length>0",60000);
+ assert.ok(await evaluate("document.querySelector('.evidence-result p').textContent.length>20"));
+ report.checks.push('unconfigured-ai-can-retrieve-real-evidence');
+ await evaluate("[...document.querySelectorAll('button')].find(b=>b.textContent==='新建对话').click()");
  await waitFor("document.querySelector('[aria-label=研究对话]').value.startsWith('conv-')");
  const conversation=await evaluate("document.querySelector('[aria-label=研究对话]').value");
  await navigate('/assistant');await waitFor("Array.from(document.querySelector('[aria-label=研究对话]')?.options||[]).some(o=>o.value==="+q(conversation)+")");
@@ -240,6 +256,11 @@ async function run(){
  }
  await send('Emulation.setDeviceMetricsOverride',{width:1440,height:900,deviceScaleFactor:1,mobile:false});
  report.checks.push('authenticated-pages-390px-geometry');
+ await uiLogout();
+ await navigate('/account?next=%2Fassistant');await waitFor("document.querySelector('.auth-submit')!==null");
+ await fill('[name=username]',a.username);await fill('[name=password]',a.password);await pointerClick('.auth-submit');
+ await waitFor("location.pathname==='/assistant'&&document.querySelector('[aria-label=研究问题]')!==null");
+ report.checks.push('login-returns-to-requested-workflow');
  await uiLogout();
  await navigate('/upload?storage=local');await waitFor("document.querySelector('.upload-drop input[type=file]')!==null");
  const localRoot=await send('DOM.getDocument');const localInput=await send('DOM.querySelector',{nodeId:localRoot.root.nodeId,selector:'.upload-drop input[type=file]'});

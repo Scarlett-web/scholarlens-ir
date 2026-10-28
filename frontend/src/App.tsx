@@ -143,14 +143,15 @@ function StudioProvider({ children }: { children: ReactNode }) {
   useEffect(() => { writeLocal("motion-paused", motionPaused); }, [motionPaused]);
   useEffect(()=>{
     alive.current=true;
+    let active=true;
     if(user)accountApi.workspace(token.current).then(data=>{
-      if(!alive.current)return;
+      if(!active)return;
       version.current=data.version;
       setFavorites(data.favorites.map(entry=>({...entry,paper:normalizePaper(entry.paper)})));
       setHistory(data.history.map(entry=>({...entry,paper:normalizePaper(entry.paper)})));
       setCollections(data.collections);setWorkspaceReady(true);
-    }).catch(cause=>{if(alive.current)setWorkspaceError(cause instanceof Error?cause.message:"账户阅读空间加载失败");});
-    return()=>{alive.current=false;};
+    }).catch(cause=>{if(active)setWorkspaceError(cause instanceof Error?cause.message:"账户阅读空间加载失败");});
+    return()=>{active=false;alive.current=false;};
   },[user]);
   useEffect(()=>{
     if(!user||!workspaceReady||!dirty.current||failed.current)return;
@@ -273,7 +274,7 @@ function StudioProvider({ children }: { children: ReactNode }) {
       setHistory((old) => [{
       paper: paperSnapshot(paper), viewedAt: new Date().toISOString()
     }, ...old.filter((item) => item.paper.paper_id !== paper.paper_id)].slice(0, 50));},
-    clearHistory: () => { if(!editWorkspace())return; setHistory([]); setToast("本地浏览记录已清空"); },
+    clearHistory: () => { if(!editWorkspace())return; setHistory([]); setToast(user?"账户浏览记录已清空":"本地浏览记录已清空"); },
     removeHistory: (id) => {if(editWorkspace())setHistory((old) => old.filter((entry) => entry.paper.paper_id !== id));},
     addUpload: async (file) => {
       const { hash } = await verifyPdf(file);

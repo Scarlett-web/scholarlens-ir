@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, BarChart3, CheckCircle2, Clock3, Download, RotateCcw, Search, Target } from "lucide-react";
-import { IntegrationNotice, PageHeading } from "../components/Layout";
-import { ToolNavigation } from "../components/ToolNavigation";
+import { PageHeading } from "../components/Layout";
 import { DATA_SOURCE, searchPapers } from "../services/papers";
 import { computeEvaluation } from "../lib/evaluation";
 import type { Relevance, RelevanceJudgments } from "../lib/evaluation";
@@ -70,20 +69,19 @@ export function EvaluationPage() {
   };
 
   return <div className="workspace-page content-wrap evaluation-page">
-    <PageHeading eyebrow="RETRIEVAL / EVALUATION" title="检索评测" desc="输入查询、标注论文相关性，计算可核查的检索指标。"/>
-    <ToolNavigation/>
-    <IntegrationNotice title="这是可操作的人工标注工作台" desc={DATA_SOURCE==="demo" ?
+    <PageHeading eyebrow="检索工具" title="检索评测" desc="输入查询、标注论文相关性，计算可核查的检索指标。"/>
+    <details className="evaluation-method"><summary>评测说明与数据范围</summary><p>{DATA_SOURCE==="demo" ?
       "本地使用虚构样本和字符串匹配。这里计算的是你标注样本上的指标，不能用作 Elasticsearch BM25 的真实实验成绩。" :
-      "结果来自当前 FastAPI 接口；指标基于你在本浏览器所做的相关性标注。正式论文报告仍需完整查询集和标注规范。"} />
+      "结果来自当前论文库，标注保存在此浏览器。指标仅反映本次结果；完整实验仍需统一查询集和标注规范。"}</p></details>
     <section className="evaluation-workbench">
       <form className="evaluation-search" onSubmit={(e)=>{e.preventDefault();if(draft.trim()){setCurrentQuery(draft.trim());setRunVersion(v=>v+1)}}}>
-        <div><span className="eyebrow">STEP 01 · YOUR QUERY</span><h2>选择检索问题</h2><p>建议使用明确的学术关键词，以便逐项判断论文相关性。</p></div>
+        <div><h2>评测查询</h2><p>建议使用明确的学术关键词，以便逐项判断论文相关性。</p></div>
         <label><Search size={19}/><input value={draft} onChange={e=>setDraft(e.target.value)} placeholder="输入评测查询…" aria-label="评测查询词" required/>
           <button className="button button-primary" type="submit">运行查询 <ArrowRight size={16}/></button></label>
       </form>
       {error && <div className="inline-error" role="alert">{error}</div>}
       <div className="evaluation-progress">
-        <div><span className="eyebrow">STEP 02 · RELEVANCE JUDGMENT</span><h2>逐篇判断相关性</h2>
+        <div><h2>相关性标注</h2>
           <p>同一个查询的标注会自动保存在当前浏览器。建议为当前全部结果标注。</p></div>
         <div className="evaluation-progress-data"><strong>{metrics.judged} / {ids.length}</strong><span>已标注</span>
           <div className="evaluation-progress-track"><span style={{width:progress+"%"}}/></div>
@@ -110,7 +108,7 @@ export function EvaluationPage() {
       </div>
     </section>
     <section className="evaluation-summary">
-      <div className="section-heading"><div><span className="eyebrow">STEP 03 · RESULTS</span><h2>人工标注结果</h2></div><span className="table-status">只计算已完整标注的当前结果</span></div>
+      <div className="section-heading"><div><h2>评测结果</h2></div><span className="table-status">只计算已完整标注的当前结果</span></div>
       <div className="metric-grid">
         <div className="metric-card"><div className="metric-icon"><Target size={22}/></div><h3>Precision@{metrics.precisionAt||5}</h3>
           <strong className="metric-value">{metrics.precisionK===null?"—":(100*metrics.precisionK).toFixed(1)+"%"}</strong>

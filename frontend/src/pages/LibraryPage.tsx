@@ -14,7 +14,7 @@ export function LibraryPage() {
   const {user}=useAuth();
   const {
     favorites, history, collections, addCollection, renameCollection, removeCollection,
-    moveFavorite, updateFavoriteNote, clearHistory, removeHistory, restoreLibrary, notify
+    moveFavorite, updateFavoriteNote, clearHistory, removeHistory, restoreLibrary, notify, workspaceSyncing, workspaceError
   } = useStudio();
   const [tab, setTab] = useState<LibraryTab>("saved");
   const [folder, setFolder] = useState("全部");
@@ -149,15 +149,15 @@ export function LibraryPage() {
               <textarea rows={3} maxLength={2000} value={entry.note??""}
                 placeholder="记录研究要点、疑问、后续阅读计划…"
                 onChange={(e)=>updateFavoriteNote(entry.paper.paper_id,e.target.value)}/>
-            </label><p>内容自动保存在此浏览器 · {entry.note?.length??0}/2000 字</p>
+            </label><p role="status">{user?(workspaceError?"保存失败，草稿已留在本机，请检查账户连接":workspaceSyncing?"正在保存到账户…":"笔记已保存到账户"):"笔记自动保存在此浏览器"} · {entry.note?.length??0}/2000 字</p>
           </div>}
         </div>)}</div>:<div className="empty-state library-empty">
           <span className="library-empty-icon"><Bookmark size={24} strokeWidth={1.7}/></span>
-          <h3>{term?"没有找到匹配的文献":"你的阅读清单，从第一篇开始。"}</h3>
-          <p>{term?"试试更短的关键词，或清除当前筛选。":"在检索结果中点击收藏，论文就会出现在这里。随后可以分类整理、记录笔记。"}</p>
+          <h3>{term?"没有找到匹配的文献":favorites.length?"这个分类还没有论文":"还没有收藏论文"}</h3>
+          <p>{term?"试试更短的关键词，或清除当前筛选。":favorites.length?"在全部收藏中选择论文，将它移入这个分类。":"在检索结果中收藏论文，即可在这里分类和记录笔记。"}</p>
           <div className="library-empty-actions">
             {term?<button type="button" className="button button-primary" onClick={()=>setTerm("")}>清空搜索条件</button>
-              :<Link to="/search" className="button button-primary">检索论文</Link>}
+              :favorites.length?<button className="button button-primary" onClick={()=>setFolder("全部")}>查看全部收藏</button>:<Link to="/search" className="button button-primary">检索论文</Link>}
             <Link to="/explore" className="button button-secondary">探索研究主题</Link>
           </div>
         </div>}
@@ -165,7 +165,7 @@ export function LibraryPage() {
     </div>:<section className="history-panel">
       <div className="results-topbar"><div><h2>最近浏览</h2><p>自动记录最近 50 篇不同论文，不包含 PDF 文件。</p></div>
         <button disabled={!history.length} className="button button-secondary" onClick={()=>{
-          if (window.confirm("确定清空全部本地浏览记录？")) clearHistory();
+          if (window.confirm(user?"确定清空当前账户的浏览记录？":"确定清空此浏览器的浏览记录？")) clearHistory();
         }}><Trash2 size={16}/> 清空历史</button></div>
       {filteredHistory.length?filteredHistory.map((entry)=><div className="history-row" key={entry.paper.paper_id}>
         <Link to={"/paper/"+encodeURIComponent(entry.paper.paper_id)}><BookOpen size={18}/><span>{entry.paper.title}</span></Link>

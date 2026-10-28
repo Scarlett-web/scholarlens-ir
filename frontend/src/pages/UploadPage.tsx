@@ -4,7 +4,6 @@ import { AlertCircle, CheckCircle2, FileText, FolderOpen, ShieldCheck, Trash2, U
 import { Link, useSearchParams } from "react-router-dom";
 import { useStudio } from "../App";
 import { IntegrationNotice, PageHeading } from "../components/Layout";
-import { ToolNavigation } from "../components/ToolNavigation";
 import { LocalPdfViewer } from "../components/LocalPdfViewer";
 
 const LIMIT_MB = 15;
@@ -55,9 +54,8 @@ function LocalUploadPage() {
 
   return (
     <div className="workspace-page content-wrap">
-      <PageHeading eyebrow="DOCUMENT WORKBENCH" title="PDF 工作区" desc="将 PDF 保存在本机浏览器，随时预览并提交本地审核。"/>
-      <ToolNavigation/>
-      <IntegrationNotice title="本地文件工作区 · 与正式数据库隔离" desc="这里会真正保存 PDF 文件到此浏览器的 IndexedDB，支持刷新后查看原文。不会传给 FastAPI，不会写入 Elasticsearch，也不会通过“审核”进入课程正式论文库。"/>
+      <PageHeading eyebrow="文件管理" title="PDF 工作区" desc="将 PDF 保存在本机浏览器，随时预览并提交本地审核。"/>
+      <IntegrationNotice title="本地文件工作区 · 与正式数据库隔离" desc="文件只保存在当前浏览器，不会上传或进入公共论文库。清除浏览器数据会删除这些文件，请保留原件。"/>
       <div className="upload-grid">
         <div className="upload-panel">
           <div className={selected ? "upload-drop has-file" : "upload-drop"}
@@ -65,7 +63,7 @@ function LocalUploadPage() {
             onDrop={(e) => {e.preventDefault(); choose(e.dataTransfer.files?.[0]);}}>
             <UploadCloud size={36} strokeWidth={1.6}/>
             <h2>添加本地论文 PDF</h2>
-            <p>拖入 PDF，或选择文件。支持最大 15 MB，提交时验证 PDF 文件头并计算 SHA-256。</p>
+            <p>拖入 PDF，或选择文件。每份文件不超过 15 MB。</p>
             <button className="button button-secondary" type="button" onClick={() => input.current?.click()}>
               <FolderOpen size={16}/> 选择 PDF 文件
             </button>
@@ -84,7 +82,7 @@ function LocalUploadPage() {
           <div className="upload-benefits">
             <div><CheckCircle2 size={17}/><span>真实 PDF 内容保存在浏览器中</span></div>
             <div><CheckCircle2 size={17}/><span>支持本地预览、删除和审核记录</span></div>
-            <div><ShieldCheck size={17}/><span>不假装完成服务器上传</span></div>
+            <div><ShieldCheck size={17}/><span>无需上传，即可预览原文</span></div>
           </div>
         </div>
         <div className="upload-aside">
@@ -132,5 +130,5 @@ export function UploadPage(){
   const [params,setParams]=useSearchParams();
   const local=params.get("storage")==="local";
   const setLocal=(value:boolean)=>{const next=new URLSearchParams(params);if(value)next.set("storage","local");else next.delete("storage");setParams(next);};
-  return <><div className="content-wrap workbench-switch segmented" role="group" aria-label="文件保存位置"><button className={!local?"selected":""} onClick={()=>setLocal(false)}>服务端上传</button><button className={local?"selected":""} onClick={()=>setLocal(true)}>本机文件</button></div>{local?<LocalUploadPage/>:<ServerUploadWorkbench admin={false}/>}</>;
+  return <><div className="content-wrap workbench-switch segmented" role="group" aria-label="文件保存位置"><button className={!local?"selected":""} onClick={()=>setLocal(false)}>账户上传</button><button className={local?"selected":""} onClick={()=>setLocal(true)}>本机文件</button></div>{local?<LocalUploadPage/>:<ServerUploadWorkbench admin={false}/>}</>;
 }
