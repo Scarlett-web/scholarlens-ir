@@ -35,4 +35,12 @@ node tools/audit/account-security-browser.mjs
 
 以上真实账户验收是本机独立SQLite和真实账户路由，不是生产账户写入验收，也不涉及供应商真实生成。后端应用变更只有两个二次确认错误码，前端只对相应POST路径的该错误保留会话，其他401仍按既有规则处理。
 
-发布与公网核验结果完成后追加。
+## 发布与公网记录
+
+- 应用提交 `354a638e42e81d46e5d6d1df5550e612ae31de5c` 已推送至origin/zjl；当前release `/opt/scholarlens/releases/20261028T063118Z-354a638`。247个发布文件逐一哈希验证，生产构建指向同源/api。
+- 先完成一致性SQLite备份、环境副本及回滚脚本，位于 `/opt/scholarlens/backups/20261028T063118Z-354a638/`；上一版 `/opt/scholarlens/releases/20261028T060559Z-4b39d4b` 保留。发布前后用户均25、论文均859；环境哈希、Tunnel PID与ES身份/启动时间不变。
+- 源站18项离线供应商响应预检、Skill/Workflow资源、真实5段证据及健康检查通过。应用active、NRestarts=0，匿名账户请求仍401。没有向生产账户提交密码修改或停用请求。
+- 公网 `https://scholarlens.lingion.cc.cd/` build-info及三个JS/CSS资源哈希均匹配；搜索61条、859篇论文、Agent5段证据且模型not_called、PDF Range206、robots和两份背景资源通过。
+- 独立Chrome公网游客检查搜索、证据入口、登录页、横向分类与相邻笔记通过，无页面错误。笔记只保留在本轮临时浏览器游客空间，不写生产账户。
+- 证据在外层 `output/deploy-account-credentials-20261028-143028/`；此追加记录及总目标验收账本均为文档修改，无需再次重启应用。完整要求和剩余项见 `docs/29_GOAL_REQUIREMENTS_AND_EVIDENCE.md`。
+
