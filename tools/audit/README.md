@@ -89,3 +89,17 @@ node tools/audit/account-security-browser.mjs
 脚本不接受服务URL，也不使用 `SCHOLARLENS_URL`。它自行启动随机回环端口的隔离服务，以实例挑战核对身份后才写入；生产账户/工作区路由和SQLite是真实实现，论文为明确标注的单篇测试夹具。覆盖UI注册、笔记持久化、密码/停用确认错误的重试、真实撤销令牌清理、迟到401保护新会话、成功修改密码撤销全部会话和停用/用户隔离。测试服务不加载生产配置，不连接ES、邮件或供应商；结束时关闭本轮浏览器与服务，运行目录和报告保留在忽略路径。
 
 旧 `frontend/tests/account-browser-smoke.mjs` 会写账户和上传，现强制要求匹配隔离实例挑战，禁止指向生产或普通本地代理。其搜索/上传旧流程尚未整体迁移，不作为本轮通过的证据。以上新工具只验收列明的账户和工作区边界，不能代替全产品端到端验收。见 `docs/28_ACCOUNT_CREDENTIAL_BOUNDARIES.md`。
+
+## 真实隔离上传、向量与所有权验收
+
+在仓库根运行；需要本项目已安装的Elasticsearch 8.19.23原生包与固定revision的MiniLM模型，不会自动下载：
+
+```powershell
+backend/.venv/Scripts/python.exe tools/audit/run-upload-integration.py
+```
+
+非Windows请使用对应本机Python和原生ES包，可用`--es-home`、`--model-dir`指定已安装路径。入口不接受服务URL；它自行建立随机回环端口、全新config/data/log/tmp/SQLite及索引，先核对cluster/name/UUID/空索引，再执行真实生产路由和CPU推理。基础语料与PDF均明确标为合成夹具，独立`-real`别名仅满足上传协议，不代表正式数据。运行目录、原件、数据库及报告保留在`tools/audit/reports/upload-integration-*/`。
+
+覆盖上传→审批→本地解析→关键词/实际向量→三模式检索→证据/片段→PDF206/DOCX→归档、受控失败、私有文件/对话/收藏/历史/通知/工作区隔离。清除继承的ES/AI/SMTP/GROBID配置；不连接生产、不改全局配置/安装config/模型，不清理历史报告。结束核对拥有的ES/pytest进程退出、端口关闭及config/model哈希不变；pytest失败、跳过、超时或清理失败均不得计为通过。重型ES与浏览器测试应顺序运行，保留失败日志。
+
+Windows AMD64当前通过5组、163次路由状态检查及2项runner守卫；macOS/POSIX只提供路径与进程组实现，尚无实际运行证据。不使用FakeES或固定向量，但合成PDF通过不代表正式语料解析质量、OCR、GROBID或真实供应商生成已通过。权限表、已修复API-only响应头问题和工具失败见`docs/31_ISOLATED_UPLOAD_AND_OWNERSHIP.md`。

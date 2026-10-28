@@ -18,6 +18,10 @@
 
 负责人：项目维护者。`PATCH /api/admin/users/{id}` 与 `POST /api/auth/deactivate` 必须在同一SQLite写事务中读取最新角色、计数有效管理员并执行变更；并发降级/停用或混合操作至少保留一名有效管理员，拒绝请求沿用 `409 invalid_state`，不改变账户和会话。管理员写事务还需重新确认操作者有效角色。已经停用的管理员不计入有效人数，降级该停用记录不能误触最后管理员保护。详见 `docs/30_ADMIN_TRANSACTION_BOUNDARIES.md`。
 
+### 2026-10-28 API独立部署的响应保护
+
+负责人：项目维护者。无论是否配置FRONTEND_DIST，认证、个人资料/工作区、上传、管理员和私有对话等响应均启用既有浏览器边界，私有API或带Authorization的响应强制Cache-Control: no-store；不得被路由的可缓存设置覆盖。公开PDF Range、正文与SSE不缓冲改写；前端未挂载时根路径仍404。验收使用真实路由和隔离ES/SQLite，见 `docs/31_ISOLATED_UPLOAD_AND_OWNERSHIP.md`。现有同源前端部署已有此保护，本轮补齐独立API模式。
+
 ### 2026-10-27 V2（优先于下方历史阶段标记）
 
 负责人组长。输入现有真实索引、可配置CPU模型和用户请求；输出沿用search全部字段及统一error结构。新增GET /api/suggest(q,limit=8)、GET /api/discover(limit=6)、GET /api/capabilities；建议来自真实title/authors，发现来自确定性真实论文与年份聚合，不编造热度。semantic/hybrid使用独立片段向量索引与真实BM25，RRF k=60；候选窗口1000，超出返回400；semantic只支持field=all/title/fulltext，hybrid关键词侧支持六字段；phrase/fuzzy只用于keyword/hybrid关键词侧，semantic拒绝。semantic/highlight不虚构精确词项；返回匹配片段与model/version解释。一路缺失时503，不静默降级。year/sort对两路及最终论文排序生效，total为候选论文数量，非全库精确语义命中数。

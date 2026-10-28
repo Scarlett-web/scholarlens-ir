@@ -44,12 +44,13 @@ class BrowserHeadersMiddleware:
 
 
 def mount_frontend(app, directory):
+    # API-only deployments need the same private-response and browser boundaries.
+    app.add_middleware(BrowserHeadersMiddleware)
     if not directory:
         return
     root = Path(directory).resolve()
     if not (root / "index.html").is_file():
         raise ValueError("FRONTEND_DIST must contain a production index.html")
-    app.add_middleware(BrowserHeadersMiddleware)
 
     @app.get("/{path:path}", include_in_schema=False)
     def frontend(path: str):

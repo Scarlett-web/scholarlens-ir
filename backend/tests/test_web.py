@@ -74,3 +74,35 @@ def test_browser_headers_preserve_pdf_ranges_and_private_responses(tmp_path):
         assert response.status_code == 206 and response.content == b"%PDF-"
         assert response.headers["content-type"] == "application/pdf"
         assert "content-range" in response.headers
+
+
+def test_api_only_private_responses_keep_browser_boundaries(tmp_path):
+    from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
+
+    pdf = tmp_path / "private.pdf"
+    pdf.write_bytes(b"%PDF-1.4\nexplicit synthetic fixture")
+    app = FastAPI()
+
+    @app.get("/api/admin/uploads/fixture/pdf")
+    def private_pdf():
+        return FileResponse(pdf, media_type="application/pdf")
+
+    @app.get("/api/me/workspace")
+    def private_workspace():
+        return JSONResponse({"fixture": True}, headers={"Cache-Control": "public, max-age=3600"})
+
+    @app.get("/api/ai/fixture-stream")
+    def private_stream():
+        return StreamingResponse(iter(["event: done\ndata: fixture\n\n"]), media_type="text/event-stream")
+
+    mount_frontend(app, None)
+    with TestClient(app) as client:
+        for path in ("/api/me/workspace", "/api/admin/uploads/fixture/pdf", "/api/ai/fixture-stream"):
+            response = client.get(path)
+            assert response.status_code == 200
+            assert response.headers.get("cache-control") == "no-store"
+            assert response.headers.get("x-content-type-options") == "nosniff"
+        ranged = client.get("/api/admin/uploads/fixture/pdf", headers={"Range": "bytes=0-4"})
+        assert ranged.status_code == 206 and ranged.content == b"%PDF-"
+        assert ranged.headers["cache-control"] == "no-store"
+        assert client.get("/").status_code == 404
