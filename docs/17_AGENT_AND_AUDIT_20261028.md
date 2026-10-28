@@ -56,6 +56,17 @@
 
 线上更新仍遵守既有流程：验证后提交并推送到 `origin/zjl`，应用修改再部署至既有华为云服务，保留上一 release、SQLite 一致性备份和环境副本；仅文档变化不重启。
 
+## 本次线上发布（2026-10-28 10:36 北京时间）
+
+- 地址：https://scholarlens.lingion.cc.cd/；应用提交 `a73155e72e9398dd09e9fd2e437cf9df0becb9c0` 已推送到 `origin/zjl`。
+- 当前 release：`/opt/scholarlens/releases/20261028T023631Z-a73155e`；上一 release `20261028T004943Z-17e9f2a` 完整保留。
+- 备份：`/opt/scholarlens/backups/20261028T023631Z-a73155e`，目录 0700，SQLite 一致性备份与环境副本 0600，备份库 `integrity_check=ok`。同目录 `rollback.sh` 可切回上一版本并仅重启 ScholarLens API，不覆盖用户库。
+- 应用包 1,982,212 字节、199 个文件逐个 SHA-256 校验通过；依赖清单与上一版本一致，未在服务器升级依赖。切换前后均为 859 篇、24 个用户记录，环境文件哈希一致；仅重启本应用，隧道 PID 与 ES 容器启动时间均不变。API、隧道均 active，API `NRestarts=0`，ES 无 OOM、无重启。
+- 公网资源 `index-CQGTPJeK.js`、`index-D0MOqAc0.css` 哈希与本地构建一致。首页和“欢迎回来”登录页正常；1366×768 新证据助手页面无横向溢出，实际检索显示 5 条原文片段与论文链接。
+- 新 `POST /api/agent/run` 已出现在公网 OpenAPI；未配置模型请求实际返回 503 / `ai_not_configured`，没有伪造生成结果。用户个人 API 仍在登录后按会话配置，本轮未使用真实供应商密钥验收生成。
+- 公网检索浏览器回归退出码 0：859 篇、61 条 magnetic 命中、BM25 片段、分页、年份排序筛选、详情、收藏笔记、最近阅读、随机发现、语义与混合检索实际排序分页、旧链接与缺失详情处理及页面几何检查。原 PDF 的 Range 请求仍返回 206、`%PDF-` 和正确 Content-Range。
+- 本机验收证据目录：`C:/Users/lenovo/Desktop/zjl/output/deploy-agent-20261028/`。本段为发布后的文档记录，不改变应用构建，无需再次重启。
+
 ## 未覆盖与风险
 
 - 本轮没有对生产执行 ZAP 主动扫描、模糊测试、爆破、越权尝试或写操作。
