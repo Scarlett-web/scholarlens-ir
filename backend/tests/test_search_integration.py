@@ -2,6 +2,7 @@
 
 import json
 import uuid
+import re
 
 from elasticsearch import Elasticsearch
 from fastapi.testclient import TestClient
@@ -12,6 +13,43 @@ from backend.config import Settings
 from backend.import_jsonl import import_records, load_jsonl, publish_alias
 
 pytestmark = pytest.mark.integration
+
+
+def test_title_highlight_noise_and_full_author_metadata(tmp_path):
+    client = Elasticsearch("http://127.0.0.1:9200", request_timeout=10)
+    alias = f"scholarlens-test-{uuid.uuid4().hex[:8]}-mock"
+    title = "Simulating the Dynamics of the Dancing Lights"
+    authors = ["Mock First Author", "Mock Second Author", "Mock Third Author", "Mock Last Researcher"]
+    source = tmp_path / "highlight.jsonl"
+    source.write_text(json.dumps({"paper_id": "mock-highlight", "title": title, "authors": authors,
+        "affiliation": ["University of Testing"], "fulltext": "The dynamics of the aurora are simulated."}), encoding="utf-8")
+    try:
+        records, meta = load_jsonl(source, "mock")
+        import_records(client, alias, records, meta)
+        with TestClient(create_app(Settings(index=alias), client)) as api:
+            response = api.get("/api/search", params={"q": title})
+            assert response.status_code == 200, response.text
+            body = response.json()
+            assert body["total"] == 1
+            hit = body["results"][0]
+            assert hit["score"] > 0 and hit["authors"] == authors
+            highlights = hit["highlights"]
+            assert "affiliation" not in highlights
+            marked = re.findall(r"<em>(.*?)</em>", str(highlights))
+            assert any("dynamics" in value.lower() for value in marked)
+            assert not any(value.lower() in {"the", "of"} for value in marked)
+            assert re.sub(r"</?em>", "", highlights["title"][0]) == title
+            author_hit = api.get("/api/search", params={"q": "Researcher", "field": "authors"}).json()["results"][0]
+            assert author_hit["authors"] == authors
+            assert author_hit["highlights"]["authors"] == ["Mock Last <em>Researcher</em>"]
+            common = api.get("/api/search", params={"q": "of the", "field": "title"}).json()
+            assert common["total"] == 1 and "<em>" in str(common["results"][0]["highlights"])
+            phrase = api.get("/api/search", params={"q": title, "phrase": True}).json()
+            assert phrase["total"] == 1 and "<em>" in str(phrase["results"][0]["highlights"])
+    finally:
+        for name in client.indices.get(index=f"{alias}-*", allow_no_indices=True):
+            client.indices.delete(index=name)
+        client.close()
 
 
 @pytest.fixture(scope="module")

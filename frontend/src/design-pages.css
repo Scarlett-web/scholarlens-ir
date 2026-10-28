@@ -247,7 +247,9 @@
 .paper-title-link h3{font-size:18px;font-weight:550;line-height:1.5;letter-spacing:-.02em}
 .paper-title-link:hover{color:var(--app-blue)}
 .paper-title-link>svg{display:none}
-.paper-authors{font-size:12px;color:var(--app-muted);margin:8px 0 12px}
+.paper-authors{font-size:12px;color:var(--app-muted);margin:8px 0 12px;line-height:1.8;overflow-wrap:anywhere}
+.paper-authors-toggle{display:inline;padding:0 0 0 8px;border:0;background:transparent;color:var(--app-blue);font:inherit;cursor:pointer;white-space:nowrap}
+.paper-authors-toggle:hover{text-decoration:underline;text-underline-offset:3px}
 .paper-abstract{font-size:14px;line-height:1.75;color:#506477;margin:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .paper-card-footer{margin-top:16px;gap:16px;align-items:center}
 .paper-keywords{gap:8px;flex-wrap:wrap}
@@ -258,6 +260,7 @@
 .pagination button{background:#fff;border:1px solid #e5e5ea;color:#58585e;border-radius:8px;min-height:40px;font-size:12px}
 .pagination button.active{background:var(--app-ink);border-color:var(--app-ink);color:#fff;font-weight:500}
 .pagination button:hover:not(:disabled):not(.active){background:var(--app-canvas)}
+.pagination-gap{display:inline-flex;align-items:center;justify-content:center;min-width:24px;min-height:40px;color:var(--app-muted);font-size:14px}
 .paper-card mark,.reading-section mark{background:#fff0ae;color:var(--app-ink)}
 .explore-page .explore-controls{background:transparent;border:0;border-bottom:1px solid var(--app-hairline);border-radius:0;padding:0 0 32px;margin:0 0 32px}
 .explore-page .topic-selector{margin:0 0 24px;gap:8px}

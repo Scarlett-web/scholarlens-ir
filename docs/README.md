@@ -11,6 +11,7 @@
 - [汇报截图](assets/report-20261028/README.md)：3 张真实公开页面，可用于 PPT。
 - [白玻璃实现](34_VISUAL_GLASS_20261028.md) + [独立复核与线上发布](35_GLASS_RELEASE_ACCEPTANCE_20261028.md)：明亮冰川外观、三档透明度、功能回归及回滚位置。
 - [研究功能修复与中文准备](36_RESEARCH_USABILITY_AND_CHINESE_READINESS.md)：自由问答、对话区比例、六字段高亮、PDF 原件下载及 CJK 检索兼容。
+- [检索结果整理](37_SEARCH_RESULTS_POLISH.md)：高亮纠错、完整作者展开、提示精简和分页省略号。
 
 ## 按主题查阅
 

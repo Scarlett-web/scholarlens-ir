@@ -25,7 +25,7 @@ from fastapi.openapi.utils import get_openapi
 from backend.config import Settings, make_client
 from backend.pdf_access import resolve_pdf, resolve_document_pdf
 from backend.schema import SEARCH_FIELDS
-from backend.search_text import has_cjk, canonical_highlights
+from backend.search_text import has_cjk, canonical_highlights, highlight_query_text
 from backend.discovery import router as discovery_router
 from backend.retrieval import search_extended, validate_extended
 from backend.accounts import Store, router as accounts_router
@@ -120,6 +120,11 @@ def build_search(params: SearchParams) -> dict:
                 }
             },
         )
+    highlight_fields = [*fields, *([field + ".cjk" for field in fields] if cjk else [])]
+    highlight_query = {"multi_match": {
+        **multi, "query": highlight_query_text(params.q, phrase=params.phrase),
+        "fields": highlight_fields, "operator": "or",
+    }}
     return {
         "query": {"bool": query},
         "from_": (params.page - 1) * params.page_size,
@@ -133,8 +138,11 @@ def build_search(params: SearchParams) -> dict:
             "max_analyzed_offset": 1000000,
             "pre_tags": ["<em>"],
             "post_tags": ["</em>"],
-            "fields": {field: {"number_of_fragments": 2, "fragment_size": 180}
-                       for field in [*fields, *([field + ".cjk" for field in fields] if cjk else [])]},
+            "highlight_query": highlight_query,
+            "order": "score",
+            "fields": {field: ({"number_of_fragments": 2, "fragment_size": 180}
+                               if field.removesuffix(".cjk") == "fulltext" else {"number_of_fragments": 0})
+                       for field in highlight_fields},
         },
     }
 

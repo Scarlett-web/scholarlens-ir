@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import {createPaperApi, normalizePaper, buildSearchParams} from "../src/services/paperApi.ts";
 import {serverHighlightParts} from "../src/lib/serverHighlight.ts";
 import {buildPaperGraph} from "../src/lib/paperRelations.ts";
+import {highlightParts} from "../src/lib/highlight.ts";
+import {paginationItems} from "../src/lib/pagination.ts";
 
 const query = {q:" magnetic ",field:"all",page:2,pageSize:6,sort:"newest",mode:"keyword",yearFrom:1990,yearTo:2026};
 const reply = data => new Response(JSON.stringify(data), {headers:{"Content-Type":"application/json"}});
@@ -101,4 +103,30 @@ test("server highlights decode as text, and cannot create executable HTML", () =
   const parts = serverHighlightParts("&lt;img src=x onerror=alert(1)&gt; <em>magnetic &amp; field</em>");
   assert.equal(parts[0].text,"<img src=x onerror=alert(1)> ");
   assert.deepEqual(parts.find(part=>part.match),{text:"magnetic & field",match:true});
+});
+
+test("query highlighting ignores connective noise, respects word boundaries, and keeps Chinese and literal input", () => {
+  const matches=(value,q)=>highlightParts(value,q).filter(part=>part.match).map(part=>part.text);
+  assert.deepEqual(matches("The dynamics of the aurora", "Simulating the Dynamics of the Dancing Lights"),["dynamics"]);
+  assert.deepEqual(matches("office software of the lab", "of"),["of"]);
+  assert.deepEqual(matches("theory and theater the", "the"),["the"]);
+  assert.deepEqual(matches("中文文献的信息检索与全文检索", "中文 检索"),["中文","检索","检索"]);
+  assert.deepEqual(matches("C++ and C++17", "C++"),["C++"]);
+  assert.equal(highlightParts("<script>text</script>",".*").map(p=>p.text).join(""),"text");
+  assert.deepEqual(matches("of the", "of the"),["of","the"]);
+});
+
+test("pagination shows readable first, middle and last windows without silent gaps", () => {
+  assert.deepEqual(paginationItems(1,37),[1,2,3,4,5,"gap-right",37]);
+  assert.deepEqual(paginationItems(18,37),[1,"gap-left",17,18,19,"gap-right",37]);
+  assert.deepEqual(paginationItems(37,37),[1,"gap-left",33,34,35,36,37]);
+  assert.deepEqual(paginationItems(4,7),[1,2,3,4,5,6,7]);
+  for(let total=1;total<=60;total++)for(let page=1;page<=total;page++){
+    const items=paginationItems(page,total),numbers=items.filter(n=>typeof n==='number');
+    assert.ok(numbers.includes(1)&&numbers.includes(page)&&numbers.includes(total));
+    assert.equal(new Set(items).size,items.length);
+    assert.ok(items.length<=9);
+    for(let i=1;i<items.length;i++)if(typeof items[i-1]==='number'&&typeof items[i]==='number')assert.equal(items[i]-items[i-1],1);
+    assert.ok(items.every((n,i)=>typeof n==='number'||(typeof items[i-1]==='number'&&typeof items[i+1]==='number'&&items[i+1]-items[i-1]>2)));
+  }
 });

@@ -1,5 +1,6 @@
 import { DEMO_PAPERS } from "../data/demoPapers";
 import type { Paper, SearchField, SearchQuery, SearchResult } from "../types";
+export { highlightParts, safePlainText } from "./highlight";
 
 function searchableField(paper: Paper, field: SearchField): string {
   if (field === "title") return paper.title;
@@ -50,23 +51,6 @@ export function searchDemo(query: SearchQuery): SearchResult {
   const offset = (query.page - 1) * query.pageSize;
   return { papers: all.slice(offset, offset + query.pageSize), total: all.length,
     page: query.page, pageSize: query.pageSize, durationMs: null, dataKind: "demo" };
-}
-
-/** HTML-like text is rendered as safe React text; no dangerouslySetInnerHTML. */
-export function safePlainText(value: string): string {
-  return value.replace(/<[^>]*>/g, "");
-}
-
-export function highlightParts(value: string, query: string): { text: string; match: boolean }[] {
-  const plain = safePlainText(value);
-  const terms = [...new Set(query.trim().split(/\s+/g).filter(Boolean))].sort((a, b) => b.length - a.length);
-  if (!terms.length) return [{ text: plain, match: false }];
-  const specials = "\\^$.*+?()[]{}|";
-  const escaped = terms.map((term) => term.split("").map((ch) => specials.includes(ch) ? "\\" + ch : ch).join(""));
-  const expression = new RegExp("(" + escaped.join("|") + ")", "gi");
-  return plain.split(expression).filter(Boolean).map((text) => ({
-    text, match: terms.some((term) => term.toLocaleLowerCase() === text.toLocaleLowerCase())
-  }));
 }
 
 export function recommendations(limit = 3): Paper[] {

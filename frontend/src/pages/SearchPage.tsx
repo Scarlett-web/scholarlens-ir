@@ -11,6 +11,7 @@ import {useAuth} from "../services/AuthContext";
 import {accountApi} from "../services/backend";
 import { FIELD_OPTIONS } from "../types";
 import { normalizeSearchPage, normalizeSearchField } from "../lib/searchParams";
+import { paginationItems } from "../lib/pagination";
 import type { SearchMode, SearchResult, SortBy } from "../types";
 const PAGE_SIZE = 6;
 function validYear(value: string): number | undefined {
@@ -130,11 +131,10 @@ export function SearchPage() {
   ];
 
   const totalPages = Math.max(1, Math.ceil((result?.total ?? 0) / PAGE_SIZE));
-  const pages = Array.from({length: totalPages}, (_, i) => i + 1).filter((n) =>
-    totalPages <= 7 || n === 1 || n === totalPages || Math.abs(n - page) <= 1);
+  const pages = paginationItems(page, totalPages);
   return (
     <div className="workspace-page content-wrap search-page">
-      <PageHeading eyebrow="RESEARCH / SEARCH" title="论文检索" desc="搜索题目、作者、机构或全文，逐步缩小结果范围。"/>
+      <PageHeading eyebrow="RESEARCH / SEARCH" title="论文检索"/>
       <SearchBox variant="compact" initialQuery={q} initialField={field} initialMode={mode}/>
       {blocked && <IntegrationNotice title="此检索模式尚未就绪" desc={capabilityError || capabilities?.[mode].reason || "正在检查模型与向量索引，请稍候。"}/>}
       {DATA_SOURCE === "api" && !q.trim() && <IntegrationNotice title="先浏览，再展开检索" desc="这里选取最多20篇近期论文，分页与年份筛选仅作用于这些候选。输入关键词可检索整个论文库。"/>}
@@ -167,7 +167,6 @@ export function SearchPage() {
             <details className="filter-data-details"><summary>关于检索数据</summary><p className="filter-small-note">{DATA_SOURCE === "demo" ?
               "本地演示按字符串出现次数排序，不属于 BM25。接入 FastAPI 后以服务器评分为准。" :
               "当前使用 API 模式，结果取决于实际后端索引和参数。"}</p></details>
-            <p className="filter-small-note">检索分数来自当前查询，不代表置信度，不宜跨查询比较。</p>
           </div>
         </aside>
         <section className="results-section" aria-live="polite" aria-busy={loading}>
@@ -202,8 +201,8 @@ export function SearchPage() {
               <div className="paper-list">{result.papers.map((paper,index) => <SearchRecord key={paper.paper_id} paper={paper} query={q} order={(page-1)*PAGE_SIZE+index+1}/>)}</div>
               <nav className="pagination" aria-label="论文结果分页">
                 <button disabled={page <= 1} onClick={() => update("page",String(page-1))}><ArrowLeft size={16}/> 上一页</button>
-                {pages.map((n) => <button className={n===page?"active":""} key={n} aria-current={n===page?"page":undefined}
-                  onClick={() => update("page",String(n))}>{n}</button>)}
+                {pages.map((n) => typeof n==="number"?<button className={n===page?"active":""} key={n} aria-label={"第 "+n+" 页"} aria-current={n===page?"page":undefined}
+                  onClick={() => update("page",String(n))}>{n}</button>:<span className="pagination-gap" key={n} aria-label="省略的页码">…</span>)}
                 <button disabled={page >= totalPages} onClick={() => update("page",String(page+1))}>下一页 <ArrowRight size={16}/></button>
               </nav>
             </> : <div className="empty-state">

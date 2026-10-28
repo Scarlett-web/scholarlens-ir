@@ -49,6 +49,21 @@ try{
     if(['affiliation','fulltext'].includes(field))await page.screenshot({path:join(output,field+'-desktop.png')});
     report.checks.push({field,q,total:data.total,highlight:true});
   }
+  const exactTitle='Simulating the Dynamics of the Dancing Lights';
+  const exact=await get('/api/search?'+new URLSearchParams({q:exactTitle}));
+  assert.equal(exact.total,1);assert.equal(exact.results[0].title,exactTitle);
+  assert.ok(!exact.results[0].highlights.affiliation);
+  const exactMarks=Object.values(exact.results[0].highlights).flat().flatMap(text=>[...text.matchAll(/<em>(.*?)<\/em>/g)].map(m=>m[1].toLowerCase()));
+  assert.ok(exactMarks.includes('dynamics'));assert.ok(!exactMarks.some(value=>['the','of'].includes(value)));
+  await page.goto(origin+'/search?'+new URLSearchParams({q:exactTitle}));
+  const exactRow=page.locator('.paper-record').first();await exactRow.waitFor();
+  assert.equal(await page.getByText(/检索分数/).count(),0);assert.equal(await page.locator('.page-heading p').count(),0);
+  assert.equal(await exactRow.locator('.paper-author').count(),3);
+  await exactRow.getByRole('button',{name:'更多作者（还有 1 位）',exact:true}).click();
+  assert.equal(await exactRow.locator('.paper-author').count(),4);
+  assert.ok((await exactRow.locator('[data-field="authors"]').textContent()).includes('Ian Bell'));
+  await page.screenshot({path:join(output,'exact-title-desktop.png')});
+  report.checks.push({exact_title:true,unrelated_stopword_highlights:false,full_author_list:true,score_hidden:true});
   await page.setViewportSize({width:390,height:844});
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
   await page.screenshot({path:join(output,'search-390.png')});

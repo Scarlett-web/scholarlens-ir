@@ -29,8 +29,8 @@ async function setup({user=false,admin=false,motion='reduce'}={}){
   if(path==='/capabilities')return json({modules:Object.fromEntries(['keyword_search','semantic_search','hybrid_search'].map(key=>[key,{status:'ready'}]))});
   if(path==='/suggest')return json({suggestions:[]});
   if(path==='/search'){
-   const rows=papers.filter(p=>(!url.searchParams.has('year_from')||p.year>=Number(url.searchParams.get('year_from')))&&(!url.searchParams.has('year_to')||p.year!==null&&p.year<=Number(url.searchParams.get('year_to'))));
-   return json({results:rows,total:13,page:Number(url.searchParams.get('page')||1),page_size:6,took_ms:7});
+   const rows=(state.searchRows||papers).filter(p=>(!url.searchParams.has('year_from')||p.year>=Number(url.searchParams.get('year_from')))&&(!url.searchParams.has('year_to')||p.year!==null&&p.year<=Number(url.searchParams.get('year_to'))));
+   return json({results:rows,total:state.searchTotal??13,page:Number(url.searchParams.get('page')||1),page_size:6,took_ms:7});
   }
   if(path==='/discover')return json({recommendations:papers,papers:859,years:[],example_searches:[]});
   if(path.startsWith('/papers/')&&method==='GET')return json(papers.find(p=>p.paper_id===decodeURIComponent(path.slice(8)))||papers[0]);
@@ -69,7 +69,8 @@ try{
  await page.goto(origin+'/search?q=fixture&field=title&mode=hybrid&from=2000&to=2026&page=2&sort=newest');
  await page.locator('.paper-record').first().waitFor();assert.equal(await page.locator('.search-conditions button').count(),4);
  assert.equal(await page.locator('.paper-list-index').first().textContent(),'07');
- assert.ok((await page.locator('.paper-record').first().textContent()).includes('检索分数 0'));
+ assert.equal(await page.getByText(/检索分数/).count(),0);
+ assert.equal(await page.locator('.page-heading p').count(),0);
  assert.equal(await page.locator('.paper-record').first().getByRole('link',{name:'查原文证据'}).getAttribute('href'),'/assistant?paper=fixture%3Asearch-a');
  await page.getByRole('button',{name:'移除字段：论文标题',exact:true}).click();
  await page.waitForFunction(()=>!new URLSearchParams(location.search).has('field')&&new URLSearchParams(location.search).get('page')==='1');
@@ -88,7 +89,37 @@ try{
  await page.getByRole('button',{name:'移除关键词：fixture',exact:true}).click();
  await page.getByText('近期论文选读',{exact:true}).waitFor();
  assert.equal(new URL(page.url()).searchParams.has('q'),false);
- report.checks.push('search row order, year, zero raw score, direct evidence and reading links, guest favorite, filter removal resets page and preserves other parameters, blank discover boundary, desktop/390 geometry');
+ report.checks.push('search row order, year, hidden score and removed heading note, direct evidence and reading links, guest favorite, filter removal resets page and preserves other parameters, blank discover boundary, desktop/390 geometry');
+
+ const names=['Fixture First Author','Fixture Second Author','Fixture Third Author','Fixture Fourth Researcher','Fixture Fifth Author','Fixture Sixth Author'];
+ state.searchRows=[{...papers[0],authors:names}];state.searchTotal=222;
+ await page.goto(origin+'/search?q=fixture&field=title&mode=keyword&from=2000&to=2026&page=1&sort=newest');
+ const row=page.locator('.paper-record').first(),authors=row.locator('[data-field="authors"]'),nav=page.getByRole('navigation',{name:'论文结果分页',exact:true});
+ await row.waitFor();assert.equal(await authors.locator('.paper-author').count(),3);
+ assert.ok((await authors.textContent()).includes('Fixture Third Author'));
+ await authors.getByRole('button',{name:'更多作者（还有 3 位）',exact:true}).click();
+ assert.equal(await authors.locator('.paper-author').count(),6);
+ for(const name of names)assert.ok((await authors.textContent()).includes(name));
+ assert.equal(await authors.getByRole('button',{name:'收起作者',exact:true}).getAttribute('aria-expanded'),'true');
+ await authors.getByRole('button',{name:'收起作者',exact:true}).click();assert.equal(await authors.locator('.paper-author').count(),3);
+ const pageItems=()=>nav.locator('button[aria-label^="第 "],.pagination-gap').allTextContents();
+ assert.deepEqual(await pageItems(),['1','2','3','4','5','…','37']);
+ await page.screenshot({path:join(output,'pagination-first-desktop.png')});
+ await nav.getByRole('button',{name:'第 5 页',exact:true}).click();await page.waitForFunction(()=>new URLSearchParams(location.search).get('page')==='5');await row.waitFor();
+ assert.deepEqual(await pageItems(),['1','…','4','5','6','…','37']);
+ for(const [key,value] of Object.entries({q:'fixture',field:'title',mode:'keyword',from:'2000',to:'2026',sort:'newest'}))assert.equal(new URL(page.url()).searchParams.get(key),value);
+ await nav.getByRole('button',{name:'第 37 页',exact:true}).click();await row.waitFor();
+ assert.deepEqual(await pageItems(),['1','…','33','34','35','36','37']);assert.equal(await nav.getByRole('button',{name:'下一页',exact:true}).isDisabled(),true);
+ await page.setViewportSize({width:390,height:844});await noOverflow(page);await page.setViewportSize({width:1440,height:1000});
+ state.searchRows=[{...papers[0],authors:names,highlights:{authors:['Fixture Fourth <em>Researcher</em>']}}];
+ await page.goto(origin+'/search?q=Researcher&field=authors');await row.waitFor();
+ assert.equal(await authors.locator('.paper-author').count(),3);assert.equal(await authors.locator('mark').textContent(),'Researcher');
+ assert.ok((await authors.textContent()).includes('Fixture First Author'));assert.ok((await authors.textContent()).includes('Fixture Fourth Researcher'));
+ await authors.getByRole('button',{name:'更多作者（还有 3 位）',exact:true}).click();
+ assert.equal(await authors.locator('.paper-author').count(),6);await noOverflow(page);
+ await page.screenshot({path:join(output,'authors-expanded-desktop.png')});
+ state.searchRows=undefined;state.searchTotal=undefined;
+ report.checks.push('six original authors expand/collapse; a later matched author stays visible and marked; 37-page first/middle/end windows include ellipses, preserve URL filters and stay within desktop/390 viewport');
 
  await page.goto(origin+'/account');await page.getByRole('heading',{name:'欢迎回来',exact:true}).waitFor();
  await page.getByLabel('用户名',{exact:true}).fill('fixture-user');await page.getByLabel('密码',{exact:true}).fill('fixture-only-password');

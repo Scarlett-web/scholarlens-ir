@@ -132,8 +132,8 @@ export function SiteLayout({ children }: { children: ReactNode }) {
     {toast&&<div className="toast" role="status"><Check size={17}/>{toast}</div>}
   </div>;
 }
-export function PageHeading({ eyebrow,title,desc,extra }: { eyebrow:string;title:string;desc:string;extra?:ReactNode }) {
-  return <section className="page-heading"><div><span className="page-kicker">{eyebrow.split("/")[0].trim()}</span><h1>{title}</h1><p>{desc}</p></div>{extra&&<div className="page-heading-extra">{extra}</div>}</section>;
+export function PageHeading({ eyebrow,title,desc,extra }: { eyebrow:string;title:string;desc?:string;extra?:ReactNode }) {
+  return <section className="page-heading"><div><span className="page-kicker">{eyebrow.split("/")[0].trim()}</span><h1>{title}</h1>{desc&&<p>{desc}</p>}</div>{extra&&<div className="page-heading-extra">{extra}</div>}</section>;
 }
 export function IntegrationNotice({title,desc}:{title:string;desc:string}) {
   return <div className="integration-notice" role="note"><span className="integration-orb"><Sparkles size={16}/></span><div><strong>{title}</strong><p>{desc}</p></div></div>;
