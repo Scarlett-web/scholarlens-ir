@@ -33,7 +33,7 @@ function LocalAdminPage(){
   return <div className="workspace-page content-wrap">
     <PageHeading eyebrow="LOCAL REVIEW WORKBENCH" title="审核工作台" desc="查看本地 PDF、记录审核意见并管理审核状态。"/>
     <ToolNavigation/>
-    <IntegrationNotice title="本地审核，不等于正式入库" desc="此工作台没有管理员鉴权或服务器审批功能；所有操作只作用于本浏览器。正式版本必须由后端执行权限校验、审计与索引更新。"/>
+    <IntegrationNotice title="本地审核，不等于正式入库" desc="此页只整理当前浏览器里的 PDF。正式审批、解析和入库请切换到服务端审核，由服务器核验管理员身份。"/>
     <div className="admin-stats">
       <div><ClipboardCheck size={22}/><span>本地文件总数</span><strong>{uploads.length}</strong></div>
       <div><Shield size={22}/><span>待审核</span><strong>{uploads.filter((u)=>u.status==="pending").length}</strong></div>
@@ -41,7 +41,7 @@ function LocalAdminPage(){
     </div>
     <section className="admin-queue">
       <div className="section-heading"><div><span className="eyebrow">REVIEW QUEUE</span><h2>审核队列</h2></div>
-        <Link className="button button-secondary" to="/upload">添加 PDF 文件</Link></div>
+        <Link className="button button-secondary" to="/upload?storage=local">添加本机 PDF</Link></div>
       <div className="admin-filters">
         <label><FileSearch size={17}/><input placeholder="按文件名筛选…" value={term} onChange={(e)=>setTerm(e.target.value)} aria-label="按文件名搜索"/></label>
         <div className="admin-filter-chips" role="group" aria-label="按审核状态筛选">
@@ -84,5 +84,5 @@ export function AdminPage(){
   const [params,setParams]=useSearchParams();
   const local=params.get("storage")==="local";
   const setLocal=(value:boolean)=>{const next=new URLSearchParams(params);if(value)next.set("storage","local");else next.delete("storage");setParams(next);};
-  return <><div className="content-wrap workbench-switch segmented" role="group" aria-label="文件保存位置"><button className={!local?"selected":""} onClick={()=>setLocal(false)}>服务端审核</button><button className={local?"selected":""} onClick={()=>setLocal(true)}>本机文件</button></div>{local?<LocalAdminPage/>:<ServerUploadWorkbench admin={true}/>}</>;
+  return <><div className="content-wrap workbench-switch segmented" role="group" aria-label="文件保存位置"><button type="button" aria-pressed={!local} className={!local?"selected":""} onClick={()=>setLocal(false)}>服务端审核</button><button type="button" aria-pressed={local} className={local?"selected":""} onClick={()=>setLocal(true)}>本机文件</button></div>{local?<LocalAdminPage/>:<ServerUploadWorkbench admin={true}/>}</>;
 }

@@ -130,5 +130,5 @@ export function UploadPage(){
   const [params,setParams]=useSearchParams();
   const local=params.get("storage")==="local";
   const setLocal=(value:boolean)=>{const next=new URLSearchParams(params);if(value)next.set("storage","local");else next.delete("storage");setParams(next);};
-  return <><div className="content-wrap workbench-switch segmented" role="group" aria-label="文件保存位置"><button className={!local?"selected":""} onClick={()=>setLocal(false)}>账户上传</button><button className={local?"selected":""} onClick={()=>setLocal(true)}>本机文件</button></div>{local?<LocalUploadPage/>:<ServerUploadWorkbench admin={false}/>}</>;
+  return <><div className="content-wrap workbench-switch segmented" role="group" aria-label="文件保存位置"><button type="button" aria-pressed={!local} className={!local?"selected":""} onClick={()=>setLocal(false)}>账户上传</button><button type="button" aria-pressed={local} className={local?"selected":""} onClick={()=>setLocal(true)}>本机文件</button></div>{local?<LocalUploadPage/>:<ServerUploadWorkbench admin={false}/>}</>;
 }

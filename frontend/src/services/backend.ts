@@ -61,7 +61,7 @@ export const accountApi = {
   clearHistory: () => backend("/me/history", {method:"DELETE"})
 };
 export const uploadApi = {
-  list: (admin=false,page=1) => backend<{results:ServerUpload[];total:number}>((admin?"/admin/uploads":"/uploads")+"?page_size=20&page="+page),
+  list: (admin=false,page=1,signal?:AbortSignal) => backend<{results:ServerUpload[];total:number}>((admin?"/admin/uploads":"/uploads")+"?page_size=20&page="+page,{signal}),
   upload: (file: File, admin=false) => { const form=new FormData();form.append("file",file);return backend<ServerUpload>(admin?"/admin/uploads":"/uploads",{method:"POST",body:form}); },
   review: (id:string,decision:"approve"|"reject",reason:string) => backend<ServerUpload>("/admin/uploads/"+encodeURIComponent(id)+"/review",{method:"POST",body:{decision,reason}}),
   process: (id:string) => backend<ServerUpload>("/admin/uploads/"+encodeURIComponent(id)+"/process",{method:"POST"}),

@@ -39,3 +39,14 @@ pwsh -File tools/audit/run-audit.ps1 -TargetUrl https://scholarlens.lingion.cc.c
 ```
 
 报告输出到 `tools/audit/reports/<timestamp>/`，默认被 Git 忽略。缺少 Semgrep 或 Gitleaks 时会标记 `not_installed`，不会伪造通过。
+
+## PDF 工作区与审核界面回归
+
+复用本目录锁文件中局部 Playwright CLI 带入的 Playwright；使用已安装的 Chrome，无需全局安装。先启动真实 API 模式的前端预览，再在仓库根运行：
+
+```powershell
+$env:SCHOLARLENS_URL='http://127.0.0.1:4175'
+node tools/audit/upload-workflow-browser.mjs
+```
+
+脚本只接受 localhost 地址，所有 API 请求被明确的 fixture 拦截，未知请求使检查失败。覆盖游客/研究账户/管理员权限界面、上传确认、状态与操作、失败恢复、串行刷新和账户失效隔离，报告和截图写入忽略目录。它验证界面与接口契约，不代表真实登录、PDF 解析、入库或生产审批已经端到端通过；真实 API 游客回归独立使用 `frontend/` 的 `npm run test:browser`。

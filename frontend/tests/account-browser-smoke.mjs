@@ -176,6 +176,8 @@ async function run(){
  await navigate('/upload');await waitFor("document.querySelector('.account-panel input[type=file]')!==null");
  const root=await send('DOM.getDocument');const input=await send('DOM.querySelector',{nodeId:root.root.nodeId,selector:'.account-panel input[type=file]'});
  await send('DOM.setFileInputFiles',{nodeId:input.nodeId,files:[path.resolve('tests/fixtures/browser-upload.pdf')]});
+ await waitFor("document.querySelector('.server-selected-file')!==null");
+ await click('.server-selected-file .button-primary');
  await waitFor("document.querySelector('.server-upload-row strong')?.textContent==='browser-upload.pdf'");
  assert.ok(await evaluate("document.querySelector('.server-upload-row').textContent.includes('待审核')"));
  await click('.server-upload-row button:first-child');
