@@ -38,6 +38,10 @@ export async function backend<T>(path: string, options: Options = {}): Promise<T
       throw new BackendError(raw?.error?.message || "请求失败（HTTP " + response.status + "）", response.status, raw?.error?.code || "request_failed");
     }
     return (options.blob ? await response.blob() : await response.json()) as T;
+  } catch (cause) {
+    if (controller.signal.aborted && !options.signal?.aborted) throw new Error("请求超时，请稍后重试。");
+    if (cause instanceof TypeError) throw new Error("无法连接服务，请检查网络后重试。");
+    throw cause;
   } finally {
     window.clearTimeout(timeout); options.signal?.removeEventListener("abort", cancel);
   }

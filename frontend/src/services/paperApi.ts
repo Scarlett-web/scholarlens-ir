@@ -65,7 +65,7 @@ export function createPaperApi(base: string, transport: typeof fetch = fetch) {
       return json;
     } catch (error) {
       if (controller.signal.aborted) throw new Error("后端请求超时，请稍后重试。");
-      if (error instanceof TypeError) throw new Error("无法连接论文服务，请检查本地后端是否已启动。");
+      if (error instanceof TypeError) throw new Error("无法连接论文服务，请检查网络后重试。");
       throw error;
     } finally { clearTimeout(timer); }
   }

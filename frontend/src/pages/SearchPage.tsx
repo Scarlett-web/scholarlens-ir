@@ -10,7 +10,8 @@ import { useSearchCapabilities } from "../services/useSearchCapabilities";
 import {useAuth} from "../services/AuthContext";
 import {accountApi} from "../services/backend";
 import { FIELD_OPTIONS } from "../types";
-import type { SearchField, SearchMode, SearchResult, SortBy } from "../types";
+import { normalizeSearchPage, normalizeSearchField } from "../lib/searchParams";
+import type { SearchMode, SearchResult, SortBy } from "../types";
 const PAGE_SIZE = 6;
 function validYear(value: string): number | undefined {
   if (!value.trim()) return undefined;
@@ -24,10 +25,10 @@ export function SearchPage() {
   const {user}=useAuth();
   const lastRecorded=useRef("");
   const q = params.get("q") ?? "";
-  const field = (FIELD_OPTIONS.some((x) => x.value === params.get("field")) ? params.get("field") : "all") as SearchField;
   const mode = (["keyword", "semantic", "hybrid"].includes(params.get("mode") ?? "") ?
     params.get("mode") : "keyword") as SearchMode;
-  const page = Math.max(1, Number(params.get("page") ?? 1) || 1);
+  const field = normalizeSearchField(params.get("field"), mode);
+  const page = normalizeSearchPage(params.get("page"));
   const sort = (["relevance", "newest", "oldest", "title"].includes(params.get("sort") ?? "") ?
     params.get("sort") : "relevance") as SortBy;
   const fromValue = params.get("from") ?? "";
@@ -50,14 +51,26 @@ export function SearchPage() {
   useEffect(() => { setDraftFrom(fromValue); setDraftTo(toValue); }, [fromValue, toValue]);
   useEffect(() => {
     let active = true;
+    const normalized = new URLSearchParams(params);
+    if (params.has("page") && params.get("page") !== String(page)) normalized.set("page", String(page));
+    if (params.has("field") && params.get("field") !== field) normalized.set("field", field);
+    if (normalized.toString() !== params.toString()) {
+      setParams(normalized, {replace:true}); return;
+    }
     if (blocked || invalidYears) { setResult(null); setError(null); setLoading(false); return; }
     setLoading(true); setError(null); setResult(null);
     searchPapers({ q, field, mode, page, pageSize: PAGE_SIZE, sort, yearFrom, yearTo })
-      .then((data) => { if (active) {setResult(data);if(user&&q.trim()&&lastRecorded.current!==JSON.stringify([user.id,q,field,mode])){lastRecorded.current=JSON.stringify([user.id,q,field,mode]);void accountApi.recordQuery(q,field,mode).catch(()=>notify("检索成功，但账户搜索历史未能保存"));}} })
+      .then((data) => { if (active) {
+        const lastPage = Math.max(1, Math.ceil(data.total / PAGE_SIZE));
+        if (page > lastPage) {
+          const next = new URLSearchParams(params); next.set("page", String(lastPage));
+          setParams(next, {replace:true}); return;
+        }
+        setResult(data);if(user&&q.trim()&&lastRecorded.current!==JSON.stringify([user.id,q,field,mode])){lastRecorded.current=JSON.stringify([user.id,q,field,mode]);void accountApi.recordQuery(q,field,mode).catch(()=>notify("检索成功，但账户搜索历史未能保存"));}} })
       .catch((cause) => { if (active) setError(cause instanceof Error ? cause.message : "检索请求失败"); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [q, field, mode, page, sort, yearFrom, yearTo, blocked, invalidYears, retryKey]);
+  }, [q, field, mode, page, sort, yearFrom, yearTo, blocked, invalidYears, retryKey, params, setParams]);
 
   const update = (key: string, value: string) => {
     const next = new URLSearchParams(params);

@@ -72,7 +72,7 @@ export function SiteLayout({ children }: { children: ReactNode }) {
       <span className="sidebar-section-label sidebar-tools-label">研究工具</span>
       <nav className="sidebar-tools" aria-label="研究工具">
         {TOOL_NAV.map(({to,label,Icon})=><NavLink key={to} to={to} className={({isActive})=>"tool-item"+(isActive?" active":"")}>
-          <Icon size={18} strokeWidth={1.7}/><span>{label}</span>{to==="/assistant"&&<small>预留</small>}
+          <Icon size={18} strokeWidth={1.7}/><span>{label}</span>{to==="/assistant"&&<small>可配置</small>}
         </NavLink>)}
       </nav>
       <div className="sidebar-bottom">

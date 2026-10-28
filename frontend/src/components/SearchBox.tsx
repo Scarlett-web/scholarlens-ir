@@ -6,6 +6,7 @@ import type { SearchField, SearchMode } from "../types";
 import { DATA_SOURCE, getSuggestions } from "../services/papers";
 import { useSearchCapabilities } from "../services/useSearchCapabilities";
 import { readLocal, writeLocal } from "../lib/storage";
+import { normalizeSearchField } from "../lib/searchParams";
 
 interface Props {
   variant?: "hero" | "compact";
@@ -22,7 +23,12 @@ export function SearchBox({ variant = "hero", initialQuery = "", initialField = 
   const [suggestions, setSuggestions] = useState<{text: string; field: string}[]>([]);
   const {capabilities, error: capabilityError} = useSearchCapabilities();
   const [focused, setFocused] = useState(false);
-  const [recent, setRecent] = useState<string[]>(() => readLocal<string[]>("recent-queries", []));
+  const [dismissed, setDismissed] = useState(false);
+  const [activeSuggestion, setActiveSuggestion] = useState(-1);
+  const [recent, setRecent] = useState<string[]>(() => {
+    const stored = readLocal<unknown>("recent-queries", []);
+    return Array.isArray(stored) ? stored.filter((item): item is string => typeof item === "string").slice(0,8) : [];
+  });
 
   useEffect(() => { setQ(initialQuery); }, [initialQuery]);
   useEffect(() => { setField(initialField); }, [initialField]);
@@ -37,6 +43,9 @@ export function SearchBox({ variant = "hero", initialQuery = "", initialField = 
     return () => { active = false; window.clearTimeout(timer); };
   }, [q, focused]);
   const recentVisible = focused && q.trim().length === 0 && recent.length > 0;
+  const choices = recentVisible ? recent.map(text => ({text, field})) : suggestions;
+  const showChoices = focused && !dismissed && choices.length > 0;
+  useEffect(() => { setActiveSuggestion(-1); }, [q, suggestions]);
 
   const submit = (term = q, suggestionField = field) => {
     const clean = term.trim();
@@ -45,7 +54,7 @@ export function SearchBox({ variant = "hero", initialQuery = "", initialField = 
     const next = [clean, ...recent.filter((item) => item.toLocaleLowerCase() !== clean.toLocaleLowerCase())].slice(0, 8);
     setRecent(next);
     writeLocal("recent-queries", next);
-    const params = new URLSearchParams({ q: clean, field: suggestionField, mode, page: "1" });
+    const params = new URLSearchParams({ q: clean, field: normalizeSearchField(suggestionField, mode), mode, page: "1" });
     navigate("/search?" + params.toString());
   };
 
@@ -65,23 +74,43 @@ export function SearchBox({ variant = "hero", initialQuery = "", initialField = 
           </select>
           <span className="field-caret" aria-hidden="true">⌄</span>
         </div>
-        <div className="search-input-wrap">
+        <div className="search-input-wrap" onBlur={event => {
+          if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false);
+        }}>
           <Search size={20} strokeWidth={1.8} />
-          <input id="main-search-input" value={q} onChange={(event) => setQ(event.target.value)}
-            onFocus={() => setFocused(true)}
-            onBlur={() => window.setTimeout(() => setFocused(false), 180)}
+          <input id="main-search-input" value={q} onChange={(event) => {setQ(event.target.value);setDismissed(false);}}
+            onFocus={() => {setFocused(true);setDismissed(false);setActiveSuggestion(-1);}}
+            role="combobox" aria-autocomplete="list" aria-expanded={showChoices}
+            aria-controls={showChoices ? "main-search-suggestions" : undefined}
+            aria-activedescendant={showChoices && activeSuggestion >= 0 ? "search-choice-" + activeSuggestion : undefined}
+            onKeyDown={event => {
+              if (event.nativeEvent.isComposing) return;
+              if (event.key === "Escape") { event.preventDefault(); setDismissed(true); setActiveSuggestion(-1); return; }
+              if ((event.key === "ArrowDown" || event.key === "ArrowUp") && choices.length) {
+                event.preventDefault(); setFocused(true); setDismissed(false);
+                const next = event.key === "ArrowDown" ? (activeSuggestion + 1) % choices.length : (activeSuggestion <= 0 ? choices.length - 1 : activeSuggestion - 1);
+                setActiveSuggestion(next);
+                document.getElementById("search-choice-" + next)?.scrollIntoView({block:"nearest"});
+              } else if (event.key === "Enter" && showChoices && activeSuggestion >= 0) {
+                event.preventDefault(); const choice = choices[activeSuggestion];
+                if (choice) submit(choice.text, normalizeSearchField(choice.field, mode));
+              }
+            }}
             placeholder="搜索论文、作者、机构或研究主题…" autoComplete="off" aria-label="论文关键词" />
-          {(suggestions.length > 0 || recentVisible) && <div className="suggestion-popover" role="listbox" aria-label="搜索建议">
+          {showChoices && <div className="suggestion-popover">
             {recentVisible ? <div className="suggestion-head">
               <span><Clock3 size={13}/> 最近搜索 · 仅保存在此浏览器</span>
               <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={clearRecent} aria-label="清空最近搜索">
                 <Trash2 size={13}/> 清空
               </button>
             </div> : <span>{DATA_SOURCE === "demo" ? "本地示例论文标题建议" : "论文标题与作者建议"}</span>}
-            {(recentVisible ? recent.map(text => ({text, field})) : suggestions).map((item) =>
-              <button key={item.text} type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => submit(item.text, (FIELD_OPTIONS.some(x => x.value === item.field) ? item.field : field) as SearchField)}>
+            <div id="main-search-suggestions" role="listbox" aria-label="搜索建议">
+              {choices.map((item,index) => <button key={item.field+":"+item.text} id={"search-choice-"+index} type="button" role="option" tabIndex={-1}
+                aria-selected={index===activeSuggestion} onMouseDown={event=>event.preventDefault()}
+                onClick={()=>submit(item.text, normalizeSearchField(item.field,mode))}>
                 {item.text}<ArrowRight size={14}/>
               </button>)}
+            </div>
           </div>}
         </div>
         <button type="submit" className="search-submit">{variant === "hero" ? "开始检索" : "搜索"} <ArrowRight size={18}/></button>

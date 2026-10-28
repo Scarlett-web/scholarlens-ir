@@ -270,3 +270,7 @@ coverage/
 frontend/output/
 frontend/qa-*.png
 !frontend/tests/fixtures/browser-upload.pdf
+
+# Frontend application source is not a Python distribution lib directory.
+!/frontend/src/lib/
+!/frontend/src/lib/*.ts

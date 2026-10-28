@@ -116,6 +116,20 @@ async function runApi() {
   await evaluate("document.querySelector('#main-search-input').focus()");
   await waitFor("document.querySelector('.suggestion-popover button')!==null");
   assert.ok(await evaluate("document.querySelector('.suggestion-popover').textContent.includes('作者建议')"));
+  await send("Input.dispatchKeyEvent",{type:"keyDown",key:"ArrowDown",code:"ArrowDown"});
+  await send("Input.dispatchKeyEvent",{type:"keyUp",key:"ArrowDown",code:"ArrowDown"});
+  const suggestion=await waitFor("document.querySelector('[role=option][aria-selected=true]')?.textContent");
+  await send("Input.dispatchKeyEvent",{type:"keyDown",key:"Escape",code:"Escape"});
+  await send("Input.dispatchKeyEvent",{type:"keyUp",key:"Escape",code:"Escape"});
+  await waitFor("document.querySelector('#main-search-input').getAttribute('aria-expanded')==='false'");
+  await send("Input.dispatchKeyEvent",{type:"keyDown",key:"ArrowDown",code:"ArrowDown"});
+  await send("Input.dispatchKeyEvent",{type:"keyUp",key:"ArrowDown",code:"ArrowDown"});
+  assert.equal(await waitFor("document.querySelector('[role=option][aria-selected=true]')?.textContent"),suggestion);
+  await send("Input.dispatchKeyEvent",{type:"keyDown",key:"Enter",code:"Enter",windowsVirtualKeyCode:13});
+  await send("Input.dispatchKeyEvent",{type:"keyUp",key:"Enter",code:"Enter",windowsVirtualKeyCode:13});
+  await waitFor("location.pathname==='/search' && document.querySelectorAll('.paper-card').length>0");
+  assert.equal(await evaluate("new URLSearchParams(location.search).get('q')"),suggestion);
+  await evaluate("(()=>{const el=document.querySelector(\'[aria-label=选择检索字段]\');el.value=\'all\';el.dispatchEvent(new Event(\'change\',{bubbles:true}));})()");
   await fill("#main-search-input","magnetic");
   await click(".search-submit");
   await waitFor("document.querySelectorAll('.paper-card').length===6");
@@ -128,11 +142,13 @@ async function runApi() {
   await waitFor("new URLSearchParams(location.search).get('page')==='2' && document.querySelector('.paper-card')?.dataset.paperId!=="+q(firstId));
   await evaluate("(()=>{const el=document.querySelector('[aria-label=排序方式]');el.value='newest';el.dispatchEvent(new Event('change',{bubbles:true}));})()");
   await waitFor("new URLSearchParams(location.search).get('sort')==='newest' && document.querySelectorAll('.paper-card').length===6");
+  await waitFor("(()=>{const years=Array.from(document.querySelectorAll('.paper-card .paper-meta-line')).map(el=>Number(el.textContent.match(/\\d{4}/)?.[0])).filter(Number.isFinite);return years.length>1&&years.every((year,i)=>!i||years[i-1]>=year)})()");
   const years=await evaluate("Array.from(document.querySelectorAll('.paper-card .paper-meta-line')).map(el=>Number(el.textContent.match(/\\d{4}/)?.[0])).filter(Number.isFinite)");
   assert.ok(years.every((year,i)=>!i||years[i-1]>=year));
   await fill(".year-inputs label:first-child input","2000");
   await click(".filter-apply-button");
   await waitFor("new URLSearchParams(location.search).get('from')==='2000' && document.querySelectorAll('.paper-card').length>0");
+  await waitFor("document.querySelectorAll('.paper-card').length>0 && Array.from(document.querySelectorAll('.paper-meta-line')).every(el=>Number(el.textContent.match(/\\d{4}/)?.[0])>=2000)");
   assert.ok(await evaluate("Array.from(document.querySelectorAll('.paper-meta-line')).every(el=>Number(el.textContent.match(/\\d{4}/)?.[0])>=2000)"));
   const shot=await send("Page.captureScreenshot",{format:"png",captureBeyondViewport:false});
   fs.mkdirSync("output/api-integration",{recursive:true});
@@ -202,7 +218,7 @@ async function runApi() {
   assert.ok(await evaluate("document.documentElement.scrollWidth<=innerWidth"));
   const mobile=await send("Page.captureScreenshot",{format:"png",captureBeyondViewport:false});
   fs.writeFileSync("output/api-integration/home-390.png",Buffer.from(mobile.data,"base64"));
-  console.log("PASS real API browser: 859 papers, suggestions, 61 magnetic hits, BM25 snippets, pagination, year sorting/filtering, detail, local favorites/notes, recent reading, server random discovery, empty query, semantic/hybrid capabilities and actual ranking/pagination when ready, old demo bookmark, missing detail, desktop/390 geometry");
+  console.log("PASS real API browser: 859 papers, keyboard suggestions and Escape reopening, 61 magnetic hits, BM25 snippets, pagination, year sorting/filtering, detail, local favorites/notes, recent reading, server random discovery, empty query, semantic/hybrid capabilities and actual ranking/pagination when ready, old demo bookmark, missing detail, desktop/390 geometry");
 }
 
 async function browserFetch(url){

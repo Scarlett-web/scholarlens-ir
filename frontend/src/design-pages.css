@@ -120,7 +120,7 @@
 .search-input-wrap input::placeholder{color:#86868b}
 .search-input-wrap svg{color:#86868b}
 .suggestion-popover{border:1px solid var(--app-hairline);border-radius:12px;box-shadow:0 8px 24px #1d1d1f14}
-.suggestion-popover button:hover{background:var(--app-canvas)}
+.suggestion-popover button:hover,.suggestion-popover button[aria-selected=true]{background:var(--app-canvas);color:var(--app-blue)}
 .search-options{position:relative;width:max-content;margin:8px 0 0 auto;font-size:12px;color:var(--app-muted);text-align:left}
 .search-options summary{display:flex;align-items:center;gap:4px;cursor:pointer;list-style:none;padding:4px 0}
 .search-options summary::-webkit-details-marker{display:none}

@@ -76,14 +76,14 @@ export function PaperPage() {
   };
 
   return <div className="workspace-page content-wrap detail-page">
-    <button className="back-link" onClick={()=>navigate(-1)}><ArrowLeft size={16}/> 返回上一页</button>
+    <button className="back-link" onClick={()=>{if(Number.isInteger(window.history.state?.idx)&&window.history.state.idx>0)navigate(-1);else navigate("/search",{replace:true});}}><ArrowLeft size={16}/> 返回上一页</button>
     {loading?<div className="empty-state"><FileText size={29}/> 正在加载论文…</div>:
     error?<div className="empty-state error-state">{error}<Link to="/search" className="button button-secondary">返回检索</Link></div>:
     !paper?<div className="empty-state"><FileQuestion size={33}/><h2>没有找到这篇论文</h2><Link to="/search" className="button button-primary">返回搜索</Link></div>:<>
       <div className="detail-header">
         <div className="detail-tags">{demoPaper?<DemoBadge/>:<span className="paper-source-tag">来自论文检索服务</span>}
           {paper.year&&<span className="year-pill"><Calendar size={14}/>{paper.year}</span>}
-          {paper.parse_status!=="unknown"&&<span className="year-pill">解析状态：{paper.parse_status}</span>}
+          {paper.parse_status!=="unknown"&&<span className="year-pill">解析状态：{{success:"已解析",partial:"部分解析",error:"解析异常"}[paper.parse_status]}</span>}
         </div>
         <h1>{paper.title}</h1>
         <p className="detail-authors">{paper.authors.length?paper.authors.join(" · "):"作者信息暂缺"}</p>
@@ -98,7 +98,7 @@ export function PaperPage() {
           </button>:<span className="button button-disabled" aria-disabled="true"><FileText size={17}/> PDF 尚不可用</span>}
           {canOpenPdf&&<button className="button button-secondary" disabled={converting} onClick={async()=>{setConverting(true);try{const blob=await backend<Blob>("/papers/"+encodeURIComponent(paper.paper_id)+"/docx",{blob:true});const url=URL.createObjectURL(blob),link=document.createElement("a");link.href=url;link.download=paper.title.replace(/[\\/:*?"<>|]/g,"_").slice(0,100)+".docx";link.click();window.setTimeout(()=>URL.revokeObjectURL(url),60000);notify("DOCX 已下载：文本转换，不保留复杂版式");}catch(cause){notify(cause instanceof Error?cause.message:"转换失败");}finally{setConverting(false);}}}><Download size={16}/>{converting?"正在转换…":"下载 DOCX"}</button>}
           <Link className="button button-secondary" to={"/assistant?paper="+encodeURIComponent(paper.paper_id)}>
-            <Sparkles size={16}/> AI 问答（需配置）
+            <Sparkles size={16}/> 论文 AI 助手
           </Link>
         </div>
       </div>
@@ -108,7 +108,7 @@ export function PaperPage() {
             <ExternalLink size={16}/> 在独立窗口打开
           </a>
         </div><iframe className="embedded-reader-frame" src={pdfUrl(paper.paper_id)} title={"PDF 原文："+paper.title}/>
-        <p>PDF 由你自己的 FastAPI 返回。如果浏览器阻止内嵌，请使用“在独立窗口打开”。</p>
+        <p>正在阅读原始 PDF。若浏览器无法内嵌显示，请选择“在独立窗口打开”，也可使用阅读器下载原件。</p>
       </section>}
       <div className="detail-grid">
         <article className="detail-main">
@@ -129,7 +129,7 @@ export function PaperPage() {
               {full.length>4500&&<button className="text-action" onClick={()=>setExpanded(!expanded)}>
                 {expanded?<ChevronUp size={16}/>:<ChevronDown size={16}/>}
                 {expanded?"收起全文":"展开全部全文"}
-              </button>}</>:<p className="muted">源数据没有提供可阅读的全文。</p>}
+              </button>}</>:<p className="muted">{canOpenPdf?"这篇论文暂无提取文本，请使用上方的 PDF 原文阅读。":"源数据没有提供可阅读的文本。"}</p>}
           </div>
           <IntegrationNotice title="引用前请核对原始文献" desc={demoPaper?
             "本页是虚构示例论文，所有作者、题目、摘要均不可作为真实学术引用。":
