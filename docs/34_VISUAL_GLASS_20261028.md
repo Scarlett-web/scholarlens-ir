@@ -1,6 +1,8 @@
 # 34 外观玻璃化与透明控制（2026-10-28）
 
-本轮把界面环境从"冰川夜 + 深色侧栏"改成"日间冰川 + 纯白玻璃"，并把玻璃透明度做成用户可切换的三档预设。**只改视觉层，未改变任何路由、接口、数据流、交互逻辑。**
+本轮把界面环境从"冰川夜 + 深色侧栏"改成"日间冰川 + 纯白玻璃"，并新增用户可切换、按浏览器保存的三档玻璃偏好。**保留既有业务路由、接口与业务数据流；新增透明度交互，并调整了首页倾斜动效幅度。**
+
+本页记录原始实现；2026-10-28 独立复核、推送及线上发布结果见 [白玻璃发布验收](35_GLASS_RELEASE_ACCEPTANCE_20261028.md)。
 
 ## 1. 来源与授权
 
@@ -164,13 +166,9 @@ export const normalizeGlass = (value: unknown): GlassLevel => ...;
 powershell -NoProfile -ExecutionPolicy Bypass -File output/glass-daylight/rollback.ps1
 ```
 
-### B. 回到仓库 HEAD（取消两轮外观改动）
+### B. 回到玻璃改动前的代码
 
-```powershell
-cd dev\scholarlens-ir\zjl
-git checkout -- frontend/src/App.tsx frontend/src/components/Layout.tsx `
-  frontend/src/design-core.css frontend/src/design-pages.css frontend/src/pages/HomePage.tsx
-```
+玻璃实现已在 `5f4c82b` 提交，当前 HEAD 已包含这版样式，因此恢复当前 HEAD 不能取消外观改动，还可能丢弃后续未提交工作。需要回退源码时，先备份当前工作，再针对 `5f4c82b` 创建反向提交并重新验证；改动前参照提交为 `48ee82a`。线上应优先使用本批次独立发布回滚脚本，见 [发布验收](35_GLASS_RELEASE_ACCEPTANCE_20261028.md)，不要直接覆盖在线文件。
 
 ### C. 手工覆盖
 
