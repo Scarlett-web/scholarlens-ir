@@ -33,3 +33,19 @@
 新增 `npm run build:production`：Node 直接调用本地 TypeScript/Vite，显式设置 `VITE_DATA_SOURCE=api`、`VITE_API_BASE_URL=/api`，不引入 shell 语法或依赖，不更改原有 demo 开发命令和用户配置。构建成功后输出 `dist/build-info.json`，记录实际生产命令、入口 HTML 和所有 JS/CSS 哈希。打包时要求生产标记和全部哈希一致；验收要同时检查浏览器显示 859 篇、真实论文 ID、关系图按需加载和后台真实检索。没有 AI 密钥进入构建。
 
 生产构建入口为 `index-DMO5iCB9.js`、`index-iMz_cIFO.css`，关系图按需 chunk 为 `PaperConstellation-vZc3lAjl.js`。该共享 Node 入口在 Windows 实际构建和浏览器回归；Linux 线上消费其静态构建。macOS 未实跑，不据此宣称已在 Mac 验收。
+
+## 正式发布与公网验收
+
+2026-10-28 12:22（北京时间）完成正式部署，源码提交 `3f8f7dd7a22b830c44b6c9d649158dce79c7f08e` 已推送 `origin/zjl`，应用 release 为 `20261028T042155Z-3f8f7dd`。发布包 228 个文件，SHA-256 为 `ffe31d3185d67b8b43e2556201b6b433c64965ff873ffc0c3a75946d1ca3f4f4`。此前首次演示构建的证据独立保留在本机 `attempt-demo-59d7ea7/`，没有作为成功版本交付。
+
+切换前保留 `/opt/scholarlens/releases/20261028T035053Z-a3b468e`；一致性数据库备份、环境副本和 rollback 脚本保存在 `/opt/scholarlens/backups/20261028T042155Z-3f8f7dd`，权限限制为 root。SQLite 备份完整性通过，rollback 脚本语法检查通过。实际首次恢复已验证旧版可正常启动。正式部署前后均为 859 篇、25 个用户；环境文件哈希一致、Cloudflare Tunnel PID 和 ES 容器身份及启动时间不变。两个后端依赖文件字节一致，没有重装依赖、改索引、改域名或重启其他服务。
+
+正式构建在交付仓库通过 `build:production`、25 项测试、结构检查和完整真实 API 游客 Chrome 回归。构建预览经现有本机 API 代理验收；一次直接代理公网的尝试遭遇 Node TLS 连接重置，未将该失败报告为通过。随后独立公网浏览器与系统 curl 路径均验收成功：
+
+- <https://scholarlens.lingion.cc.cd/> 实际加载本次 JS/CSS。公网 `build-info.json` 明确 `api`、`/api`，文件哈希与 manifest 一致；三个 JS/CSS（包括按需组件）分别通过完整 SHA-256 核对。Cloudflare 可插入统计脚本，因此公网入口检查采用实际资源入口和独立资源哈希，不要求经 CDN 的 HTML 与源站字节完全相同。
+- 探索页明确显示“真实论文库 · 859 篇”；列表 9 篇真实论文，关系图 20 个 `source-sha256:` 节点、1 组有依据的连线，选择后详情链接与当前节点一致，点击后打开真实论文正文。桌面无横向溢出；控制台错误为 0。
+- 公网评测页返回 10 篇真实结果、真实引擎耗时；未标注时 Precision/nDCG 显示“待标注”，完成率为 0%，无页面错误。已等待数据与入场效果稳定，实际查看最终截图。
+- `/api/stats` 为 859，`magnetic` 检索命中 61；Agent 返回 5 条真实证据、版本 `0.2.0`、步骤 `search_papers` 与 `verify_sources`，模型 `not_called`。本批没有配置或测试个人供应商生成。
+- 原 PDF Range 返回 206，64 字节以 `%PDF-` 开始；robots 正确返回文本，1600px 和 2560px 冰岛图片哈希与本次发布一致。
+
+最终机器证据见 `output/deploy-map-metrics-20261028/public-checks.json`、`origin-deployment-report.json`；公网截图为 `public-research-map.png`、`public-evaluation-pending-final.png`（均在外层开发工作区、Git 忽略目录）。后续此发布记录的文档提交不改变应用资源，无需再次重启服务。本次完成这一批发布，不代表其余逐页优化、真实个人模型生成或全局安全审计已经完成。
