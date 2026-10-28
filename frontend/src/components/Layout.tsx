@@ -112,7 +112,7 @@ export function SiteLayout({ children }: { children: ReactNode }) {
         </div>}
       </header>
       {DATA_SOURCE==="demo"&&<div className="environment-strip" role="status"><span className="env-dot"/>演示空间 · 18 篇虚构示例论文，非真实研究数据</div>}
-      <main id="main" className="site-main">{children}</main>
+      <main id="main" className="site-main" key={pathname}>{children}</main>
       <footer className="site-footer footer-light"><div className="content-wrap footer-inner">
         <span className="footer-motto">ScholarLens <span>把注意力留给研究本身。</span></span>
         <div className="footer-links"><Link to="/search">论文检索</Link><Link to="/library">我的文献</Link><Link to="/evaluation">检索评测</Link></div>

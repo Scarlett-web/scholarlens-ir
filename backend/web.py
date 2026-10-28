@@ -6,6 +6,14 @@ from fastapi import HTTPException
 from fastapi.responses import FileResponse
 
 
+FRONTEND_CSP = (
+    "default-src 'self'; script-src 'self'; connect-src 'self'; "
+    "style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; "
+    "frame-src 'self' blob:; object-src 'self' blob:; "
+    "base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
+)
+
+
 class BrowserHeadersMiddleware:
     """Add browser boundaries without buffering PDF ranges or streamed responses."""
 
@@ -67,7 +75,7 @@ def mount_frontend(app, directory):
                 cache = "no-cache"
             elif path.startswith("assets/") and re.fullmatch(r".+-[A-Za-z0-9_-]{8,}\.(?:js|css)", candidate.name):
                 cache = "public, max-age=31536000, immutable"
-            return FileResponse(candidate, headers={"Cache-Control": cache})
+            return FileResponse(candidate, headers={"Cache-Control": cache, "Content-Security-Policy": FRONTEND_CSP})
         if path.startswith(("assets/", "images/")) or "." in Path(path).name:
             raise HTTPException(404, "File not found")
-        return FileResponse(root / "index.html", headers={"Cache-Control": "no-cache"})
+        return FileResponse(root / "index.html", headers={"Cache-Control": "no-cache", "Content-Security-Policy": FRONTEND_CSP})

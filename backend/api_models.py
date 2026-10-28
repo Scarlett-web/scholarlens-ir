@@ -95,6 +95,7 @@ class PaperSummary(BaseModel):
     paper_id: str
     title: str
     authors: list[str]
+    affiliation: list[str] = Field(default_factory=list)
     year: int | None
     abstract: str
 

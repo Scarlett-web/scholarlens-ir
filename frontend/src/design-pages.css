@@ -272,6 +272,7 @@
 .explore-grid .paper-card h3{font-size:18px}
 .explore-grid .paper-card-footer{margin-top:24px}
 .explore-view-controls{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.explore-focus-note{display:flex;align-items:center;gap:12px;margin:0 0 24px;padding:12px 16px;border:1px solid var(--app-hairline);border-radius:12px;background:var(--glass-soft);color:var(--app-muted);font-size:12px;line-height:1.7}.explore-focus-note>svg{color:var(--app-blue);flex:none}.explore-focus-note.is-error{border-color:#e2b9b0;background:#fff8f6;color:#8c453b}.explore-focus-note.is-error>svg{color:#b2533f}.explore-focus-note span{flex:1;min-width:0}.explore-focus-note .text-action{flex:none}
 .paper-constellation{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(256px,1fr);gap:0;background:var(--paper);border:1px solid var(--glass-edge);border-radius:var(--r-panel);overflow:hidden;box-shadow:var(--glass-shadow)}
 .constellation-map{min-width:0;background:var(--glass-clear);padding:24px}
 .constellation-heading{display:flex;justify-content:space-between;align-items:center;gap:16px;font-size:12px;color:var(--app-muted)}
@@ -409,3 +410,4 @@
  .hero-paper-float,.home-topic:hover>svg,.home-library-link:hover,.explore-grid .paper-card:hover{transform:none!important}
  .apple-home .hero-label,.apple-home .hero h1,.apple-home .hero-subtitle,.apple-home .hero-caption,.home-search-area,.home-workspace[data-revealed=true]{animation:none}
 }
+@media(max-width:600px){.explore-focus-note{align-items:flex-start;flex-wrap:wrap}.explore-focus-note .text-action{margin-left:28px}}

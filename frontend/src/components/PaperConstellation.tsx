@@ -4,9 +4,20 @@ import { ArrowUpRight, Network, RotateCcw } from "lucide-react";
 import { buildPaperGraph, relationLabels } from "../lib/paperRelations";
 import type { Paper } from "../types";
 
-export default function PaperConstellation({ papers }: { papers: Paper[] }) {
-  const graph = useMemo(() => buildPaperGraph(papers), [papers]);
+/** Keep a visible focus node inside the graph's bounded input without changing other order. */
+export function prioritizeFocus(papers: Paper[], focusId?: string): Paper[] {
+  if (!focusId) return papers;
+  const index = papers.findIndex(paper => paper.paper_id === focusId);
+  if (index <= 0) return papers;
+  return [papers[index], ...papers.slice(0, index), ...papers.slice(index + 1)];
+}
+
+export default function PaperConstellation({ papers, focusId }: { papers: Paper[]; focusId?: string }) {
+  const graph = useMemo(() => buildPaperGraph(prioritizeFocus(papers, focusId)), [papers, focusId]);
   const [selected, setSelected] = useState("");
+  useEffect(() => {
+    setSelected(focusId && graph.nodes.some(node => node.paper.paper_id === focusId) ? focusId : "");
+  }, [focusId, graph]);
   const active = graph.nodes.find(node => node.paper.paper_id === selected)
     ?? graph.nodes.reduce<(typeof graph.nodes)[number] | undefined>((best, node) => !best || node.degree > best.degree ? node : best, undefined);
   const scene = useRef<HTMLDivElement>(null);
@@ -59,7 +70,7 @@ export default function PaperConstellation({ papers }: { papers: Paper[] }) {
       <h3>{active.paper.title}</h3><p className="constellation-authors">{active.paper.authors.join(" · ") || "作者信息暂缺"}</p>
       <Link className="text-action" to={"/paper/" + encodeURIComponent(active.paper.paper_id)}>阅读这篇论文 <ArrowUpRight size={15}/></Link>
       <div className="constellation-reasons"><h4>{relations.length ? "与 " + relations.length + " 篇候选存在共同字段" : "尚无共同字段"}</h4>
-        {!relations.length && <p>这批候选中暂未找到相同的作者姓名、关键词、标签或机构。仍可打开原文，或换一批继续探索。</p>}
+        {!relations.length && <p>这批候选中暂未找到可核对的共同元数据。仍可打开原文，或换一批继续探索。</p>}
         {relations.map(edge => {
           const other = graph.nodes.find(node => node.paper.paper_id === (edge.source === active.paper.paper_id ? edge.target : edge.source))!;
           return <button type="button" key={other.paper.paper_id} onClick={() => setSelected(other.paper.paper_id)}>

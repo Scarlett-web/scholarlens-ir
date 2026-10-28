@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {createPaperApi, normalizePaper, buildSearchParams} from "../src/services/paperApi.ts";
 import {serverHighlightParts} from "../src/lib/serverHighlight.ts";
+import {buildPaperGraph} from "../src/lib/paperRelations.ts";
 
 const query = {q:" magnetic ",field:"all",page:2,pageSize:6,sort:"newest",mode:"keyword",yearFrom:1990,yearTo:2026};
 const reply = data => new Response(JSON.stringify(data), {headers:{"Content-Type":"application/json"}});
@@ -27,6 +28,19 @@ test("sort, mode, pagination and years use FastAPI vocabulary", () => {
   assert.equal(buildSearchParams({...query,sort:"oldest",mode:"hybrid"}).get("sort"),"year_asc");
   assert.equal(buildSearchParams({...query,mode:"semantic"}).get("mode"),"semantic");
   assert.throws(()=>buildSearchParams({...query,sort:"title"}),/不支持/);
+});
+
+test("API summaries create only supplied institution relations without invented topic fields", () => {
+  const papers = [
+    {paper_id:"synthetic-a",title:"Fixture A",authors:["Author A"],affiliation:["Fixture university"]},
+    {paper_id:"synthetic-b",title:"Fixture B",authors:["Author B"],affiliation:["Fixture university"]},
+    {paper_id:"synthetic-c",title:"Fixture C",authors:[]}
+  ].map(normalizePaper);
+  assert.ok(papers.every(paper=>paper.topics.length===0 && paper.keywords.length===0));
+  const graph=buildPaperGraph(papers);
+  assert.equal(graph.edges.length,1);
+  assert.deepEqual(graph.edges[0].reasons,[{kind:"affiliation",value:"Fixture university"}]);
+  assert.equal(graph.nodes.find(node=>node.paper.paper_id==="synthetic-c").degree,0);
 });
 
 test("search keeps actual server count, zero score, highlights and elapsed time", async () => {

@@ -5,7 +5,7 @@
  --glass-edge:rgba(255,255,255,.8);--glass-shadow:0 16px 48px #173d5614, inset 0 1px 0 #ffffffb3;
  --app-hairline:rgba(70,109,134,.16);--app-blue:#0969a9;--app-blue-soft:#e1f1fb;--app-rail:224px;
  --r-control:8px;--r-panel:16px;--r-feature:24px;--app-easing:cubic-bezier(.22,1,.36,1);
- --motion-control:200ms;--motion-base:500ms;--motion-scene:700ms;
+ --motion-control:200ms;--motion-base:500ms;--motion-scene:700ms;--motion-route:420ms;
  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
  color:var(--app-ink);background:#d5e5ee;font-variant-numeric:tabular-nums;
 }
@@ -91,6 +91,7 @@ button,input,select,textarea{font-family:inherit}
 .header-search:hover{background:var(--app-canvas);color:var(--app-ink)}
 .mobile-brand,.mobile-menu-button,.environment-strip{display:none!important}
 .site-main{min-height:0;flex:1;min-width:0;background:transparent}
+.site-main> *{animation:route-enter var(--motion-route) var(--app-easing) both}
 .site-footer,.footer-light,.footer-dark{background:rgba(249,253,255,.18);color:var(--app-muted);border-top:1px solid var(--app-hairline);border-radius:0 0 24px 0;padding:24px 0}
 .footer-inner{display:flex;align-items:center;justify-content:space-between;gap:24px}
 .footer-motto{font-size:12px;font-weight:600;white-space:nowrap}
@@ -114,6 +115,7 @@ h2,h3{color:var(--app-ink)}
 .search-submit>svg,.button-primary>svg{transition:transform 500ms var(--app-easing)}
 .search-submit:hover>svg,.button-primary:hover:not(:disabled)>svg{transform:translateX(4px)}
 @keyframes workspace-enter{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes route-enter{from{opacity:.82;transform:translateY(4px)}to{opacity:1;transform:none}}
 .button:active:not(:disabled),.search-submit:active:not(:disabled){transform:scale(.98)}
 .button-primary,.search-submit,.ai-compose-footer .button-primary{background:var(--app-blue);color:#fff;border-color:var(--app-blue);box-shadow:none}
 .button-primary:hover,.search-submit:hover,.ai-compose-footer .button-primary:hover{background:#0758b2}

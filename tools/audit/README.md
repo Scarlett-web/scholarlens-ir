@@ -14,6 +14,29 @@
 | pip-audit 2.9.0 | 后端锁文件已知依赖公告 | 独立 `.venv`，只查公告，不安装或升级应用依赖 |
 | OWASP ZAP | 动态安全 | 不随项目启动；只在隔离测试环境被动运行 |
 
+ZAP 2.17.0 使用官方 `ZAP_2.17.0_Crossplatform.zip`，SHA-256 为 `94c8f767b1c2e94f0db66b3ae56514d5e3f5a728ee1b6c798e0c8fe2d61fbff0`，解压到被忽略的 `bin/zap-2.17.0/`。先核对官方 release asset digest；不执行系统安装器，不自动更新扩展。
+
+```powershell
+backend/.venv/Scripts/python.exe tools/audit/run-zap-passive.py --self-test
+backend/.venv/Scripts/python.exe tools/audit/run-zap-passive.py
+```
+
+该入口不接受服务 URL，只启动它拥有的随机回环端口测试实例。实际账户/工作区路由与空 SQLite、合成单篇论文、真实生产前端组合在一起；请求固定为 8 条 GET，无登录/上传/写入、spider 或 activeScan。计划在启动前校验，使用独立 `-dir`、`-silent`、`-notel` 和 safe 模式，默认用户目录不参与验收。退出码、告警、实际请求、空用户数及进程清理均写报告；`passed` 只表示检查执行成功，**不表示零告警或完整安全认证**。
+
+## 桌面页面与关系交互验收
+
+先启动本机真实 API 预览，再运行以下命令。两项检查顺序运行，使用独立浏览器环境，拒绝跨源及服务写请求；不会使用个人浏览器登录状态。
+
+```powershell
+$env:SCHOLARLENS_URL='http://127.0.0.1:4175'
+node tools/audit/desktop-quality.mjs
+node tools/audit/relation-motion-browser.mjs
+```
+
+`desktop-quality` 在 Chrome 与 Edge 分别检查 1440/1366px 主要路由和 390px 回归，涵盖语义、可访问名称、几何、浏览器异常及实际动态论文内链。每浏览器最多探测 64 个去重论文链接；超额为未验证并使结果失败，不用 SPA 的 HTTP 200 冒充页面可达。外链只列清单，不访问。它是页面初筛，不代替完整无障碍认证、ZAP 或性能测试。
+
+`relation-motion-browser` 使用真实只读 API 检查详情到聚焦关系图、21 候选的 20 节点上限、换批/退出/浏览器前后退、专注阅读隐藏、420ms 转场以及网站暂停/系统减少动态。故障与迟到响应仅在浏览器内模拟，并单独标记；不会修改服务或论文数据。两个工具均支持 `--self-test`，实际运行报告与截图在忽略目录 `tools/audit/reports/`。
+
 ## 运行
 
 局部工具可重建，命令不会改全局配置：

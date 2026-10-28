@@ -104,7 +104,7 @@ def router(es, metadata):
             index=generation,
             size=limit,
             sort=[{"year": {"order": "desc", "missing": "_last"}}, {"paper_id": "asc"}],
-            source=["paper_id", "title", "authors", "year", "abstract"],
+            source=["paper_id", "title", "authors", "affiliation", "year", "abstract"],
             aggs={"years": {"terms": {"field": "year", "size": 100, "order": {"_key": "desc"}}}},
             track_total_hits=True,
         )
@@ -133,7 +133,9 @@ def router(es, metadata):
         docs = [
             h["_source"]
             for h in scan(
-                es, index=generation, source=["paper_id", "title", "authors", "year", "abstract"]
+                es,
+                index=generation,
+                source=["paper_id", "title", "authors", "affiliation", "year", "abstract"],
             )
         ]
         candidates = [doc for doc in docs if doc["paper_id"] not in excluded]

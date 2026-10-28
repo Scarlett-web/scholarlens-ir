@@ -41,7 +41,8 @@ async function setup({user=false,note="Existing research note.",answerMode=false
     const json=(data,status=200)=>route.fulfill({status,contentType:"application/json",body:JSON.stringify(data)});
     state.requests.push({path,method});
     if(path==="/stats")return json({status:"real",papers:859});
-    if(path==="/capabilities")return json({modules:{ai_qa:{status:answerMode?"ready":"not_configured",reason:"Controlled fixture only"},keyword_search:{status:"ready"},semantic_search:{status:"ready"},hybrid_search:{status:"ready"}}});
+    if(path==="/discover"&&method==="GET"&&url.searchParams.get("limit")==="20")return json({papers:Object.keys(papers).length,recommendations:Object.values(papers),example_searches:[],years:[],status:"synthetic"});
+    if(path==="/capabilities")return json({modules:{ai_qa:{status:answerMode?"ready":"not_configured",reason:"Controlled fixture only: provider unavailable. Authorization Bearer synthetic-not-real-bearer-1234567890; api_key=sk-synthetic-not-real-key-1234567890."},keyword_search:{status:"ready"},semantic_search:{status:"ready"},hybrid_search:{status:"ready"}}});
     if(path==="/auth/me"&&user)return json({id:801,username:"fixture-researcher",role:"user"});
     if(path==="/me/workspace"&&method==="GET"&&user)return json(state.workspace);
     if(path==="/me/workspace"&&method==="PUT"&&user){state.saved.push(request.postDataJSON());return json({version:state.saved.length});}
@@ -119,7 +120,14 @@ try{
   state.response=[{quote:4}];await search(page,"malformed fixture response");await page.getByRole("alert").filter({hasText:"证据服务返回格式无效"}).waitFor();assert.equal(await page.locator(".evidence-source-choice").count(),1);
   await context.close();report.checks.push("guest exact source and literal markup, context, copy provenance, append preserving notes, duplicate prevention, Unicode/deep fulltext popup focus, invalid locator, changed source, retry, empty/malformed result, cancel and late response, desktop/390 geometry");
 
-  const user=await setup({user:true});await user.page.goto(origin+"/assistant");await search(user.page);await user.page.getByText("片段与当前原文一致",{exact:true}).waitFor();
+  const user=await setup({user:true});await user.page.goto(origin+"/assistant");
+  const availabilityReason=await user.page.locator(".assistant-availability").waitFor().then(async()=>user.page.locator(".assistant-availability").textContent());
+  assert.ok(availabilityReason?.includes("Controlled fixture only: provider unavailable"));
+  assert.ok(availabilityReason?.includes("Bearer [已隐藏]"));
+  assert.ok(!availabilityReason?.includes("Bearer synthetic-not-real-bearer-1234567890"));
+  assert.ok(!availabilityReason?.includes("sk-synthetic-not-real-key-1234567890"));
+  report.checks.push("capability unavailability reason remains useful while Bearer and sk- synthetic samples are masked");
+  await search(user.page);await user.page.getByText("片段与当前原文一致",{exact:true}).waitFor();
   await user.page.getByRole("button",{name:"加入笔记",exact:true}).click();await user.page.waitForFunction(()=>document.querySelector('.evidence-saved')!==null);
   await user.page.waitForTimeout(650);assert.equal(user.state.saved.length,1);assert.ok(user.state.saved[0].favorites[0].note.startsWith("Existing research note."));assert.ok(user.state.saved[0].favorites[0].note.includes(quote));
   let releasePaper;user.state.paperGate=new Promise(resolve=>{releasePaper=resolve;});await user.page.locator(".evidence-source-choice").nth(1).click();await user.page.getByText("正在与当前原文逐字核对…",{exact:true}).waitFor();

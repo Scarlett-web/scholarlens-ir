@@ -20,8 +20,15 @@ def test_same_origin_static_and_spa_boundaries(tmp_path):
         for path in ("/", "/search", "/paper/source-sha256:test", "/account"):
             response=client.get(path)
             assert response.status_code==200 and "ScholarLens frontend" in response.text
+            policy = response.headers["content-security-policy"]
+            assert "script-src 'self'" in policy and "connect-src 'self'" in policy
+            assert "frame-src 'self' blob:" in policy and "img-src 'self' data: blob:" in policy
+            assert "frame-ancestors 'self'" in policy and "form-action 'self'" in policy
+            assert "unsafe-eval" not in policy
         assert client.get("/assets/app.js").status_code==200
         assert client.get("/api/check").json()=={"ok":True}
+        assert "content-security-policy" not in client.get("/api/check").headers
+        assert "content-security-policy" not in client.get("/docs").headers
         for path in ("/api/missing", "/assets/missing.js", "/.env", "/%2e%2e/outside.txt"):
             result=client.get(path)
             assert result.status_code==404 and "PRIVATE_TEST_VALUE" not in result.text

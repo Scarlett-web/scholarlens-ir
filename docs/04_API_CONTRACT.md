@@ -114,6 +114,12 @@ search 的 query 回显全部已验证参数（包括 year_from/year_to/phrase/f
 
 ## 5. 问答
 
+### 发现摘要与可核对机构（2026-10-28）
+
+负责人：项目维护者。`GET /api/discover?limit=1..20` 和 `GET /api/discover/random?limit=1..20&seed=...&exclude=...` 的 `recommendations` 继续返回原有论文摘要，并增加可选来源字段 `affiliation: string[]`；无机构元数据时返回 `[]`。不返回本地路径、解析错误或其他内部来源字段。输入仍为当前索引与只读查询，不修改索引或论文。
+
+用途是前端详情及探索图解释共同机构；共同机构不表示引用关系或语义相关度。验收同时覆盖两条路由的机构保留、缺失值兼容和内部字段不外泄，并保留原有 seed、exclude 与返回封装。隔离契约测试使用显式合成文档和模拟搜索客户端，不冒充真实 ES 验收。
+
 ### `POST /api/ask`
 
 请求：

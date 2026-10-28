@@ -7,6 +7,7 @@ import { DemoBadge, IntegrationNotice } from "../components/Layout";
 import { PaperCard } from "../components/PaperCard";
 import { ReadingToolbar } from "../components/ReadingToolbar";
 import { EvidencePassage } from "../components/EvidencePassage";
+import { PaperRelationsPanel } from "../components/PaperRelationsPanel";
 import { evidenceLocatorLabel, evidenceTargetFromHash, resolveEvidenceLocation } from "../lib/evidenceLocation";
 import { DATA_SOURCE, getPaper, pdfUrl } from "../services/papers";
 import { DEMO_PAPERS } from "../data/demoPapers";
@@ -155,6 +156,7 @@ export function PaperPage() {
           <IntegrationNotice title="引用前请核对原始文献" desc={demoPaper?
             "本页是虚构示例论文，所有作者、题目、摘要均不可作为真实学术引用。":
             "论文信息来自检索接口，但当前系统未自动验证出版社、DOI 和正式发表信息。"} />
+          <PaperRelationsPanel paper={paper}/>
           {related.length>0&&<section className="related-section"><span className="eyebrow">RELATED TOPICS</span>
             <h2>也许你会感兴趣</h2><p>基于本地演示样本的主题和关键词相似性排序，并非语义检索。</p>
             <div className="paper-list">{related.map(item=><PaperCard key={item.paper_id} paper={item} dense/>)}</div>

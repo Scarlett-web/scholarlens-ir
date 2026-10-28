@@ -114,7 +114,11 @@ try {
   const downloading=page.waitForEvent("download");await page.getByRole("button",{name:"下载 DOCX",exact:true}).first().click();assert.match((await downloading).suggestedFilename(),/\.docx$/);
   page.once("dialog",dialog=>dialog.accept());await page.locator('.server-upload-row[data-status="rejected"]').getByRole("button",{name:"归档",exact:true}).click();
   await page.waitForFunction(()=>document.querySelectorAll('.server-upload-row[data-status="rejected"]').length===0);assert.equal(state.archives[0],"fixture-rejected");
+  const queueCountBeforeFailedRefresh=await page.locator(".server-upload-row").count();
+  const firstQueueTextBeforeFailedRefresh=(await page.locator(".server-upload-row").first().innerText()).trim();
   state.failNext=true;await page.getByRole("button",{name:"刷新状态",exact:true}).click();await page.getByRole("alert").filter({hasText:"Fixture queue temporarily unavailable"}).waitFor();
+  assert.equal(await page.locator(".server-upload-row").count(),queueCountBeforeFailedRefresh,"a failed refresh must preserve the last successful queue count");
+  assert.equal((await page.locator(".server-upload-row").first().innerText()).trim(),firstQueueTextBeforeFailedRefresh,"a failed refresh must preserve the last successful first record");
   await page.getByRole("button",{name:"重新读取",exact:true}).click();await page.locator(".server-upload-row").first().waitFor();assert.equal(await page.getByRole("alert").count(),0,"recovered queue must clear stale failure");
   state.delayNext=9000;await page.getByRole("button",{name:"刷新状态",exact:true}).click();await page.locator(".upload-queue-loading").waitFor();
   await page.locator(".server-upload-row").first().waitFor({timeout:15000});assert.equal(state.maxLists,1,"a slow list request must not overlap with interval polling");
