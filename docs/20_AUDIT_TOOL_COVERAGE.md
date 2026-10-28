@@ -4,7 +4,7 @@
 
 ## 本轮范围与结果
 
-- Gitleaks 8.30.1：官方 Windows x64 release，核对官方 SHA-256 后安装至 `tools/audit/bin/`。首次扫描当前 `HEAD` 可达历史，无凭据命中；新增未提交源码尚不包含在这份历史报告，提交前/后仍需检查。
+- Gitleaks 8.30.1：官方 Windows x64 release，核对官方 SHA-256 后安装至 `tools/audit/bin/`。首次及源码提交后扫描 `HEAD` 可达历史，无凭据命中；发布前复查覆盖到 `a3b468e`，共 19 次提交。报告保留在忽略目录。
 - Semgrep 1.168.0：复用已有可执行文件，规则扩展为代码执行、shell、反序列化、SQL、TLS、浏览器原始 HTML 等九类；82 个文件，19 条线索。三条 SQL 命中位于账户迁移与字段更新，字段来自固定映射及 Pydantic 禁止额外字段的模型，值用占位符绑定；其余为命令行/子进程结构化输出，未据此认定 SQL 注入或凭据泄露。`demoPapers.ts` 有一处部分解析警告，因此该文件的扫描覆盖不完整，不能把退出码零写成全量静态检查通过。
 - pip-audit 2.9.0：隔离 `.venv`，使用 `--no-deps --disable-pip` 查询 48 个锁定依赖的公告。发现 Pillow 12.3.0 的已知公告，修复版本为 13.0.0。项目头像代码会处理上传 PNG/JPEG，故升级至 13.0.0，而非仅隐藏公告；不声称所有公告均可通过本项目复现。
 - Pillow 验收：在项目忽略目录安装独立 13.0.0，以明确 `PYTHONPATH` 验证导入版本并运行账户/头像/网页针对性测试。发布只升级 ScholarLens 专用虚拟环境的 Pillow，使用离线官方 wheel，备份可用旧 wheel、环境和数据库；切换失败恢复旧依赖和旧 release。没有全局 Python 依赖变更。
@@ -19,6 +19,8 @@
 - 背景衍生图与 robots 修复后，本机桌面 Lighthouse 四项均为 100；FCP 0.3 秒、LCP 0.6 秒、TBT 0、CLS 0。报告 `tools/audit/reports/lighthouse-prism-desktop.json`；桌面与前述移动仿真的条件不同，不作直接提升幅度比较，也不代表公网性能。
 - 旧版 v21 集成测试依赖本机 Elasticsearch 正式索引；本机依赖未就绪，相关组合运行已停止，不计为通过，不对生产运行这些写入型测试。
 - 发布预备了 Python 3.12 / Linux x86_64 的 Pillow 13.0.0 与 12.3.0 官方 wheel，均核对 PyPI SHA-256。部署仅允许这一项依赖差异，失败须恢复旧 wheel 和旧 release。
+
+华为云现已使用 Pillow 13.0.0；原依赖 wheel、旧 release、环境和数据库备份均保留，部署及公网验收见 [21_PRISM_READER_RELEASE.md](21_PRISM_READER_RELEASE.md)。
 
 ## 仍需推进
 
