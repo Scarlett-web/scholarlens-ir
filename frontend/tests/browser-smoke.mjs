@@ -104,6 +104,48 @@ async function pointerClick(selector){
   await send("Input.dispatchMouseEvent",{type:"mouseReleased",...point,button:"left",clickCount:1});
 }
 
+async function exerciseReader() {
+  await waitFor("document.querySelector('.reader-focus-button')!==null");
+  await click('.reader-focus-button');
+  await waitFor("document.querySelector('.detail-page').dataset.readingFocus==='true'");
+  assert.equal(await evaluate("getComputedStyle(document.querySelector('.app-sidebar')).display"),'none');
+  const position=await evaluate("(()=>{const a=document.querySelector('.detail-main'),offset=document.querySelector('.reader-tools').getBoundingClientRect().height+24;return scrollY+a.getBoundingClientRect().top-offset+.45*(a.getBoundingClientRect().height-innerHeight+offset)})()");
+  await evaluate('window.scrollTo({top:'+position+',behavior:"instant"})');
+  await waitFor("Number(document.querySelector('.reader-progress progress').value)>=40");
+  await waitFor("JSON.parse(localStorage.getItem('scholarlens-v1:reading-positions:guest')||'{}')[decodeURIComponent(location.pathname.slice(7))]?.ratio>.4");
+  const paperPath=await evaluate('location.pathname');
+  await navigate(paperPath);
+  await waitFor("document.querySelector('.reader-resume')!==null");
+  await click('.reader-resume button:not(.icon-button)');
+  await waitFor("Math.abs(Number(document.querySelector('.reader-progress progress').value)-45)<8");
+  assert.ok(await evaluate("!document.querySelector('.reader-resume')"));
+  await click('.reader-toolbar nav button:first-child');
+  const excerpt=await evaluate("(()=>{const p=document.querySelector('#paper-abstract [data-reader-text]');const node=p.firstChild;const r=document.createRange();r.setStart(node,0);r.setEnd(node,Math.min(60,node.textContent.length));const s=getSelection();s.removeAllRanges();s.addRange(r);p.dispatchEvent(new MouseEvent('mouseup',{bubbles:true}));return s.toString().trim()})()");
+  assert.ok(excerpt.length>10);
+  await waitFor("document.querySelector('.reader-selection')!==null");
+  await click('.reader-selection button:nth-of-type(2)');
+  await waitFor("JSON.parse(localStorage.getItem('scholarlens-v1:favorites')||'[]').some(e=>e.note.includes("+q(excerpt)+"))");
+  await evaluate("(()=>{const p=document.querySelector('#paper-abstract [data-reader-text]'),n=p.firstChild,r=document.createRange();r.setStart(n,5);r.setEnd(n,Math.min(70,n.textContent.length));getSelection().removeAllRanges();getSelection().addRange(r);p.dispatchEvent(new MouseEvent('mouseup',{bubbles:true}));})()");
+  await waitFor("document.querySelector('.reader-selection')!==null");
+  await click('.reader-selection button:nth-of-type(2)');
+  assert.ok(await waitFor("JSON.parse(localStorage.getItem('scholarlens-v1:favorites')||'[]').some(e=>e.note.includes("+q(excerpt)+")&&e.note.split('摘录：').length===3)"),'append must preserve the first excerpt');
+  await click('.reader-focus-button');
+  await evaluate('window.scrollTo({top:0,behavior:"instant"})');
+  fs.mkdirSync('output/api-integration',{recursive:true});
+  const focusShot=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
+  fs.writeFileSync('output/api-integration/reader-focus-desktop.png',Buffer.from(focusShot.data,'base64'));
+  await send('Input.dispatchKeyEvent',{type:'keyDown',key:'Escape',code:'Escape'});
+  await send('Input.dispatchKeyEvent',{type:'keyUp',key:'Escape',code:'Escape'});
+  await waitFor("document.querySelector('.detail-page').dataset.readingFocus==='false'");
+  await send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});
+  await evaluate('window.scrollTo({top:0,behavior:"instant"})');
+  assert.ok(await evaluate('document.documentElement.scrollWidth<=innerWidth'),'reader controls must fit at 390px');
+  const mobile=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
+  fs.writeFileSync('output/api-integration/reader-390.png',Buffer.from(mobile.data,'base64'));
+  await send('Emulation.setDeviceMetricsOverride',{width:1440,height:900,deviceScaleFactor:1,mobile:false});
+  console.log('PASS focus reader: actual scroll progress, isolated local position restore, source selection appended without replacing notes, Escape exit, desktop/390 screenshots');
+}
+
 async function runApi() {
   const response=await browserFetch(origin+"/api/stats");
   assert.equal(response.status,200,"Vite proxy must reach FastAPI");
@@ -158,14 +200,27 @@ async function runApi() {
   await waitFor("document.querySelector('.detail-header')!==null");
   assert.ok(await evaluate("document.querySelector('.reading-paragraph').textContent.length>20"));
   assert.ok(await evaluate("document.querySelector('.detail-tags').textContent.includes('解析状态')"));
+  await exerciseReader();
   await navigate("/library");
   await waitFor("document.querySelector('.library-paper-item')!==null");
   await click(".note-edit-button");
   await fill(".reading-note textarea","真实论文联调笔记");
   await navigate("/");
   await waitFor("document.querySelector('.recent-current-page')?.dataset.paperId.startsWith('source-sha256:')");
+  await send('Emulation.setDeviceMetricsOverride',{width:1366,height:768,deviceScaleFactor:1,mobile:false});
+  assert.ok(await evaluate("(()=>{const r=document.querySelector('.search-submit').getBoundingClientRect();return r.top>=0&&r.bottom<innerHeight&&document.querySelectorAll('.prism-facets path').length>=6})()"),'search must remain visible beside the prism at 1366x768');
+  await click('.motion-toggle');
+  assert.equal(await evaluate("document.querySelector('.apple-home').dataset.motion"),'paused');
+  await click('.motion-toggle');
+  await send('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
+  await waitFor("document.querySelector('.motion-toggle').disabled");
+  assert.equal(await evaluate("getComputedStyle(document.querySelector('.research-prism')).transform"),'none');
+  await send('Emulation.setEmulatedMedia',{features:[]});
+  await waitFor("['.hero-label','.hero h1','.hero-subtitle','.home-search-area'].every(s=>Number(getComputedStyle(document.querySelector(s)).opacity)>.99)");
+  await evaluate("Promise.all(document.getAnimations().filter(a=>Number.isFinite(a.effect.getComputedTiming().endTime)).map(a=>a.finished.catch(()=>{})))");
   const home=await send("Page.captureScreenshot",{format:"png",captureBeyondViewport:false});
   fs.writeFileSync("output/api-integration/home-desktop.png",Buffer.from(home.data,"base64"));
+  await send('Emulation.setDeviceMetricsOverride',{width:1440,height:900,deviceScaleFactor:1,mobile:false});
   await navigate("/explore");
   await waitFor("document.querySelectorAll('.paper-card').length===9");
   assert.ok(await evaluate("!document.querySelector('.topic-selector').textContent.includes('计算机科学')"));

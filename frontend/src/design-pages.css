@@ -7,7 +7,7 @@
 .apple-home .hero{display:block;min-height:0;position:relative;padding-block:32px 24px;text-align:left;background:transparent;overflow:visible}
 .hero-composition{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,.85fr);gap:48px;align-items:center}
 .apple-home .hero-inner{width:100%;max-width:none;margin:0;min-width:0;position:relative;isolation:isolate}
-.hero-knowledge-map{position:absolute;z-index:-1;inset:-48px -16px auto auto;width:100%;height:auto;pointer-events:none;opacity:.12}
+.hero-knowledge-map{position:absolute;z-index:-1;inset:-48px -16px auto auto;width:100%;height:auto;pointer-events:none;opacity:.05}
 .knowledge-paths{fill:none;stroke:#d6e4f7;stroke-width:1;stroke-dasharray:1200;animation:knowledge-draw 2200ms var(--app-easing) both}
 .knowledge-nodes circle{fill:#9cbde8;transform-box:fill-box;transform-origin:center;animation:knowledge-pulse 4s var(--app-easing) infinite}
 .apple-home:has(.hero-paper-stage[data-scene-active=false]) .knowledge-nodes circle{animation-play-state:paused}
@@ -20,14 +20,27 @@
 .apple-home .hero-subtitle{font-size:16px;line-height:1.75;color:var(--app-muted);max-width:680px;margin:24px 0;text-wrap:pretty}
 .hero-caption{display:flex;align-items:center;gap:12px;margin-top:24px;font-size:12px;color:#86868b}
 .hero-caption-line{width:32px;height:1px;background:#c7c7ce}
-.hero-paper-stage{position:relative;padding:24px 16px;isolation:isolate;min-width:0;perspective:1200px;overflow:clip;overflow-clip-margin:24px}
-.hero-paper-float{position:relative;transform-style:preserve-3d;animation:paper-float 8s var(--app-easing) infinite}
+.hero-paper-stage{position:relative;padding:64px 24px 48px;isolation:isolate;min-width:0;perspective:1200px;overflow:clip;overflow-clip-margin:24px}
+.research-prism{position:absolute;inset:-24px -16px 0 -64px;pointer-events:none;z-index:-1;transform-style:preserve-3d;transform:translateY(-8px) rotateX(calc(-8deg + var(--scene-rx,0deg))) rotateY(calc(10deg + var(--scene-ry,0deg))) rotateZ(-8deg);transition:transform var(--motion-scene) var(--app-easing)}
+.research-prism svg{width:100%;height:100%;overflow:visible;filter:drop-shadow(0 24px 24px #133e5340)}
+.prism-thickness{fill:#4e829a66;stroke:#c4eff28c;stroke-width:1}
+.prism-thickness path:nth-child(2){fill:#416e8e99}
+.prism-thickness path:nth-child(3){fill:#8bdad85c}
+.prism-facets{stroke:#e7feff80;stroke-width:.8}
+.facet-north{fill:#efffffa3}.facet-west{fill:#86c5df8c}.facet-core{fill:#c5ecf650}.facet-east{fill:#5d91b86b}.facet-south{fill:#b9e5ed66}.facet-reflection{fill:#f2ffff52}
+.prism-edges{fill:none;stroke:#ecffffb3;stroke-width:1.2;stroke-linejoin:round}
+.prism-edges path+path{stroke:#e5ffff5c;stroke-width:.8}
+.prism-caustics{fill:none;stroke:#ffffffed;stroke-width:2;stroke-linecap:round}
+.prism-caustics path+path{stroke:#b7fffa99;stroke-width:3}
+.prism-shadow{position:absolute;width:64%;height:24px;bottom:0;left:20%;background:#183c5440;filter:blur(16px);border-radius:50%;transform:rotateX(65deg);z-index:-1}
+.hero-paper-stage[data-tilt=active] .research-prism{transition-duration:var(--motion-control)}
+.hero-paper-float{position:relative;width:88%;margin-left:auto;transform-style:preserve-3d;animation:paper-float 8s var(--app-easing) infinite}
 .hero-paper-stack{position:relative;transform-style:preserve-3d;transform:rotateX(calc(4deg + var(--scene-rx,0deg))) rotateY(calc(-6deg + var(--scene-ry,0deg))) rotateZ(-1deg);transition:transform 700ms var(--app-easing)}
 .hero-paper-stage[data-tilt=active] .hero-paper-stack{transition-duration:200ms}
 .hero-paper-stack:before,.hero-paper-stack:after{content:"";position:absolute;inset:0;border:1px solid #e2e5ec;border-radius:16px;pointer-events:none}
 .hero-paper-stack:before{background:#eaf2ff;transform:translate3d(0,20px,-32px) rotateZ(5deg)}
 .hero-paper-stack:after{background:#f5f5f7;transform:translate3d(0,10px,-16px) rotateZ(2.5deg)}
-.hero-paper-sheet{padding:24px;border:1px solid #fff;border-radius:16px;background:#fffffff5;box-shadow:0 24px 48px #1b415523,inset 0 1px 0 #fff;position:relative;transform:translateZ(16px)}
+.hero-paper-sheet{padding:24px;border:1px solid #f5ffffe6;border-radius:16px;background:#f8fdffcc;backdrop-filter:blur(12px) saturate(1.15);-webkit-backdrop-filter:blur(12px) saturate(1.15);box-shadow:0 24px 48px #173d5533,inset 0 1px 0 #fff,inset -1px -1px 0 #789eb845;position:relative;transform:translateZ(16px)}
 .hero-paper-stack[data-count="0"]:before,.hero-paper-stack[data-count="0"]:after,.hero-paper-stack[data-count="1"]:before,.hero-paper-stack[data-count="1"]:after,.hero-paper-stack[data-count="2"]:before{display:none}
 .hero-paper-float:has(.recent-deck:hover),.hero-paper-float:focus-within{animation-play-state:paused}
 .recent-deck{position:relative;touch-action:pan-y;transform-style:preserve-3d}
@@ -68,13 +81,6 @@
 @keyframes reading-turn-previous{0%{opacity:1;transform:rotateY(0)}65%{opacity:1}100%{opacity:0;transform:rotateY(135deg)}}
 @keyframes recent-arrive{from{opacity:.45;transform:translateX(12px)}to{opacity:1;transform:translateX(0)}}
 
-.research-orbit{position:absolute;top:50%;left:-16px;width:calc(100% + 32px);aspect-ratio:1;border:1px solid #ffffff73;border-radius:50%;pointer-events:none;z-index:-1;transform-style:preserve-3d}
-.orbit-one{transform:translateY(-50%) rotateZ(-32deg) rotateX(50deg)}
-.orbit-two{transform:translateY(-50%) rotateZ(38deg) rotateX(62deg);border-color:#ffffff59}
-.orbit-traveler{position:absolute;inset:0;animation:research-orbit 26s linear infinite}
-.orbit-traveler>i{position:absolute;top:-4px;left:50%;width:8px;height:8px;border-radius:50%;background:#7fa9dd;box-shadow:0 0 0 4px #eaf2ff}
-.orbit-two .orbit-traveler{animation-duration:34s;animation-direction:reverse;transform:rotate(140deg)}
-.orbit-two .orbit-traveler>i{background:#b7c1d1;width:4px;height:4px;box-shadow:none}
 .motion-toggle{display:inline-flex;align-items:center;justify-content:center;gap:4px;margin-left:4px;min-height:32px;padding:4px 8px;border:1px solid #eeeef2;border-radius:8px;background:#fff;color:var(--app-muted);font-size:12px;cursor:pointer;transition:background 300ms var(--app-easing),border-color 300ms var(--app-easing)}
 .motion-toggle:hover:not(:disabled){background:var(--app-canvas);border-color:#dcdce2}
 .motion-toggle:disabled{cursor:default;color:#86868b}
@@ -86,7 +92,6 @@
 .home-search-area{animation-delay:280ms}
 .home-workspace[data-revealed=true]{animation:research-enter 700ms var(--app-easing) both}
 @keyframes paper-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
-@keyframes research-orbit{from{transform:rotate(0)}to{transform:rotate(360deg)}}
 @keyframes research-enter{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
 .hero-paper-top{display:flex;align-items:center;justify-content:space-between;font-size:12px;color:#86868b;padding-bottom:16px;border-bottom:1px solid #eeeef2}
 .hero-paper-top>span{display:flex;align-items:center;gap:8px}
@@ -286,9 +291,10 @@
  .hero-composition{display:contents}
  .apple-home .hero-inner{order:0}
  .home-search-area{order:1}
- .hero-paper-stage{display:block;order:2;margin-top:32px;padding:24px 0;overflow-clip-margin:12px}
+ .hero-paper-stage{display:block;order:2;margin-top:32px;padding:32px 0;overflow-clip-margin:12px}
  .hero-paper-float,.hero-paper-stack{transform:none!important}
- .research-orbit, .recent-deck .hero-paper-sheet{padding:24px 16px}
+ .hero-paper-float{width:100%}
+ .recent-deck .hero-paper-sheet{padding:24px 16px}
  .recent-deck .hero-paper-title{font-size:18px;min-height:48px}
  .recent-current-page,.recent-turn-front{height:288px}
  .recent-deck .hero-paper-empty{height:300px}
@@ -341,7 +347,7 @@
 }
 
 @media(prefers-reduced-motion:reduce){
- .hero-paper-stack{transform:none!important}
- .hero-paper-float,.orbit-traveler,.home-topic:hover>svg,.home-library-link:hover,.explore-grid .paper-card:hover{transform:none!important}
+ .hero-paper-stack,.research-prism{transform:none!important}
+ .hero-paper-float,.home-topic:hover>svg,.home-library-link:hover,.explore-grid .paper-card:hover{transform:none!important}
  .apple-home .hero-label,.apple-home .hero h1,.apple-home .hero-subtitle,.apple-home .hero-caption,.home-search-area,.home-workspace[data-revealed=true]{animation:none}
 }

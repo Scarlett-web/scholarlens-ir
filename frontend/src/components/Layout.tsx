@@ -57,7 +57,7 @@ export function SiteLayout({ children }: { children: ReactNode }) {
     notify(!presentation?"课堂展示字号已开启":"已恢复正常字号");
   };
   return <div className="shell shell-light workspace-shell" data-motion={motionPaused || reducedMotion ? "paused" : "running"}>
-    <div className="observatory-backdrop" aria-hidden="true"><img src="/images/iceland-jokulsarlon.webp" alt="" fetchPriority="high"/></div>
+    <div className="observatory-backdrop" aria-hidden="true"><img src="/images/iceland-jokulsarlon.webp" srcSet="/images/iceland-jokulsarlon-1600.webp 1600w, /images/iceland-jokulsarlon-2560.webp 2560w, /images/iceland-jokulsarlon.webp 3200w" sizes="100vw" width="3200" height="1801" alt="" fetchPriority="high"/></div>
     <MotionEffects/>
     <a className="skip-link" href="#main">跳转到内容</a>
     <aside className="app-sidebar" aria-label="研究空间导航">

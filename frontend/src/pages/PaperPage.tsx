@@ -1,10 +1,11 @@
 import {backend} from "../services/backend";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, ArrowUpRight, Bookmark, Calendar, ChevronDown, ChevronUp, Clipboard, Download, ExternalLink, FileQuestion, FileText, Quote, Search, Sparkles } from "lucide-react";
 import { useStudio } from "../App";
 import { DemoBadge, IntegrationNotice } from "../components/Layout";
 import { Highlight, PaperCard } from "../components/PaperCard";
+import { ReadingToolbar } from "../components/ReadingToolbar";
 import { DATA_SOURCE, getPaper, pdfUrl } from "../services/papers";
 import { DEMO_PAPERS } from "../data/demoPapers";
 import type { Paper } from "../types";
@@ -31,6 +32,8 @@ export function PaperPage() {
   const [loading,setLoading]=useState(true);
   const [error,setError]=useState("");
   const [expanded,setExpanded]=useState(false);
+  const [focused,setFocused]=useState(false);
+  const articleRef=useRef<HTMLElement>(null);
   const [readingSearch,setReadingSearch]=useState("");
   const [citationStyle,setCitationStyle]=useState<CitationStyle>("apa");
   const [pdfOpen,setPdfOpen]=useState(false);
@@ -39,7 +42,7 @@ export function PaperPage() {
 
   useEffect(()=>{
     let alive=true;
-    setLoading(true);setPaper(null);setError("");setPdfOpen(false);setExpanded(false);
+    setLoading(true);setPaper(null);setError("");setPdfOpen(false);setExpanded(false);setFocused(false);setReadingSearch("");
     getPaper(paperId).then((value)=>{
       if(!alive)return;
       setPaper(value);
@@ -75,11 +78,12 @@ export function PaperPage() {
     notify("已导出参考信息，请核验出版来源");
   };
 
-  return <div className="workspace-page content-wrap detail-page">
+  return <div className="workspace-page content-wrap detail-page" data-reading-focus={focused}>
     <button className="back-link" onClick={()=>{if(Number.isInteger(window.history.state?.idx)&&window.history.state.idx>0)navigate(-1);else navigate("/search",{replace:true});}}><ArrowLeft size={16}/> 返回上一页</button>
     {loading?<div className="empty-state"><FileText size={29}/> 正在加载论文…</div>:
     error?<div className="empty-state error-state">{error}<Link to="/search" className="button button-secondary">返回检索</Link></div>:
     !paper?<div className="empty-state"><FileQuestion size={33}/><h2>没有找到这篇论文</h2><Link to="/search" className="button button-primary">返回搜索</Link></div>:<>
+      <ReadingToolbar key={paper.paper_id} paper={paper} articleRef={articleRef} expanded={expanded} setExpanded={setExpanded} focused={focused} setFocused={setFocused}/>
       <div className="detail-header">
         <div className="detail-tags">{demoPaper?<DemoBadge/>:<span className="paper-source-tag">来自论文检索服务</span>}
           {paper.year&&<span className="year-pill"><Calendar size={14}/>{paper.year}</span>}
@@ -98,7 +102,7 @@ export function PaperPage() {
           </button>:<span className="button button-disabled" aria-disabled="true"><FileText size={17}/> PDF 尚不可用</span>}
           {canOpenPdf&&<button className="button button-secondary" disabled={converting} onClick={async()=>{setConverting(true);try{const blob=await backend<Blob>("/papers/"+encodeURIComponent(paper.paper_id)+"/docx",{blob:true});const url=URL.createObjectURL(blob),link=document.createElement("a");link.href=url;link.download=paper.title.replace(/[\\/:*?"<>|]/g,"_").slice(0,100)+".docx";link.click();window.setTimeout(()=>URL.revokeObjectURL(url),60000);notify("DOCX 已下载：文本转换，不保留复杂版式");}catch(cause){notify(cause instanceof Error?cause.message:"转换失败");}finally{setConverting(false);}}}><Download size={16}/>{converting?"正在转换…":"下载 DOCX"}</button>}
           <Link className="button button-secondary" to={"/assistant?paper="+encodeURIComponent(paper.paper_id)}>
-            <Sparkles size={16}/> 论文 AI 助手
+            <Sparkles size={16}/> 查看原文证据
           </Link>
         </div>
       </div>
@@ -111,26 +115,27 @@ export function PaperPage() {
         <p>正在阅读原始 PDF。若浏览器无法内嵌显示，请选择“在独立窗口打开”，也可使用阅读器下载原件。</p>
       </section>}
       <div className="detail-grid">
-        <article className="detail-main">
-          <div className="reading-section">
+        <article className="detail-main" ref={articleRef}>
+          <section className="reading-section" id="paper-abstract" tabIndex={-1}>
             <span className="eyebrow">ABSTRACT</span><h2>论文摘要</h2>
-            <p className="reading-paragraph">{paper.abstract||"源数据没有提供摘要。"}</p>
+            <p className="reading-paragraph" data-reader-text={paper.abstract?true:undefined}>{paper.abstract||"源数据没有提供摘要。"}</p>
             {paper.abstract&&<button className="text-action" onClick={()=>void copy(paper.abstract,"摘要已复制")}>
               <Clipboard size={15}/> 复制摘要
             </button>}
-          </div>
-          <div className="reading-section">
+          </section>
+          <section className="reading-section" id="paper-fulltext" tabIndex={-1}>
             <span className="eyebrow">FULL TEXT</span><h2>论文全文</h2>
             {full?<><label className="reader-search"><Search size={17}/>
                 <input value={readingSearch} onChange={(e)=>setReadingSearch(e.target.value)} placeholder="在当前全文中查找关键词…" aria-label="全文查找"/>
                 {readingSearch&&<span>{full.toLocaleLowerCase().split(readingSearch.toLocaleLowerCase()).length-1} 处匹配</span>}
               </label>
-              <div className="reading-paragraph pre-line"><Highlight text={displayText} query={readingSearch}/>{!expanded&&full.length>displayText.length?"\n\n…（部分内容已折叠）":""}</div>
+              <div className="reading-paragraph pre-line" data-reader-text><Highlight text={displayText} query={readingSearch}/></div>
+              {!expanded&&full.length>displayText.length&&<p className="reader-fold-notice">当前展示前 {displayText.length.toLocaleString()} 字符，共 {full.length.toLocaleString()} 字符。</p>}
               {full.length>4500&&<button className="text-action" onClick={()=>setExpanded(!expanded)}>
                 {expanded?<ChevronUp size={16}/>:<ChevronDown size={16}/>}
                 {expanded?"收起全文":"展开全部全文"}
               </button>}</>:<p className="muted">{canOpenPdf?"这篇论文暂无提取文本，请使用上方的 PDF 原文阅读。":"源数据没有提供可阅读的文本。"}</p>}
-          </div>
+          </section>
           <IntegrationNotice title="引用前请核对原始文献" desc={demoPaper?
             "本页是虚构示例论文，所有作者、题目、摘要均不可作为真实学术引用。":
             "论文信息来自检索接口，但当前系统未自动验证出版社、DOI 和正式发表信息。"} />
@@ -140,7 +145,7 @@ export function PaperPage() {
           </section>}
         </article>
         <aside className="detail-sidebar">
-          <div className="info-panel"><h3>文献信息</h3>
+          <div className="info-panel" id="paper-info" tabIndex={-1}><h3>文献信息</h3>
             {[
               ["论文编号",paper.paper_id],
               ["发表年份",paper.year??"未知"],
@@ -159,7 +164,7 @@ export function PaperPage() {
               </Link>):<span>尚无关键词</span>}
             </div>
           </div>
-          <div className="info-panel citation-panel"><h3>参考信息工具</h3>
+          <div className="info-panel citation-panel" id="paper-citation" tabIndex={-1}><h3>参考信息工具</h3>
             <p className="muted">可选择格式、复制或导出；缺失的出版信息不会编造。</p>
             <label className="form-label">格式
               <select value={citationStyle} onChange={(e)=>setCitationStyle(e.target.value as CitationStyle)}>

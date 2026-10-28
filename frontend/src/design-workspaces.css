@@ -50,16 +50,46 @@
 .history-row a{color:#3c4654}
 .history-row a:hover{color:#1268c6}
 .detail-page .back-link{font-size:12px;color:#6d7c90;margin-bottom:18px}
-.detail-header{padding:24px 32px 32px;margin-bottom:24px;border:1px solid #fff;border-radius:16px;box-shadow:0 8px 24px #173d5608;background:var(--paper)}
+.detail-header{padding:24px 0 32px;margin-bottom:24px;border:0;border-bottom:1px solid var(--app-hairline);border-radius:0;box-shadow:none;background:var(--paper)}
 .detail-header h1{font-size:36px;font-weight:650;max-width:960px;line-height:1.3;letter-spacing:-.035em;margin:24px 0 16px;color:var(--app-ink)}
 .detail-authors{font-size:14px;color:#7b8695}
-.detail-buttons{margin-top:23px;gap:8px}
+.detail-buttons{margin-top:24px;gap:8px}
 .detail-buttons .button{min-height:44px;font-size:14px}
 .detail-grid{grid-template-columns:minmax(0,1fr) 256px;gap:24px;align-items:start}
-.detail-main{padding:32px;background:var(--paper);border:1px solid #fff;border-radius:16px;min-width:0;box-shadow:0 8px 24px #173d5608}
+.detail-main{padding:0 32px 32px 0;background:var(--paper);border:0;border-radius:0;min-width:0;box-shadow:none}
 .reading-section h2{font-size:18px;letter-spacing:-.03em}
 .reading-section+.reading-section{border-color:#eaedf1;margin-top:28px;padding-top:28px}
-.reading-paragraph{font-size:16px;line-height:1.95;color:#56565d}
+.reading-paragraph{font-size:16px;line-height:1.95;color:var(--app-ink);overflow-wrap:anywhere}
+.reading-section,.detail-sidebar .info-panel{scroll-margin-top:112px}
+.reading-section:focus,.detail-sidebar .info-panel:focus{outline:none}
+.reading-section:focus-visible>h2,.detail-sidebar .info-panel:focus-visible>h3{outline:2px solid var(--app-blue);outline-offset:8px;border-radius:4px}
+.reader-tools{position:sticky;top:0;z-index:30;margin-bottom:16px;background:var(--paper);border-bottom:1px solid var(--app-hairline)}
+.reader-toolbar{display:flex;align-items:center;gap:16px;min-height:64px;padding:8px 0}
+.reader-toolbar nav{display:flex;align-items:center;gap:4px;margin-right:auto}
+.reader-toolbar button,.reader-resume button,.reader-selection button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:36px;padding:8px 12px;background:transparent;border:1px solid transparent;border-radius:8px;font-size:12px;color:var(--app-muted);white-space:nowrap;cursor:pointer}
+.reader-toolbar button:hover,.reader-resume button:hover,.reader-selection button:hover{background:var(--app-blue-soft)}
+.reader-toolbar button[aria-current],.reader-toolbar .reader-focus-button{background:var(--app-blue-soft);color:var(--app-blue)}
+.reader-toolbar .reader-focus-button{border-color:#0969a92b;min-height:40px}
+.reader-progress{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--app-muted);white-space:nowrap}
+.reader-progress progress{width:48px;height:4px;border:0;border-radius:8px;overflow:hidden;accent-color:var(--app-blue)}
+.reader-progress progress::-webkit-progress-bar{background:#dce9f0}.reader-progress progress::-webkit-progress-value{background:var(--app-blue);border-radius:8px}
+.reader-resume,.reader-selection{display:flex;align-items:center;gap:8px;min-height:48px;border-top:1px solid var(--app-hairline);padding-block:8px;font-size:12px}
+.reader-resume>span,.reader-selection>span{display:flex;align-items:center;gap:8px;margin-right:auto;min-width:0}
+.reader-resume small{color:var(--app-muted);font-size:12px}
+.reader-resume>button:not(.icon-button){color:var(--app-blue)}
+.reader-selection>span>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:360px}
+.reader-selection>span>svg{flex-shrink:0;color:var(--app-blue)}
+.reader-selection button:disabled{opacity:.5;cursor:default}
+.reader-storage-error,.reader-fold-notice{font-size:12px;color:var(--app-muted);line-height:1.7}
+.reader-storage-error{padding-bottom:12px;margin:0}
+.workspace-shell:has(.detail-page[data-reading-focus=true]){background:var(--paper);padding:0;min-height:100dvh}
+.workspace-shell:has(.detail-page[data-reading-focus=true]):before,.workspace-shell:has(.detail-page[data-reading-focus=true]) .observatory-backdrop,.workspace-shell:has(.detail-page[data-reading-focus=true]) .app-sidebar,.workspace-shell:has(.detail-page[data-reading-focus=true]) .site-header,.workspace-shell:has(.detail-page[data-reading-focus=true]) .site-footer{display:none}
+.workspace-shell:has(.detail-page[data-reading-focus=true]) .app-stage{margin:0 auto;max-width:1040px;min-height:100dvh;border-radius:0}
+.detail-page[data-reading-focus=true]{padding-block:16px 64px}
+.detail-page[data-reading-focus=true] .detail-header h1{font-size:30px;max-width:800px}
+.detail-page[data-reading-focus=true] .detail-tags,.detail-page[data-reading-focus=true] .detail-buttons,.detail-page[data-reading-focus=true] .detail-sidebar,.detail-page[data-reading-focus=true] .related-section{display:none}
+.detail-page[data-reading-focus=true] .detail-grid{grid-template-columns:minmax(0,1fr);max-width:800px;margin:auto}
+.detail-page[data-reading-focus=true] .detail-main{padding:0}
 .reader-search{border-radius:8px}
 .info-panel{border:1px solid var(--glass-edge);border-radius:16px;padding:24px;background:var(--glass-soft);box-shadow:var(--glass-shadow)}
 .info-row{border-top:1px solid #e7e7ec;padding:12px 0}
@@ -231,6 +261,14 @@
  .library-main .paper-list{border-radius:8px}
  .library-paper-item{padding-inline:0}
  .detail-header{padding:8px 0 24px;margin-bottom:24px}.detail-header h1{font-size:30px}.detail-main{padding:0}
+ .reader-toolbar{flex-wrap:wrap;gap:8px;justify-content:space-between}
+ .reader-toolbar nav{width:100%;gap:0}
+ .reader-toolbar nav button{padding-inline:8px;flex:1}
+ .reader-resume,.reader-selection{flex-wrap:wrap}
+ .reader-resume>span,.reader-selection>span{width:100%;flex-wrap:wrap}
+ .reader-selection>span>span{max-width:calc(100vw - 96px)}
+ .reader-progress{gap:4px}
+ .reading-section,.detail-sidebar .info-panel{scroll-margin-top:160px}
  .detail-sidebar{display:grid;grid-template-columns:1fr}
  .evaluation-workbench,.evaluation-summary{padding:19px}
  .evaluation-summary .metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}

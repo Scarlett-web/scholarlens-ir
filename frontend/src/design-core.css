@@ -1,10 +1,11 @@
 /* Glacier observatory: landscape, clear navigation glass, and quiet paper surfaces. */
 :root{
  --app-canvas:#edf4f8;--app-surface:#fff;--app-ink:#193348;--app-muted:#304d61;
- --glass-clear:rgba(247,252,255,.2);--glass-soft:rgba(249,253,255,.72);--paper:rgba(255,255,255,.94);
+ --glass-clear:rgba(247,252,255,.2);--glass-soft:rgba(249,253,255,.72);--paper:#fbfdfe;
  --glass-edge:rgba(255,255,255,.8);--glass-shadow:0 16px 48px #173d5614, inset 0 1px 0 #ffffffb3;
  --app-hairline:rgba(70,109,134,.16);--app-blue:#0969a9;--app-blue-soft:#e1f1fb;--app-rail:224px;
  --r-control:8px;--r-panel:16px;--r-feature:24px;--app-easing:cubic-bezier(.22,1,.36,1);
+ --motion-control:200ms;--motion-base:500ms;--motion-scene:700ms;
  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
  color:var(--app-ink);background:#d5e5ee;font-variant-numeric:tabular-nums;
 }
@@ -21,7 +22,7 @@ button,input,select,textarea{font-family:inherit}
 .app-stage{position:relative;isolation:isolate;display:flex;flex-direction:column;min-height:calc(100dvh - 48px);margin:0 24px 0 calc(var(--app-rail) + 24px);min-width:0;background:transparent;border:0;border-radius:0 24px 24px 0;box-shadow:none}
 .app-stage:before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;border-radius:inherit;background:rgba(244,251,255,.38)}
 .app-stage[data-space=home]:before{background:transparent}
-.app-stage[data-space=reading]:before{background:rgba(247,251,253,.68)}
+.app-stage[data-space=reading]:before{background:var(--paper)}
 .app-sidebar{position:fixed;inset:24px auto 24px 24px;z-index:50;width:var(--app-rail);height:calc(100dvh - 48px);background:rgba(247,252,255,.04);border:0;border-right:1px solid #ffffff38;border-radius:24px 0 0 24px;box-shadow:none;padding:32px 16px 16px;display:flex;flex-direction:column;overflow-y:auto;scrollbar-width:thin;scrollbar-color:transparent transparent}
 .app-sidebar:hover{scrollbar-color:#36536940 transparent}
 .sidebar-brand{padding:0 12px 32px;display:flex;flex-direction:column;gap:8px}
@@ -211,6 +212,5 @@ dialog.pdf-viewer-backdrop::backdrop{background:#16384e66;backdrop-filter:blur(1
 .app-sidebar .sidebar-signature{border-top-color:#c5eff329}
 .app-sidebar .sidebar-signature-mark{background:#d8f5f52a;color:#e4f3f7}
 .app-stage:before{background:rgba(239,248,250,.82);box-shadow:inset 1px 0 0 #ffffff8c}
-.app-stage[data-space=home]:before{background:rgba(240,249,252,.62)}
-.app-stage[data-space=reading]:before{background:rgba(248,252,253,.92)}
+.app-stage[data-space=home]:before{background:rgba(240,249,252,.78)}
 .site-header{background:rgba(224,242,247,.54);border-bottom-color:#ffffff66}

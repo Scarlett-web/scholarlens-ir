@@ -38,6 +38,7 @@ interface StudioContextValue {
   isFavorite(id: string): boolean;
   moveFavorite(id: string, collection: string): void;
   updateFavoriteNote(id: string, note: string): void;
+  appendFavoriteExcerpt(paper: Paper, excerpt: string): boolean;
   addCollection(name: string): boolean;
   renameCollection(previous: string, next: string): boolean;
   removeCollection(name: string): void;
@@ -233,6 +234,20 @@ function StudioProvider({ children }: { children: ReactNode }) {
     updateFavoriteNote: (id, note) => {
       if(!editWorkspace())return;
       setFavorites((old) => old.map((entry) => entry.paper.paper_id === id ? { ...entry, note: note.slice(0, 2000) } : entry));
+    },
+    appendFavoriteExcerpt: (paper, excerpt) => {
+      if(user&&paper.paper_id.startsWith("demo-")){setToast("虚构演示论文仅保留在游客空间");return false;}
+      if(!editWorkspace())return false;
+      const quote = excerpt.trim();
+      if(!quote)return false;
+      const existing = favorites.find(entry=>entry.paper.paper_id===paper.paper_id);
+      const note = [existing?.note, "摘录：\n"+quote].filter(Boolean).join("\n\n");
+      if(note.length>2000){setToast("笔记空间不足：请缩短摘录，或先在我的文献中整理已有笔记");return false;}
+      setFavorites(old=>existing
+        ? old.map(entry=>entry.paper.paper_id===paper.paper_id?{...entry,note}:entry)
+        : [{paper:paperSnapshot(paper),collection:"全部收藏",savedAt:new Date().toISOString(),note},...old]);
+      setToast(existing?"原文已追加到文献笔记":"已收藏论文，并将原文加入笔记");
+      return true;
     },
     addCollection: (name) => {
       if(!editWorkspace())return false;
