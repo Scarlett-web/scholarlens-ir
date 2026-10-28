@@ -19,4 +19,13 @@
 - `test_ai_responses.py` 与 `test_agent.py` 合计 60 项通过；原有 DNS 私网/混合地址拒绝、Host/SNI 固定、拒绝跳转、上游脱敏及 RAG 错误兼容检查 12 项通过；另单独运行原有正常生成及引用兼容用例 1 项通过。合计 73 项针对性及兼容检查通过，不是后端全量检查。过深/非文本响应、标准及代码围栏 JSON 均有实际用例。
 - 局部 Harness 从 8 个扩为 11 个场景，新增格式异常供应商、非文本草稿和过深计划恢复，逐个真实执行均退出 0；结果 `passed=true`、`real_provider=not_tested`、`production_mutations=false`。JSON、JUnit 和输出位于外层 `output/agent-provider-boundaries-20261028/harness/`。
 - 官方 MCP SDK 客户端与 stdio 子进程实际检查通过：三工具、两资源、一提示词、私有 ID 和非法数量拒绝。HTTP 数据源为受控本机夹具，真实供应商生成未测试。Ruff 对五个本批修改/新增 Python 文件检查通过，Git diff 格式检查通过。
-- 前端源码、依赖、数据库 schema、供应商配置与部署环境均无变更。项目内工具保持局部安装，无新依赖和全局配置变更。发布及公网结果待实际执行后追加。
+- 前端源码、依赖、数据库 schema、供应商配置与部署环境均无变更。项目内工具保持局部安装，无新依赖和全局配置变更。Gitleaks 对本批暂存差异实际扫描，无凭据命中；此结果仅覆盖本批差异。
+
+## 发布与公网结果
+
+- 应用提交 `7917ba31dde8c4d9f3d48569c8fd5ed395ead564` 已推送到 `origin/zjl`，线上 release 为 `/opt/scholarlens/releases/20261028T054410Z-7917ba3`。发布包 243 个文件、3,023,930 字节，SHA-256 `9b8e297e93219d85862e521e13cb8a3bb2213b9fac1a8b0885e66bd95845d8b0`，逐文件核对通过。
+- 切换前使用服务器实际 Python 环境运行 18 项离线响应边界预检，`passed=true`。仅用 `httpx.MockTransport`，包括非文本回复拒绝、递归 JSON 归一和正常回答兼容；未调用真实供应商。部署同时检查 Skill/Workflow、Python 源码和依赖锁一致性，未升级服务器依赖。
+- 上一 release `20261028T052844Z-93b93a4` 保留；一致性 SQLite 备份、环境副本及回滚脚本位于 `/opt/scholarlens/backups/20261028T054410Z-7917ba3`，备份完整性与回滚脚本语法检查通过。切换前后均为 25 用户、859 论文，环境哈希不变，Cloudflare Tunnel PID 与 Elasticsearch 容器身份/启动时间不变。
+- 只切换并重启 ScholarLens API。再次读取实际服务进程工作目录，确认指向新 release；`ActiveState=active`、`NRestarts=0`。前端相较上一应用提交无源码差异，复用已校验构建，全部三个公网 JS/CSS 资源哈希与发布清单一致。
+- 公网验收 `passed=true`：真实 859 篇、magnetic 61 条、5 段已核验来源，模型 `not_called`；原 PDF Range 返回 206 和正确文件头，背景及 robots 可读。独立 Chrome 的公网只读游客检查通过搜索结果与论文范围对应、证据链接、登录页和桌面几何，`errors=[]`、`blockedWrites=[]`。没有在生产注册、登录、上传、审批或写入索引。
+- 发布与公网证据保留在外层 `output/deploy-agent-response-20261028/`。本节为发布后的纯文档记录，后续文档提交无需重建或重启。真实个人供应商生成、Squirrel/ZAP 工具缺口及两份记录中尚未逐项验收的设计与审计内容仍需继续；本批不构成全局任务完成声明。
