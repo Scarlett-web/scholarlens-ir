@@ -47,3 +47,15 @@ Linux/macOS 对应解释器为 `.venv/bin/python`。可选 MCP SDK 不加入 Web
 ## 后续仍需完成
 
 此运行时更新不代表两份参考文档的全部设计与全局审计任务已完成。首页研究棱镜、真实论文关系视图、阅读专注模式、评测图形和上传审核时间线仍需逐项实现验收；安全工具缺口及性能改进也继续以实际报告为准。真实个人模型生成尚未验收，不配置替代共享密钥。
+
+## 线上发布记录（2026-10-28 11:06 北京时间）
+
+- 已推送应用提交 `0d3be7bad096ca70b7d5f92253af4876fab97801` 至 `origin/zjl`，部署至 https://scholarlens.lingion.cc.cd/ 。当前 release 为 `/opt/scholarlens/releases/20261028T030645Z-0d3be7b`。
+- 保留上一 release `20261028T023631Z-a73155e`。一致性 SQLite 备份、环境副本与回滚脚本位于 `/opt/scholarlens/backups/20261028T030645Z-0d3be7b`，目录 0700、数据库和环境副本 0600，备份库完整性检查通过。回滚只切换应用并重启 ScholarLens API，不覆盖用户库。
+- 发布包 1,992,907 字节、205 个文件逐一 SHA-256 校验；包含实际 Workflow/Skill，切换前 `resources()` 校验通过。服务器未安装 MCP SDK、未升级主应用依赖。
+- 切换前后均为 859 篇论文、24 个用户记录。环境哈希一致；搜索库容器及隧道 PID/启动时间不变。应用和隧道 active，应用 `NRestarts=0`，ES 无 OOM、无重启。
+- 公网 JS `index-DVmbihDe.js`、CSS `index-znisI4n3.css` 哈希与本地构建一致。真实关键词 `magnetic` 返回 61 条；原 PDF Range 返回 206、`%PDF-` 及合法 Content-Range。
+- 公网 `operation=evidence` 返回 5 段真实证据、Agent 0.2.0 和实际检索/原文核对两步，模型为 `not_called`。MCP 官方 SDK 客户端通过本机预览代理实际检索线上论文、读取片段和运行证据模式；三工具、两资源、一提示词及私有 ID/参数边界均通过。
+- Ego 独立浏览器实际输入问题、提交、展开执行记录，得到 5 张原文卡片、2 个完成步骤，无页面报错或横向溢出。登录页显示“欢迎回来”，首页 1366×768 搜索框首屏可见；没有进行生产账户注册、写入或扫描。Ego 截图接口两次超时，未把未生成的截图标成视觉验收通过；DOM、实际交互及原有浏览器布局回归作为本轮证据。
+- 本次追加 6 项旧 RAG 适配器兼容测试通过；连同上述 38 项针对性测试共 44 项通过，不等同于后端全量。完整账户浏览器回归本轮未在生产执行；认证、个人配置及对话所有权使用隔离 HTTP/SQLite 夹具验证。
+- 本机预览源与交付仓库同步，构建资源一致。本机证据目录 `C:/Users/lenovo/Desktop/zjl/output/deploy-runtime-20261028/`；MCP 真实 API 验收报告位于忽略目录 `tools/agent/reports/mcp-real-api.json`。本发布记录只改文档，无需再重启服务。
