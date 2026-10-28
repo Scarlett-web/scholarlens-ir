@@ -248,6 +248,38 @@
 .explore-grid .paper-card:first-child .paper-abstract{max-width:800px}
 .explore-grid .paper-card h3{font-size:18px}
 .explore-grid .paper-card-footer{margin-top:24px}
+.explore-view-controls{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.paper-constellation{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(256px,1fr);gap:0;background:var(--paper);border:1px solid var(--glass-edge);border-radius:var(--r-panel);overflow:hidden;box-shadow:var(--glass-shadow)}
+.constellation-map{min-width:0;background:var(--glass-clear);padding:24px}
+.constellation-heading{display:flex;justify-content:space-between;align-items:center;gap:16px;font-size:12px;color:var(--app-muted)}
+.constellation-heading>span{display:flex;gap:8px;align-items:center}
+.constellation-space{height:480px;perspective:1000px;position:relative;touch-action:pan-y;cursor:grab}
+.constellation-space:active{cursor:grabbing}
+.constellation-plane{position:absolute;inset:24px 16px 32px;transform-style:preserve-3d;transform:rotateX(var(--map-rx,0deg)) rotateY(var(--map-ry,0deg));transition:transform var(--motion-control) var(--app-easing)}
+.constellation-edges{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.constellation-edges line{stroke:var(--app-blue);stroke-width:1;vector-effect:non-scaling-stroke;opacity:.16;transition:opacity var(--motion-control) var(--app-easing)}
+.constellation-edges line[data-active=true]{opacity:.64;stroke-width:1.5}
+.constellation-node{position:absolute;transform:translate(-50%,-50%);width:var(--node-size);height:var(--node-size);border:1px solid var(--app-hairline);border-radius:50%;background:var(--app-blue-soft);color:var(--app-blue);box-shadow:0 8px 16px #173d5612;padding:0;display:grid;place-items:center;transition:background var(--motion-control) var(--app-easing),box-shadow var(--motion-control) var(--app-easing)}
+.constellation-node>span{font-size:12px;font-weight:600}
+.constellation-node>small{position:absolute;left:50%;top:calc(100% + 8px);transform:translateX(-50%);font-size:12px;white-space:nowrap;color:var(--app-muted);pointer-events:none}
+.constellation-node[data-related=true]{border-color:var(--app-blue)}
+.constellation-node[aria-pressed=true]{background:var(--app-blue);color:var(--app-surface);box-shadow:0 0 0 8px var(--app-blue-soft),0 8px 24px #173d5624;z-index:1}
+.constellation-node:hover,.constellation-node:focus-visible{outline:2px solid var(--app-blue);outline-offset:4px}
+.constellation-caption,.constellation-scope{font-size:12px;line-height:1.8;color:var(--app-muted);margin:16px 0 0}
+.constellation-detail{padding:24px;min-width:0;background:var(--paper);border-left:1px solid var(--app-hairline)}
+.constellation-detail h3{font-size:18px;line-height:1.5;margin:16px 0;overflow-wrap:anywhere}
+.constellation-authors{font-size:12px;line-height:1.8;color:var(--app-muted)}
+.constellation-reasons{margin-top:24px;max-height:320px;overflow:auto;scrollbar-width:thin}
+.constellation-reasons h4{font-size:14px;margin:0 0 16px}
+.constellation-reasons p{font-size:14px;line-height:1.8;color:var(--app-muted)}
+.constellation-reasons button{display:block;text-align:left;width:100%;padding:12px;background:var(--app-canvas);border:1px solid var(--app-hairline);border-radius:var(--r-control);color:var(--app-ink);margin:0 0 8px}
+.constellation-reasons button:hover{background:var(--app-blue-soft)}
+.constellation-reasons button>span{display:block;font-size:14px;line-height:1.5}
+.constellation-reasons button>small{display:block;font-size:12px;line-height:1.8;color:var(--app-muted);margin-top:8px;overflow-wrap:anywhere}
+.workspace-shell[data-motion=paused] .constellation-plane{transform:none;transition:none}
+@media(max-width:1000px){.paper-constellation{grid-template-columns:1fr}.constellation-detail{border-left:0;border-top:1px solid var(--app-hairline)}.constellation-reasons{max-height:256px}}
+@media(max-width:600px){.constellation-map,.constellation-detail{padding:16px}.constellation-space{height:400px}.constellation-plane{inset:24px 0 32px}.constellation-heading{align-items:flex-start;gap:8px}.constellation-heading .text-action{font-size:12px;white-space:nowrap}.explore-view-controls{width:100%;justify-content:space-between}}
+@media(prefers-reduced-motion:reduce){.constellation-plane{transform:none!important;transition:none}.constellation-node,.constellation-edges line{transition:none}}
 /* The optical highlight follows the pointer only on a few functional surfaces. */
 .search-form,.site-header{background-image:radial-gradient(240px circle at var(--glass-x,20%) var(--glass-y,0%),#ffffff50,transparent 75%)}
 .search-page .search-form{background-color:rgba(255,255,255,.86)}

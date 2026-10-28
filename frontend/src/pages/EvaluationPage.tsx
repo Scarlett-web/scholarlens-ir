@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, BarChart3, CheckCircle2, Clock3, Download, RotateCcw, Search, Target } from "lucide-react";
 import { PageHeading } from "../components/Layout";
+import { MetricRing, MetricScale, QueryTimings, type QueryTiming } from "../components/EvaluationVisuals";
 import { DATA_SOURCE, searchPapers } from "../services/papers";
 import { computeEvaluation } from "../lib/evaluation";
 import type { Relevance, RelevanceJudgments } from "../lib/evaluation";
@@ -22,22 +23,33 @@ export function EvaluationPage() {
   const [data, setData] = useState<SearchResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [saved, setSaved] = useState<SavedJudgments>(() => readLocal("eval-judgments", {}));
+  const [saved, setSaved] = useState<SavedJudgments>(() => {
+    const stored = readLocal<unknown>("eval-judgments", {});
+    return stored && typeof stored === "object" && !Array.isArray(stored) ? stored as SavedJudgments : {};
+  });
+  const [timings, setTimings] = useState<QueryTiming[]>([]);
+  const [storageError, setStorageError] = useState(false);
   const key = DATA_SOURCE + "::" + currentQuery.toLocaleLowerCase();
-  const grades = saved[key] ?? {};
+  const rawGrades = saved[key];
+  const grades: RelevanceJudgments = rawGrades && typeof rawGrades === "object" && !Array.isArray(rawGrades)
+    ? Object.fromEntries(Object.entries(rawGrades).filter(([,value])=>value===0||value===1||value===2)) : {};
 
   useEffect(() => {
     if (!currentQuery.trim()) { setData(null); setLoading(false); return; }
     let active = true;
     setLoading(true); setError(""); setData(null);
     searchPapers({q:currentQuery,field:"all",page:1,pageSize:10,sort:"relevance"})
-      .then((results) => { if (active) setData(results); })
+      .then((results) => { if (active) {
+        setData(results);
+        if(results.dataKind==="api"&&results.durationMs!==null&&Number.isFinite(results.durationMs)&&results.durationMs>=0)
+          setTimings(old=>[...old,{query:currentQuery,ms:results.durationMs!}].slice(-6));
+      } })
       .catch((cause) => { if(active)setError(cause instanceof Error?cause.message:"查询失败"); })
       .finally(() => { if(active)setLoading(false); });
     return () => {active=false};
   }, [currentQuery, runVersion]);
 
-  useEffect(() => { writeLocal("eval-judgments",saved); },[saved]);
+  useEffect(() => { setStorageError(!writeLocal("eval-judgments",saved)); },[saved]);
   const ids = useMemo(() => data?.papers.map((paper) => paper.paper_id) ?? [], [data]);
   const metrics = computeEvaluation(ids, grades);
   const progress = ids.length ? Math.round(100 * metrics.judged / ids.length) : 0;
@@ -80,16 +92,17 @@ export function EvaluationPage() {
           <button className="button button-primary" type="submit">运行查询 <ArrowRight size={16}/></button></label>
       </form>
       {error && <div className="inline-error" role="alert">{error}</div>}
+      {storageError&&<p className="inline-error" role="status">标注暂未保存到浏览器，请先导出备份，再检查存储权限。</p>}
       <div className="evaluation-progress">
         <div><h2>相关性标注</h2>
           <p>同一个查询的标注会自动保存在当前浏览器。建议为当前全部结果标注。</p></div>
         <div className="evaluation-progress-data"><strong>{metrics.judged} / {ids.length}</strong><span>已标注</span>
-          <div className="evaluation-progress-track"><span style={{width:progress+"%"}}/></div>
+          <progress className="evaluation-progress-track" max={Math.max(1,ids.length)} value={metrics.judged} aria-label="本次结果标注完成率"/>
         </div>
       </div>
       {loading?<div className="paper-skeleton-grid">{Array.from({length:3},(_,i)=><div className="paper-skeleton" key={i}/>)}</div>:
         data&&data.papers.length ? <div className="evaluation-rows">{data.papers.map((paper,index)=>
-          <article className="evaluation-row" key={paper.paper_id}>
+          <article className="evaluation-row" key={paper.paper_id} data-grade={grades[paper.paper_id]??"unjudged"}>
             <div className="evaluation-row-content"><span className="eval-rank">#{index+1} · {paper.year??"年份未知"}</span>
               <Link to={"/paper/"+encodeURIComponent(paper.paper_id)}><h3>{paper.title}</h3></Link>
               <p>{paper.authors.join(" · ")||"作者信息暂缺"}</p>
@@ -97,7 +110,7 @@ export function EvaluationPage() {
             </div>
             <div className="evaluation-votes"><span>相关性分级</span>{LABELS.map(option=>
               <button className={grades[paper.paper_id]===option.value?"selected":""} key={option.value}
-                title={option.detail} aria-pressed={grades[paper.paper_id]===option.value}
+                data-grade={option.value} title={option.detail} aria-pressed={grades[paper.paper_id]===option.value}
                 onClick={()=>grade(paper.paper_id,option.value)}>{option.value} · {option.label}</button>)}
             </div>
           </article>)}</div>
@@ -111,20 +124,22 @@ export function EvaluationPage() {
       <div className="section-heading"><div><h2>评测结果</h2></div><span className="table-status">只计算已完整标注的当前结果</span></div>
       <div className="metric-grid">
         <div className="metric-card"><div className="metric-icon"><Target size={22}/></div><h3>Precision@{metrics.precisionAt||5}</h3>
-          <strong className="metric-value">{metrics.precisionK===null?"—":(100*metrics.precisionK).toFixed(1)+"%"}</strong>
+          <MetricRing value={metrics.precisionK}>{metrics.precisionK===null?"待标注":(100*metrics.precisionK).toFixed(1)+"%"}</MetricRing>
           <p>前 {metrics.precisionAt||5} 条中被你判断为相关或高度相关的论文比例。</p>
         </div>
         <div className="metric-card"><div className="metric-icon"><BarChart3 size={22}/></div><h3>nDCG@{metrics.ndcgAt||10}</h3>
-          <strong className="metric-value">{metrics.ndcgK===null?"—":metrics.ndcgK.toFixed(3)}</strong>
+          <strong className="metric-value">{metrics.ndcgK===null?"待标注":metrics.ndcgK.toFixed(3)}</strong>
+          <MetricScale value={metrics.ndcgK}/>
           <p>当前标注结果的排序质量；使用 0 / 1 / 2 三级相关性。</p>
         </div>
         <div className="metric-card"><div className="metric-icon"><CheckCircle2 size={22}/></div><h3>标注完成率</h3>
-          <strong className="metric-value">{ids.length?progress+"%":"—"}</strong>
+          <MetricRing value={ids.length?progress/100:null}>{ids.length?progress+"%":"待查询"}</MetricRing>
           <p>本次返回的 {ids.length} 篇论文中，已完成标注的比例。</p>
         </div>
         <div className="metric-card"><div className="metric-icon"><Clock3 size={22}/></div><h3>查询耗时</h3>
           <strong className="metric-value">{data?.dataKind==="api"&&data.durationMs!==null?data.durationMs+" ms":"—"}</strong>
-          <p>{DATA_SOURCE==="demo"?"本地模拟不展示伪造的服务器耗时。":"接口请求耗时，具体统计口径须核对后端。"} </p>
+          <QueryTimings entries={timings}/>
+          <p>{DATA_SOURCE==="demo"?"本地模拟不展示伪造的服务器耗时。":"图示为本页最近的 BM25 引擎耗时（ms），取自 took_ms，不含网络等待。"} </p>
         </div>
       </div>
       <p className="metric-footnote">{metrics.message} Recall 需要完整的语料相关性标注池，目前不计算。不同检索方法的公平对比还需要固定查询集与实验脚本。</p>

@@ -5,6 +5,7 @@ import { useStudio } from "../App";
 import {useAuth} from "../services/AuthContext";
 import { PageHeading } from "../components/Layout";
 import { PaperCard } from "../components/PaperCard";
+import { ReadingPositionHint } from "../components/ReadingPositionHint";
 import { downloadJson } from "../lib/storage";
 
 type LibraryTab = "saved" | "history";
@@ -135,6 +136,7 @@ export function LibraryPage() {
           <p>共 {filtered.length} 篇论文 · 可添加私人阅读笔记</p></div></div>
         {filtered.length?<div className="paper-list">{filtered.map((entry) => <div className="library-paper-item" key={entry.paper.paper_id}>
           <PaperCard paper={entry.paper}/>
+          <ReadingPositionHint paperId={entry.paper.paper_id}/>
           <div className="saved-paper-controls">
             <Clock3 size={14}/> 收藏于 {new Date(entry.savedAt).toLocaleDateString("zh-CN")}
             <label>分类 <select value={entry.collection} onChange={(e)=>moveFavorite(entry.paper.paper_id,e.target.value)}>
@@ -144,6 +146,9 @@ export function LibraryPage() {
               <StickyNote size={15}/>{entry.note?"查看 / 修改笔记":"添加笔记"}
             </button>
           </div>
+          {entry.note&&editingNote!==entry.paper.paper_id&&<button className="library-note-preview" type="button" onClick={()=>setEditingNote(entry.paper.paper_id)}>
+            <StickyNote size={16}/><span><strong>阅读笔记</strong><span>{entry.note.length>180?entry.note.slice(0,180)+"…":entry.note}</span></span>
+          </button>}
           {editingNote===entry.paper.paper_id && <div className="reading-note">
             <label>我的阅读笔记
               <textarea rows={3} maxLength={2000} value={entry.note??""}
@@ -152,9 +157,9 @@ export function LibraryPage() {
             </label><p role="status">{user?(workspaceError?"保存失败，草稿已留在本机，请检查账户连接":workspaceSyncing?"正在保存到账户…":"笔记已保存到账户"):"笔记自动保存在此浏览器"} · {entry.note?.length??0}/2000 字</p>
           </div>}
         </div>)}</div>:<div className="empty-state library-empty">
-          <span className="library-empty-icon"><Bookmark size={24} strokeWidth={1.7}/></span>
-          <h3>{term?"没有找到匹配的文献":favorites.length?"这个分类还没有论文":"还没有收藏论文"}</h3>
-          <p>{term?"试试更短的关键词，或清除当前筛选。":favorites.length?"在全部收藏中选择论文，将它移入这个分类。":"在检索结果中收藏论文，即可在这里分类和记录笔记。"}</p>
+          <div className="library-empty-shelf" aria-hidden="true"><span/><span/><span/></div>
+          <h3>{term?"没有找到匹配的文献":favorites.length?"这个分类还没有论文":"你的研究书架还是空的"}</h3>
+          <p>{term?"试试更短的关键词，或清除当前筛选。":favorites.length?"在全部收藏中选择论文，将它移入这个分类。":"从一篇论文开始，留下第一条线索。收藏后可分组、摘录，并接着上次的位置阅读。"}</p>
           <div className="library-empty-actions">
             {term?<button type="button" className="button button-primary" onClick={()=>setTerm("")}>清空搜索条件</button>
               :favorites.length?<button className="button button-primary" onClick={()=>setFolder("全部")}>查看全部收藏</button>:<Link to="/search" className="button button-primary">检索论文</Link>}
@@ -168,7 +173,8 @@ export function LibraryPage() {
           if (window.confirm(user?"确定清空当前账户的浏览记录？":"确定清空此浏览器的浏览记录？")) clearHistory();
         }}><Trash2 size={16}/> 清空历史</button></div>
       {filteredHistory.length?filteredHistory.map((entry)=><div className="history-row" key={entry.paper.paper_id}>
-        <Link to={"/paper/"+encodeURIComponent(entry.paper.paper_id)}><BookOpen size={18}/><span>{entry.paper.title}</span></Link>
+        <div className="history-reading-info"><Link to={"/paper/"+encodeURIComponent(entry.paper.paper_id)}><BookOpen size={18}/><span>{entry.paper.title}</span></Link>
+          <ReadingPositionHint paperId={entry.paper.paper_id}/></div>
         <span>{new Date(entry.viewedAt).toLocaleString("zh-CN")}</span>
         <button aria-label={"删除"+entry.paper.title} title="移除这条历史记录" onClick={()=>removeHistory(entry.paper.paper_id)}><X size={16}/></button>
       </div>):<div className="empty-state">{term?"没有匹配的浏览记录":"打开论文详情后，这里会记录你的阅读历史。"}</div>}

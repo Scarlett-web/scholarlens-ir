@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { RefreshCcw, Search, SlidersHorizontal, X } from "lucide-react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { List, Network, RefreshCcw, Search, SlidersHorizontal, X } from "lucide-react";
 import { PageHeading, IntegrationNotice } from "../components/Layout";
 import { PaperCard } from "../components/PaperCard";
 import { DATA_SOURCE, getDiscovery, getRandomDiscovery } from "../services/papers";
@@ -7,6 +7,9 @@ import type { Paper } from "../types";
 import { TOPICS } from "../data/demoPapers";
 
 type Order = "random" | "newest" | "oldest" | "title";
+const PaperConstellation = lazy(() => import("../components/PaperConstellation").catch(() => ({
+  default: () => <div className="empty-state error-state" role="alert"><h3>关系图暂未加载成功</h3><p>可切回列表继续浏览，或刷新页面重试。</p><button type="button" className="button button-secondary" onClick={()=>window.location.reload()}>刷新页面</button></div>
+})));
 function scramble(id:string,seed:number):number {
   let x=seed*17+101;
   for (let i=0;i<id.length;i++) x=(x*31+id.charCodeAt(i))|0;
@@ -21,6 +24,7 @@ export function ExplorePage() {
   const [error,setError]=useState("");
   const [loading,setLoading]=useState(true);
   const [total,setTotal]=useState(0);
+  const [view,setView]=useState<"list"|"map">("list");
   const seen=useRef<string[]>([]);
 
   useEffect(()=>{
@@ -89,12 +93,19 @@ export function ExplorePage() {
     </section>
     <div className="results-topbar"><div><span className="eyebrow">BROWSE PAPERS</span>
       <h2>{topic==="全部领域"?"全部研究领域":topic}</h2>
-      <p>{loading?"正在读取…":filtered.length+" 篇符合条件 · 当前展示最多 9 篇"}</p></div>
-      {(term||topic!=="全部领域")&&<button className="button button-secondary" onClick={()=>{setTopic("全部领域");setTerm("")}}>清除筛选</button>}
+      <p>{loading?"正在读取…":filtered.length+" 篇符合条件 · "+(view==="list"?"列表最多展示 9 篇":"关系图最多展示 20 篇")}</p></div>
+      <div className="explore-view-controls">
+        {(term||topic!=="全部领域")&&<button className="text-action" onClick={()=>{setTopic("全部领域");setTerm("")}}>清除筛选</button>}
+        <div className="segmented" role="group" aria-label="探索显示方式">
+          <button type="button" className={view==="list"?"selected":""} aria-pressed={view==="list"} onClick={()=>setView("list")}><List size={16}/> 列表</button>
+          <button type="button" className={view==="map"?"selected":""} aria-pressed={view==="map"} onClick={()=>setView("map")}><Network size={16}/> 关系图</button>
+        </div>
+      </div>
     </div>
     {error?<div className="empty-state error-state"><h3>加载失败</h3><p>{error}</p></div>:
       loading?<div className="paper-skeleton-grid"><div className="paper-skeleton"/><div className="paper-skeleton"/></div>:
-      filtered.length?<div className="explore-grid">{filtered.slice(0,9).map((paper,index)=>
+      filtered.length?view==="map"?<Suspense fallback={<div className="empty-state" role="status">正在准备论文关系图…</div>}><PaperConstellation papers={filtered}/></Suspense>:
+        <div className="explore-grid">{filtered.slice(0,9).map((paper,index)=>
         <PaperCard key={paper.paper_id} paper={paper} dense order={index+1}/>)}</div>:
       <div className="empty-state"><Search size={27}/><h3>这个条件下没有论文</h3>
         <p>请调整领域或关键词。</p>

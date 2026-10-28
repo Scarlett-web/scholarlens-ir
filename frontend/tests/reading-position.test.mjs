@@ -10,6 +10,7 @@ test("reading positions persist per paper and account without guest leakage", ()
   store.clear();
   assert.equal(saveReadingPosition(11, "paper-a", position), true);
   assert.deepEqual(loadReadingPosition(11, "paper-a", 9000), position);
+  assert.deepEqual(loadReadingPosition(11, "paper-a"), position, "library can show a prior record without storing full source text");
   assert.equal(loadReadingPosition(12, "paper-a", 9000), null);
   assert.equal(loadReadingPosition(undefined, "paper-a", 9000), null);
   assert.equal(loadReadingPosition(11, "paper-b", 9000), null);

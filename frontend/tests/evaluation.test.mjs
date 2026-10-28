@@ -10,6 +10,14 @@ test("no judgments never invents precision or nDCG values", () => {
   assert.equal(data.count, 3);
 });
 
+test("corrupted persisted grades never become completed evaluation metrics", () => {
+  for (const invalid of [3, -1, "2", null, true, {}]) {
+    const result = computeEvaluation(["a", "b"], { a: 2, b: invalid });
+    assert.equal(result.judged, 1); assert.equal(result.relevantCount, 1);
+    assert.equal(result.precisionK, null); assert.equal(result.ndcgK, null);
+  }
+});
+
 test("top-5 precision counts grades 1 or 2 as relevant", () => {
   const data = computeEvaluation(["a","b","c","d","e"], {a:2,b:0,c:1,d:0,e:1});
   assert.equal(data.precisionAt, 5);

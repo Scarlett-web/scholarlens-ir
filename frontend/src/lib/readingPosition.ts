@@ -22,9 +22,9 @@ function positions(userId: number | undefined): Record<string, ReadingPosition> 
   return Object.fromEntries(entries);
 }
 
-export function loadReadingPosition(userId: number | undefined, paperId: string, textLength: number): ReadingPosition | null {
+export function loadReadingPosition(userId: number | undefined, paperId: string, textLength?: number): ReadingPosition | null {
   const entry = positions(userId)[paperId];
-  return entry && entry.textLength === textLength ? entry : null;
+  return entry && (textLength === undefined || entry.textLength === textLength) ? entry : null;
 }
 
 export function saveReadingPosition(userId: number | undefined, paperId: string, value: ReadingPosition): boolean {
