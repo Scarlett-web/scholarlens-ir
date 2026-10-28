@@ -1,0 +1,6 @@
+[
+  {"id":"keyword-evidence","question":"magnetic resonance imaging","mode":"keyword","expect":"citations_are_source_slices"},
+  {"id":"insufficient-evidence","question":"a topic absent from the corpus","mode":"keyword","expect":"no_invented_answer"},
+  {"id":"scoped-compare","question":"比较方法和局限","operation":"compare","expect":"every_selected_paper_is_cited"},
+  {"id":"session-isolation","question":"总结这篇论文","operation":"summarize","expect":"personal_provider_is_request_scoped"}
+]

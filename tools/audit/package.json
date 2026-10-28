@@ -1,0 +1,11 @@
+{
+  "name": "scholarlens-local-audit-tools",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Project-local audit tools for ScholarLens; dependencies stay under tools/audit.",
+  "dependencies": {
+    "@playwright/cli": "0.1.22",
+    "lighthouse": "13.6.0",
+    "squirrelscan": "0.0.138"
+  }
+}

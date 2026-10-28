@@ -1,0 +1,19 @@
+{
+  "name": "scholarlens-local-agent-tools",
+  "scope": "project-local",
+  "servers": {
+    "playwright-cli": {
+      "command": "tools/audit/node_modules/.bin/playwright-cli.cmd",
+      "purpose": "独立浏览器只读流程和截图"
+    },
+    "zap": {
+      "enabled": false,
+      "reason": "只在隔离测试环境被动扫描，禁止连接生产"
+    }
+  },
+  "policy": {
+    "allow_live": false,
+    "allow_write_actions": false,
+    "allow_secret_upload": false
+  }
+}

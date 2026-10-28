@@ -19,6 +19,7 @@ from backend.accounts import problem
 from backend.personal_ai import personal_settings, PublicAITransport
 from backend.chunks import chunks
 from backend.retrieval import vector_candidates, rrf
+from backend.agent import trace
 
 
 def provider_identity(settings):
@@ -88,6 +89,14 @@ class AskResponse(BaseModel):
     model: dict
     operation: str = "ask"
     conversation_id: str | None = None
+
+
+class AgentResponse(AskResponse):
+    agent: dict
+
+
+class AgentInput(AskInput):
+    operation: Literal["ask", "summarize", "compare"] = "ask"
 
 
 class OperationInput(AskInput):
@@ -609,6 +618,23 @@ def router(es, settings, metadata, read_paper, upload_indices=lambda: [], store=
     @api.post("/ask", response_model=AskResponse)
     def ask(body: AskInput, request: Request, authorization: str | None = Header(default=None)):
         return perform(body, authorization, headers=request.headers)
+
+    @api.post("/agent/run", response_model=AgentResponse)
+    def run_agent(body: AgentInput, request: Request, authorization: str | None = Header(default=None)):
+        """Run the bounded evidence workflow and return its trace with the answer."""
+        if body.operation == "summarize" and (not body.paper_ids or len(set(body.paper_ids)) != 1):
+            raise problem(400, "invalid_parameter", "总结需要一篇论文")
+        if body.operation == "compare" and (not body.paper_ids or not 2 <= len(set(body.paper_ids)) <= 10):
+            raise problem(400, "invalid_parameter", "比较需要2至10篇不同论文")
+        result = perform(body.model_copy(update={"stream": False}), authorization, body.operation, request.headers)
+        result["agent"] = trace(
+            body.operation,
+            body.question,
+            body.paper_ids,
+            result["retrieval"]["evidence_count"],
+            bool(result.get("answer")),
+        )
+        return result
 
     @api.post("/ai/summarize", response_model=AskResponse)
     def summarize(body: OperationInput, request: Request, authorization: str | None = Header(default=None)):

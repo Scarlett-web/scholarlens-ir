@@ -16,7 +16,7 @@ const TOOL_NAV = [
   {to:"/evaluation",label:"检索评测",Icon:BarChart3},
   {to:"/upload",label:"PDF 工作区",Icon:FilePlus2},
   {to:"/admin",label:"审核工作台",Icon:FolderCheck},
-  {to:"/assistant",label:"AI 助手",Icon:Sparkles}
+  {to:"/assistant",label:"证据助手",Icon:Sparkles}
 ] as const;
 
 export function SiteLayout({ children }: { children: ReactNode }) {

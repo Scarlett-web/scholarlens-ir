@@ -98,6 +98,8 @@ DOCX是真实OOXML文档，**当前为文本提取转换**，不保证复原复�
 
 AI服务器端仍配置`AI_API_KEY/AI_BASE_URL/AI_MODEL`，未配置统一503 `ai_not_configured`，不将Key发前端。原单篇/多篇`POST /api/ask`保留`question/paper_ids/mode/top_k/conversation_id`，增加`stream=false`。多篇选择时top_k须至少等于不同论文数，最多10个证据片段。
 
+新增 `POST /api/agent/run` 作为证据 Agent 入口。请求在原字段外增加 `operation=ask|summarize|compare`，服务端按 route → retrieve_evidence → grounded_answer → citation_guard 执行，返回原有回答字段并增加 `agent`：名称、版本、工作流、工具列表、步骤状态、证据数量和 `grounded` 标志。该入口始终返回经过引用校验的完整 JSON，不接受流式半成品；个人 API 仍通过本次请求的会话头传入，不落库。
+
 | 方法与地址 | 请求/输出 |
 |---|---|
 | POST /api/ai/summarize | `{paper_ids:[ID],question?:重点,mode?,top_k?,conversation_id?,stream?}`；只接受一篇 |

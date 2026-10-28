@@ -1,0 +1,12 @@
+rules:
+  - id: scholarlens-dangerous-debug
+    message: Avoid debug output that may expose request or credential data.
+    severity: WARNING
+    languages: [python, javascript, typescript]
+    pattern-either:
+      - pattern: console.log($X)
+      - pattern: print($X)
+    paths:
+      exclude:
+        - "**/tests/**"
+        - "**/tools/audit/**"
