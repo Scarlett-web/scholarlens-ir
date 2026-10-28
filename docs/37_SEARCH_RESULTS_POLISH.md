@@ -33,4 +33,12 @@
 
 ### 发布边界
 
-仅更新应用代码；不调整 DNS、正式索引/别名、模型、账号、原件和依赖。发布时保留旧 release，先做 SQLite 一致性备份及环境备份；失败回滚。供应商真实生成不在本次只读检索验证范围内。线上发布结果在部署完成后补记。
+仅更新应用代码；不调整 DNS、正式索引/别名、模型、账号、原件和依赖。供应商真实生成不在本次只读检索验证范围内。
+
+### 线上发布结果（2026-10-28）
+
+- 应用提交 `c9113110861ccb9989eb0573a805d93487b674ff` 已推送 `origin/zjl`。华为云 release：`/opt/scholarlens/releases/20261028T151256Z-c911311`，公开地址 https://scholarlens.lingion.cc.cd/ 。
+- 旧版本 `/opt/scholarlens/releases/20261028T141350Z-b81dbdf` 保留；一致性 SQLite 备份、环境备份、部署报告及 `rollback.sh` 位于 `/opt/scholarlens/backups/20261028T151256Z-c911311`。只重启应用服务；Cloudflare 进程与 Elasticsearch 容器标识/启动时间保持一致，环境文件哈希一致，用户数发布前后均 27。
+- 源站验证：859 篇未变、六字段高亮正常、完整题名仍唯一命中、四位作者和原始评分仍由 API 返回、连接词高亮已消除、证据流程返回五份真实来源且不调用模型、新版资源哈希一致。
+- 公网验证：`output/search-polish-20261028/public-checks.json` 记录新版全部 JS/CSS、冰川图片、build-info 的哈希核对、859 篇与 magnetic 61 条结果、证据流程及 PDF 206 分段下载。
+- 公网 Chrome 独立浏览器：六字段、真实题名与作者展开、删去的提示、桌面/390px 排版、原 PDF 全文件下载、助手布局全部通过，无页面 JavaScript 异常。报告与截图：`tools/audit/reports/research-usability-2026-10-28T15-13-39-782Z/`。
