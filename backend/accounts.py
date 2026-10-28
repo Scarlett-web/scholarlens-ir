@@ -450,10 +450,16 @@ def router(store: Store, read_paper):
         assignments = ",".join(f"{k}=?" for k in values)
         params = list(values.values()) + [now(), user_id]
         with store.connect() as db:
+            # Serialize the invariant check with the write, including other admin removals.
+            db.execute("BEGIN IMMEDIATE")
+            actor = db.execute("SELECT role,disabled FROM users WHERE id=?", (user["id"],)).fetchone()
+            if actor is None or actor["role"] != "admin" or actor["disabled"]:
+                raise problem(403, "forbidden", "需要管理员权限")
             target = db.execute("SELECT role,disabled FROM users WHERE id=?", (user_id,)).fetchone()
             if (
                 target
                 and target["role"] == "admin"
+                and not target["disabled"]
                 and (values.get("role") == "user" or values.get("disabled"))
             ):
                 admins = db.execute(
@@ -578,8 +584,12 @@ def router(store: Store, read_paper):
         ):
             raise problem(401, "invalid_credentials", "请确认当前用户名和密码")
         with store.connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            current = db.execute("SELECT role,disabled FROM users WHERE id=?", (user["id"],)).fetchone()
+            if current is None or current["disabled"]:
+                raise problem(401, "unauthenticated", "登录已过期或已退出")
             if (
-                row["role"] == "admin"
+                current["role"] == "admin"
                 and db.execute(
                     "SELECT count(*) FROM users WHERE role='admin' AND disabled=0"
                 ).fetchone()[0]

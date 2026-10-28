@@ -14,6 +14,10 @@
 
 成功修改密码仍撤销该用户所有会话并要求重新登录；成功停用仍禁用登录、撤销所有会话并保留数据。HTTP 状态保持兼容，细分错误码只用于这两个已认证的二次确认接口。验收须在临时 SQLite 和真实账户路由上覆盖错误重试、成功撤销、真实会话失效、用户隔离与资料保留，并以独立浏览器核对界面。测试脚本必须自行启动隔离服务并核对实例挑战，不接受生产服务或本地转发作为写入目标。见 `docs/28_ACCOUNT_CREDENTIAL_BOUNDARIES.md`。
 
+### 2026-10-28 管理员并发变更
+
+负责人：项目维护者。`PATCH /api/admin/users/{id}` 与 `POST /api/auth/deactivate` 必须在同一SQLite写事务中读取最新角色、计数有效管理员并执行变更；并发降级/停用或混合操作至少保留一名有效管理员，拒绝请求沿用 `409 invalid_state`，不改变账户和会话。管理员写事务还需重新确认操作者有效角色。已经停用的管理员不计入有效人数，降级该停用记录不能误触最后管理员保护。详见 `docs/30_ADMIN_TRANSACTION_BOUNDARIES.md`。
+
 ### 2026-10-27 V2（优先于下方历史阶段标记）
 
 负责人组长。输入现有真实索引、可配置CPU模型和用户请求；输出沿用search全部字段及统一error结构。新增GET /api/suggest(q,limit=8)、GET /api/discover(limit=6)、GET /api/capabilities；建议来自真实title/authors，发现来自确定性真实论文与年份聚合，不编造热度。semantic/hybrid使用独立片段向量索引与真实BM25，RRF k=60；候选窗口1000，超出返回400；semantic只支持field=all/title/fulltext，hybrid关键词侧支持六字段；phrase/fuzzy只用于keyword/hybrid关键词侧，semantic拒绝。semantic/highlight不虚构精确词项；返回匹配片段与model/version解释。一路缺失时503，不静默降级。year/sort对两路及最终论文排序生效，total为候选论文数量，非全库精确语义命中数。
