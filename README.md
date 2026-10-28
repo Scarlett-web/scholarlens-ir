@@ -8,7 +8,7 @@ ScholarLens 是《信息检索》课程大作业，实现真实学术论文的�
 
 最新证据智能体运行时、局部 stdio MCP 插件和可执行 Harness 见 [运行契约及验收范围](docs/18_AGENT_RUNTIME_CONTRACT.md)。以下初次交付数量为历史记录；每次更新的当前验证与线上发布单独登记，不据此宣称真实个人供应商已通过。
 
-- frontend/ 已纳入冰岛玻璃风格的完整 React 界面，连接检索、账户、收藏笔记、最近阅读、上传审核和研究助手；源码默认 demo，真实部署设置 VITE_DATA_SOURCE=api。
+- frontend/ 已纳入冰岛玻璃风格的完整 React 界面，连接检索、账户、收藏笔记、最近阅读、上传审核和研究助手；源码默认 demo。真实部署在 frontend/ 运行 `npm run build:production`，固定使用本站 `/api` 并生成可校验的 `dist/build-info.json`；普通 `npm run build` 的结果不能直接当作线上真实数据构建。发布后还须在浏览器确认显示 859 篇真实论文。
 - 每个登录用户可独立填写 OpenAI 兼容 URL、模型及密钥；密钥只保存在标签页 sessionStorage，退出清除，按请求使用，不写服务器数据库。默认配置空，未做真实供应商调用。
 - 本轮本机后端 161 passed、1 deselected；前端 build、15 tests、structure、真实检索浏览器和14项账户流程通过。被排除的是独立 API 重启测试，不把历史结果当本轮证明。
 - FastAPI 支持 FRONTEND_DIST 同源托管，服务器与 Cloudflare 独立部署见 [部署说明](docs/11_SERVER_DEPLOYMENT.md)。本机测试不代表外网已发布，外网状态以实际部署验收为准。

@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "tsc --noEmit && vite build",
+    "build:production": "node scripts/build-production.mjs",
     "preview": "vite preview --host 127.0.0.1",
     "typecheck": "tsc --noEmit",
     "test": "node --test tests/evaluation.test.mjs tests/paper-api.test.mjs tests/search-params.test.mjs tests/reading-position.test.mjs tests/paper-relations.test.mjs",

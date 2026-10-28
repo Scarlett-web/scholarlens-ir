@@ -25,3 +25,11 @@
 - 耗时已核对接口 `took_ms` 来源为 ES 引擎 `took`，界面注明不含网络等待。关系线不代表引用、学术影响力或语义距离。
 
 截图与部署机器证据保存在外层开发工作区忽略目录 `output/api-integration/`、`output/deploy-map-metrics-20261028/`。本批没有后端、数据库 schema 或依赖变化；部署要求新旧两个 requirements 文件字节一致，且校验包括按需 chunk 在内的所有 JS/CSS 哈希。
+
+## 生产构建契约与首次发布恢复
+
+首次公网 HTTP 验收通过，但独立浏览器发现该发布使用仓库默认 demo 构建，显示 18 篇明确标记的虚构样本。已立即执行备份目录的 rollback 脚本恢复 `20261028T035053Z-a3b468e`；数据和后端没有变化。不能将前端资源哈希一致和后端 HTTP 正常当作实际前端连接真实 API 的证明。
+
+新增 `npm run build:production`：Node 直接调用本地 TypeScript/Vite，显式设置 `VITE_DATA_SOURCE=api`、`VITE_API_BASE_URL=/api`，不引入 shell 语法或依赖，不更改原有 demo 开发命令和用户配置。构建成功后输出 `dist/build-info.json`，记录实际生产命令、入口 HTML 和所有 JS/CSS 哈希。打包时要求生产标记和全部哈希一致；验收要同时检查浏览器显示 859 篇、真实论文 ID、关系图按需加载和后台真实检索。没有 AI 密钥进入构建。
+
+生产构建入口为 `index-DMO5iCB9.js`、`index-iMz_cIFO.css`，关系图按需 chunk 为 `PaperConstellation-vZc3lAjl.js`。该共享 Node 入口在 Windows 实际构建和浏览器回归；Linux 线上消费其静态构建。macOS 未实跑，不据此宣称已在 Mac 验收。
