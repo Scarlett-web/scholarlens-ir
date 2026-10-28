@@ -30,4 +30,12 @@
 - `tools/audit/search-account-browser.mjs` 对同一构建使用明确 API fixture 通过：条件移除/分页参数、编号年份与真实零评分、直接阅读/证据链接、游客收藏、登录/注册密码与失败恢复、动态暂停、账户读取失败重试、历史清空失败/成功及迟到分页隔离、资料保存、头像上传后的刷新、通知已读、管理员角色更新及账户失效隔离。结果 `passed=true`、`unhandled=[]`、`errors=[]`。头像、账户与权限操作仅验证界面契约，不代表真实后端写入端到端通过。
 - 已查看交付构建的真实搜索/普通登录截图，以及 fixture 的桌面/390px 搜索、登录和账户截图。桌面为主要验收目标，390px 仅布局回归。fixture 证据位于忽略目录 `tools/audit/reports/search-account-2026-10-28T05-26-42-712Z/`；修改前备份、真实 API 截图及首次回归失败线索保留在外层 `output/ux-search-account-20261028/`。临时浏览器与 fixture 不操作生产账户、笔记或原件。
 
-正式切换与公网结果完成后追加；未将本批视为全局安全审计或全部优化完成。
+## 发布与公网验收
+
+- 2026-10-28，应用提交 `93b93a4a4b1eb416c506704cc145f3badbc3066b` 已推送至 `origin/zjl`，部署到既有华为云服务。正式地址为 https://scholarlens.lingion.cc.cd/；当前 release 为 `/opt/scholarlens/releases/20261028T052844Z-93b93a4`。发布包包含 240 个文件，大小 3,019,557 字节，SHA-256 为 `edbf374b6da3ac860375648ed659dc900d73fb100cf7ff24880fb93bc314e58e`。
+- 上一 release `/opt/scholarlens/releases/20261028T050800Z-83bf92f` 保留。备份目录 `/opt/scholarlens/backups/20261028T052844Z-93b93a4` 包含 SQLite 一致性备份、环境副本和已通过 shell 语法检查的回滚脚本。发布前后用户均为 25、论文均为 859，环境哈希相同；Cloudflare Tunnel PID 与 Elasticsearch 容器身份及启动时间均未改变。仅切换并重启本应用，未升级依赖、修改索引或原件。
+- 源站验收为 `origin_passed`。随后通过 SSH 再次只读确认 `current` 指向上述 release，`scholarlens-api` 和 `cloudflared-scholarlens` 均为 `active`，源站 `/api/stats` 返回真实 859 篇。
+- 公网资源与 API 验收 `public-checks.json` 为 `passed=true`：`build-info.json` 使用真实 `/api`，全部三个 JS/CSS 资源哈希与发布清单一致；论文数 859，magnetic 关键词检索 61 条；Agent 0.2.0 返回 5 段核验来源，模型状态 `not_called`；原始 PDF 的 Range 请求返回 206 和正确的 `%PDF-` 开头；robots 与两张冰岛背景资源均通过。
+- 独立 Chrome 对公网执行只读游客验收，`public-browser-report.json` 为 `passed=true`：6 条结果记录的 ID、标题、年份与真实 API 对应，单篇证据链接及其论文范围正确，登录页三层功能条、密码类型、输入聚焦和桌面几何通过。`errors=[]`、`blockedWrites=[]`。已查看公网搜索页和登录页桌面截图；未登录或创建测试账户，未提交收藏、笔记或其他生产写入。此结果不代表真实认证和账户写入的端到端验收。
+- 首次公网浏览器脚本在论文范围内标题的可见性断言超时：该标题处于收起的原有 `details` 中。原始失败报告及脚本均保留；修正验收脚本，先展开论文范围，再核对标题，最终退出 0。没有为适配测试修改产品。
+- 发布清单、源站报告、公网 API 和浏览器报告、截图与首次失败说明保留在外层 `output/deploy-search-account-20261028/`。本节为发布后的纯文档记录；其后文档提交无需重建或重启网站。个人供应商真实生成、邮件服务及其余全局审计事项仍按各自契约和验证边界继续，未将本批视为全局安全审计或全部优化完成。
