@@ -19,7 +19,7 @@ from backend.accounts import problem
 from backend.personal_ai import personal_settings, PublicAITransport
 from backend.chunks import chunks
 from backend.retrieval import vector_candidates, rrf
-from backend.agent import trace
+from backend.agent_runtime import ResearchAgent, model_plan
 
 
 def provider_identity(settings):
@@ -93,10 +93,13 @@ class AskResponse(BaseModel):
 
 class AgentResponse(AskResponse):
     agent: dict
+    evidence: list[Citation]
+    evidence_status: Literal["sufficient", "insufficient_evidence", "evidence_only", "provider_unavailable"]
 
 
 class AgentInput(AskInput):
-    operation: Literal["ask", "summarize", "compare"] = "ask"
+    paper_ids: list[str] | None = Field(default=None, max_length=10)
+    operation: Literal["ask", "summarize", "compare", "evidence"] = "ask"
 
 
 class OperationInput(AskInput):
@@ -263,7 +266,7 @@ def retrieve_evidence(es, settings, base, body: AskInput, read_paper, keyword_in
     return result
 
 
-def generate(settings, question: str, evidence: list[dict], transport=None, history=None):
+def generate(settings, question: str, evidence: list[dict], transport=None, history=None, validate=True, deadline=None):
     """Bounded provider call; redact all upstream messages, headers and URLs in errors."""
     if not settings.ai_api_key or not settings.ai_base_url or not settings.ai_model:
         raise problem(503, "ai_not_configured", "AI尚未配置，请由服务器管理员设置模型和密钥")
@@ -293,12 +296,14 @@ def generate(settings, question: str, evidence: list[dict], transport=None, hist
     payload[settings.ai_token_parameter] = min(max(settings.ai_max_tokens, 64), 4096)
     if settings.ai_personal and transport is None:
         transport = PublicAITransport()
+    remaining = max(0.1, deadline - time.monotonic()) if deadline else 120
     with httpx.Client(
-        timeout=min(max(settings.ai_timeout, 1), 120), trust_env=False, transport=transport, follow_redirects=False
+        timeout=min(max(settings.ai_timeout, 1), 120, remaining), trust_env=False, transport=transport, follow_redirects=False
     ) as client:
         if transport is None:
             mark_provider(settings, False)
-        for attempt in range(2):
+        attempts = 1 if deadline else 2
+        for attempt in range(attempts):
             try:
                 with client.stream(
                     "POST",
@@ -311,7 +316,7 @@ def generate(settings, question: str, evidence: list[dict], transport=None, hist
                     if response.status_code == 429:
                         raise problem(503, "ai_rate_limited", "AI服务额度或频率受限")
                     if response.status_code >= 500:
-                        if attempt == 0:
+                        if attempt + 1 < attempts:
                             continue
                         raise problem(502, "ai_upstream_error", "AI服务暂时异常")
                     if response.status_code != 200:
@@ -320,16 +325,18 @@ def generate(settings, question: str, evidence: list[dict], transport=None, hist
                         )
                     data = bytearray()
                     for block in response.iter_bytes():
+                        if deadline and time.monotonic() >= deadline:
+                            raise problem(504, "ai_timeout", "本次研究的模型调用已超时")
                         data.extend(block)
                         if len(data) > 1000000:
                             raise problem(502, "ai_invalid_response", "AI响应超过限制")
                     decoded = json.loads(data)["choices"][0]["message"]["content"]
-                    result = validate_answer(decoded, evidence)
+                    result = validate_answer(decoded, evidence) if validate else decoded
                     if transport is None:
                         mark_provider(settings, True)
                     return result
             except httpx.TimeoutException:
-                if attempt:
+                if attempt + 1 == attempts:
                     raise problem(504, "ai_timeout", "AI服务超时")
             except httpx.HTTPError:
                 raise problem(502, "ai_upstream_error", "AI服务连接失败")
@@ -483,7 +490,7 @@ def router(es, settings, metadata, read_paper, upload_indices=lambda: [], store=
         base, _ = metadata()
         return retrieve_evidence(es, settings, base, body, read_paper, upload_indices())
 
-    def scoped_evidence(base, body, operation):
+    def scoped_evidence(base, body, operation, allow_partial=False):
         if not body.paper_ids:
             return retrieve_evidence(es, settings, base, body, read_paper, upload_indices())
         papers = list(dict.fromkeys(body.paper_ids))
@@ -519,7 +526,7 @@ def router(es, settings, metadata, read_paper, upload_indices=lambda: [], store=
                     retrieve_evidence(es, settings, base, scoped, read_paper, upload_indices())
                 )
         # A comparison must not imply evidence about a paper that contributed no source.
-        if any(not group for group in groups):
+        if any(not group for group in groups) and not allow_partial:
             return []
         combined = []
         for i in range(max(map(len, groups), default=0)):
@@ -528,7 +535,27 @@ def router(es, settings, metadata, read_paper, upload_indices=lambda: [], store=
                     combined.append(group[i])
         return combined[: body.top_k]
 
-    def perform(body, authorization, operation="ask", headers=None):
+    def verify_agent_sources(refs, paper_ids):
+        verified = []
+        documents = {}
+        for ref in refs:
+            if paper_ids and ref["paper_id"] not in paper_ids:
+                continue
+            if ref["paper_id"] not in documents:
+                doc, _ = read_paper(ref["paper_id"])
+                documents[ref["paper_id"]] = {c["chunk_id"]: c for c in chunks(doc)}
+            source = documents[ref["paper_id"]].get(ref["chunk_id"])
+            if source and ref["quote"].strip() and ref["quote"] in source["text"]:
+                verified.append({**ref, "locator": source["locator"]})
+        return verified
+
+    def agent_citations(draft, refs, paper_ids, operation):
+        answer, citations = validate_answer(draft, refs)
+        if answer and paper_ids and operation == "compare" and not set(paper_ids) <= {r["paper_id"] for r in citations}:
+            raise problem(502, "ai_invalid_citations", "比较结果必须逐篇引用所选论文")
+        return answer, citations
+
+    def perform(body, authorization, operation="ask", headers=None, agent_mode=False):
         effective = personal_settings(settings, headers or {}, lambda: require_user(authorization))
         history = []
         if body.conversation_id:
@@ -540,7 +567,8 @@ def router(es, settings, metadata, read_paper, upload_indices=lambda: [], store=
                     (body.conversation_id,),
                 ).fetchall()
             history = [{"role": r["role"], "content": r["content"][:1000]} for r in reversed(rows)]
-        if not effective.ai_api_key or not effective.ai_base_url or not effective.ai_model:
+        provider_ready = bool(effective.ai_api_key and effective.ai_base_url and effective.ai_model)
+        if not provider_ready and not agent_mode:
             raise problem(503, "ai_not_configured", "AI尚未配置，请由服务器管理员设置模型和密钥")
         question = body.question
         if operation == "summarize":
@@ -561,10 +589,22 @@ def router(es, settings, metadata, read_paper, upload_indices=lambda: [], store=
             + body.question
         )[-2000:]
         scoped = body.model_copy(update={"question": retrieval_question.strip()})
-        refs = scoped_evidence(base, scoped, operation)
-        answer = ""
-        citations = []
-        if refs:
+        agent_result = {}
+        if agent_mode:
+            runner = ResearchAgent(
+                retrieve=lambda query: scoped_evidence(base, scoped.model_copy(update={"question": query}), operation, allow_partial=operation == "compare"),
+                verify=verify_agent_sources,
+                generate=lambda refs, attempt: generate(effective, question + ("\nRepair invalid citations. Use only exact supplied quotes." if attempt else ""), refs, history=history, validate=False, deadline=runner.deadline),
+                validate=agent_citations,
+                planner=lambda query, task, skill: model_plan(effective, query, task, skill, deadline=runner.deadline),
+            )
+            agent_result = runner.run(retrieval_question.strip(), operation, body.paper_ids, body.top_k, provider_ready)
+            refs = agent_result["evidence"]
+            answer, citations = agent_result["answer"], agent_result["citations"]
+        else:
+            refs = scoped_evidence(base, scoped, operation)
+            answer, citations = "", []
+        if refs and not agent_mode:
             if history:
                 answer, citations = generate(effective, question, refs, history=history)
             else:
@@ -577,7 +617,7 @@ def router(es, settings, metadata, read_paper, upload_indices=lambda: [], store=
                 raise problem(502, "ai_invalid_citations", "比较结果必须逐篇引用所选论文")
         result = {
             "answer": answer,
-            "evidence_status": "sufficient" if answer else "insufficient_evidence",
+            "evidence_status": agent_result.get("evidence_status", "sufficient" if answer else "insufficient_evidence"),
             "citations": citations,
             "retrieval": {
                 "mode": body.mode,
@@ -586,12 +626,15 @@ def router(es, settings, metadata, read_paper, upload_indices=lambda: [], store=
                 "scope_paper_ids": body.paper_ids,
                 "context_messages": len(history),
             },
-            "model": {"name": effective.ai_model, "status": "generated" if refs else "not_called"},
+            "model": {"name": effective.ai_model, "status": "generated" if answer else "attempted" if agent_mode and any(s["tool"] == "grounded_answer" for s in agent_result["agent"]["steps"]) else "not_called"},
             "operation": operation,
             "conversation_id": body.conversation_id,
         }
+        if agent_mode:
+            result.update(agent=agent_result["agent"], evidence=agent_result["evidence"])
         if body.conversation_id:
-            save_messages(body.conversation_id, body.question, answer, citations)
+            saved_sources = citations or (refs if agent_mode else [])
+            save_messages(body.conversation_id, body.question, answer, saved_sources)
         if body.stream:
             # Buffer the provider result and validate all citations BEFORE releasing any answer.
             def events():
@@ -626,15 +669,7 @@ def router(es, settings, metadata, read_paper, upload_indices=lambda: [], store=
             raise problem(400, "invalid_parameter", "总结需要一篇论文")
         if body.operation == "compare" and (not body.paper_ids or not 2 <= len(set(body.paper_ids)) <= 10):
             raise problem(400, "invalid_parameter", "比较需要2至10篇不同论文")
-        result = perform(body.model_copy(update={"stream": False}), authorization, body.operation, request.headers)
-        result["agent"] = trace(
-            body.operation,
-            body.question,
-            body.paper_ids,
-            result["retrieval"]["evidence_count"],
-            bool(result.get("answer")),
-        )
-        return result
+        return perform(body.model_copy(update={"stream": False}), authorization, body.operation, request.headers, agent_mode=True)
 
     @api.post("/ai/summarize", response_model=AskResponse)
     def summarize(body: OperationInput, request: Request, authorization: str | None = Header(default=None)):

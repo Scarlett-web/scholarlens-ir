@@ -1,0 +1,2 @@
+# Optional local MCP plugin; the web runtime does not import this SDK.
+mcp==1.30.0

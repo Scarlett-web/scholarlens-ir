@@ -1,9 +1,9 @@
 import {useEffect,useRef,useState} from "react";
 import {Link,useSearchParams} from "react-router-dom";
-import {ArrowRight,BookOpen,CheckCircle2,RotateCcw,Send,Square,Workflow} from "lucide-react";
+import {ArrowRight,BookOpen,CheckCircle2,RotateCcw,Send,Square,Workflow,TriangleAlert} from "lucide-react";
 import {PageHeading} from "../components/Layout";
 import {askAi,conversationApi,getAssistantAvailability,retrieveEvidence} from "../services/ai";
-import type {AiMessage,AiOperation,Conversation,Evidence} from "../services/ai";
+import type {AgentTrace,AiMessage,AiOperation,Conversation,Evidence} from "../services/ai";
 import {useStudio} from "../App";
 import {useAuth} from "../services/AuthContext";
 import {DATA_SOURCE,getPaper} from "../services/papers";
@@ -11,11 +11,16 @@ import {PersonalAiSettings} from "../components/PersonalAiSettings";
 import {loadPersonalAi} from "../services/personalAi";
 
 const EXAMPLES=["magnetic resonance imaging","protein structure","quantum theory"];
+function ExecutionTrace({trace}:{trace:AgentTrace}){
+  const statusLabel={done:"完成",running:"进行中",queued:"待执行",empty:"无结果",skipped:"跳过",error:"未完成"};
+  return <details className="agent-trace"><summary><Workflow size={14}/>执行记录<span>{trace.evidence_count} 条证据{trace.elapsed_ms!==undefined?" · "+(trace.elapsed_ms/1000).toFixed(1)+" 秒":""}</span></summary><ol>{trace.steps.map(step=><li key={step.id} data-status={step.status}><span>{step.status==="done"?<CheckCircle2 size={14}/>:step.status==="error"?<TriangleAlert size={14}/>:<span className="agent-step-dot"/>}</span><span>{step.label}{step.result_count!==undefined?" · "+step.result_count+" 项":""}</span><small>{statusLabel[step.status]}{step.elapsed_ms!==undefined?" · "+(step.elapsed_ms/1000).toFixed(1)+"s":""}</small></li>)}</ol>{trace.warnings?.map((warning,index)=><p className="agent-warning" key={index}>{warning}</p>)}</details>;
+}
 export function AssistantPage(){
   const [params]=useSearchParams(),focusedPaper=params.get("paper")||"";
   const {favorites}=useStudio(),{user}=useAuth();
   const [personal,setPersonal]=useState(()=>user?loadPersonalAi(user.id):null);
   const [draft,setDraft]=useState(""),[messages,setMessages]=useState<AiMessage[]>([]),[evidence,setEvidence]=useState<Evidence[]|null>(null);
+  const [evidenceTrace,setEvidenceTrace]=useState<AgentTrace|undefined>();
   const [busy,setBusy]=useState(false),[error,setError]=useState("");
   const [availability,setAvailability]=useState({status:"checking",reason:"正在检查问答服务…"});
   const [operation,setOperation]=useState<AiOperation>("ask"),[selected,setSelected]=useState<string[]>(focusedPaper&&!focusedPaper.startsWith("demo-")?[focusedPaper]:[]),[focusTitle,setFocusTitle]=useState("");
@@ -41,21 +46,21 @@ export function AssistantPage(){
   const submit=()=>{
     const question=draft.trim()||(operation==="summarize"?"总结这篇论文的研究问题、方法、结果与局限。":operation==="compare"?"逐篇比较所选论文的方法、结论和局限，并列出证据。":"");
     if(!ready||!operationValid||!question)return;
-    void request(async signal=>{const reply=await askAi({question,paperIds:selected,operation,conversationId,personal},signal);if(signal.aborted)return;setMessages(old=>[...old,{role:"user",content:question},reply]);setDraft("");if(user)setConversations(await conversationApi.list());});
+    void request(async signal=>{const reply=await askAi({question,paperIds:selected,operation,conversationId,personal},signal);if(signal.aborted)return;setEvidence(null);setEvidenceTrace(undefined);setMessages(old=>[...old,{role:"user",content:question},reply]);setDraft("");if(user)setConversations(await conversationApi.list());});
   };
-  const findEvidence=()=>{if(!draft.trim()||DATA_SOURCE!=="api")return;void request(async signal=>{const rows=await retrieveEvidence(draft.trim(),selected,signal);if(!signal.aborted)setEvidence(rows);});};
-  const reset=()=>{controller.current?.abort();controller.current=null;setBusy(false);setError("");setMessages([]);setEvidence(null);setDraft("");setConversationId("");};
+  const findEvidence=()=>{if(!draft.trim()||DATA_SOURCE!=="api")return;void request(async signal=>{const result=await retrieveEvidence(draft.trim(),selected,signal);if(!signal.aborted){setEvidence(result.evidence);setEvidenceTrace(result.agent);}});};
+  const reset=()=>{controller.current?.abort();controller.current=null;setBusy(false);setError("");setMessages([]);setEvidence(null);setEvidenceTrace(undefined);setDraft("");setConversationId("");};
   useEffect(()=>{reset();setConversations([]);setPersonal(user?loadPersonalAi(user.id):null);},[user?.id]);
   const loginUrl="/account?"+new URLSearchParams({next:"/assistant"+(focusedPaper?"?paper="+encodeURIComponent(focusedPaper):"")});
   return <div className="workspace-page content-wrap ai-page">
     <PageHeading eyebrow="研究工具" title="证据助手" desc="先核对论文原文，再生成带来源的研究回答。"/>
     <div className="assistant-workspace">
       <div className="ai-shell">
-        <div className="ai-shell-header"><div className="ai-shell-title"><Workflow size={20}/><strong>{ready?"研究证据台":"原文证据检索"}</strong><span className="agent-status">{ready?"Agent 已就绪":"无需配置即可检索"}</span></div><button className="button button-secondary" onClick={reset} disabled={busy||!messages.length&&evidence===null&&!draft&&!error&&!conversationId}><RotateCcw size={16}/>清空当前内容</button></div>
+        <div className="ai-shell-header"><div className="ai-shell-title"><Workflow size={20}/><strong>{ready?"研究证据台":"原文证据检索"}</strong><span className="agent-status">{personal?"个人 API 已填写":ready?"回答模式可用":"无需配置即可检索"}</span></div><button className="button button-secondary" onClick={reset} disabled={busy||!messages.length&&evidence===null&&!draft&&!error&&!conversationId}><RotateCcw size={16}/>清空当前内容</button></div>
         <div ref={conversation} className="ai-conversation" aria-live="polite">
           {!messages.length&&evidence===null&&<div className="ai-welcome"><h2>{ready?"从一个具体问题开始":"先找到能回答问题的原文"}</h2><p>{ready?"Agent 会先找证据，再生成回答并检查引用。":"输入关键词，查看论文中的相关片段。此功能无需配置 AI。"}</p><div className="agent-capability-row"><span><CheckCircle2 size={14}/>检索</span><span><CheckCircle2 size={14}/>核对</span><span><CheckCircle2 size={14}/>引用</span></div><div className="ai-starters" aria-label="原文检索示例">{EXAMPLES.map(question=><button key={question} disabled={busy} onClick={()=>{setDraft(question);input.current?.focus();}}>{question}<ArrowRight size={14}/></button>)}</div></div>}
-          {messages.map((message,index)=><div key={index} className={"ai-chat-message "+(message.role==="user"?"from-user":"from-assistant")}><div className="ai-chat-label">{message.role==="user"?"你的问题":"研究回答"}</div><p>{message.content}</p>{message.role==="assistant"&&message.agent&&<details className="agent-trace"><summary><Workflow size={14}/> Agent 执行轨迹 <span>{message.agent.evidence_count} 条证据</span></summary><ol>{message.agent.steps.map(step=><li key={step.id} data-status={step.status}><span>{step.status==="done"?<CheckCircle2 size={14}/>:<span className="agent-step-dot"/>}</span><span>{step.label}</span><code>{step.tool}</code></li>)}</ol></details>}{Boolean(message.sources?.length)&&<div className="ai-chat-citations"><strong>引用来源</strong>{message.sources?.map((source,i)=><Link key={source.chunk_id||source.paper_id+i} to={"/paper/"+encodeURIComponent(source.paper_id)}><BookOpen size={15}/><span>{source.title}{source.excerpt&&<small>{source.excerpt}</small>}{source.locator&&<small>{source.locator}</small>}</span><ArrowRight size={15}/></Link>)}</div>}</div>)}
-          {evidence!==null&&<section className="evidence-results"><div className="evidence-results-heading"><h2>原文证据</h2><span>{evidence.length} 条相关片段</span></div>{!evidence.length&&<p>没有找到相关片段。试试更短的关键词，或扩大右侧论文范围。</p>}{evidence.map(item=><article className="evidence-result" key={item.chunk_id}><Link to={"/paper/"+encodeURIComponent(item.paper_id)}><strong>{item.paper_title}</strong><ArrowRight size={14}/></Link><p>{item.quote}</p><small>{item.locator}</small></article>)}</section>}
+          {messages.map((message,index)=><div key={index} className={"ai-chat-message "+(message.role==="user"?"from-user":"from-assistant")}><div className="ai-chat-label">{message.role==="user"?"你的问题":"研究回答"}</div><p>{message.content}</p>{message.role==="assistant"&&message.agent&&<ExecutionTrace trace={message.agent}/ >}{Boolean(message.sources?.length)&&<div className="ai-chat-citations"><strong>{message.sourceLabel||"引用来源"}</strong>{message.sources?.map((source,i)=><Link key={source.chunk_id||source.paper_id+i} to={"/paper/"+encodeURIComponent(source.paper_id)}><BookOpen size={15}/><span>{source.title}{source.excerpt&&<small>{source.excerpt}</small>}{source.locator&&<small>{source.locator}</small>}</span><ArrowRight size={15}/></Link>)}</div>}</div>)}
+          {evidence!==null&&<section className="evidence-results"><div className="evidence-results-heading"><h2>原文证据</h2><span>{evidence.length} 条相关片段</span></div>{evidenceTrace&&<ExecutionTrace trace={evidenceTrace}/ >}{!evidence.length&&<p>没有找到相关片段。试试更短的关键词，或扩大右侧论文范围。</p>}{evidence.map(item=><article className="evidence-result" key={item.chunk_id}><Link to={"/paper/"+encodeURIComponent(item.paper_id)}><strong>{item.paper_title}</strong><ArrowRight size={14}/></Link><p>{item.quote}</p><small>{item.locator}</small></article>)}</section>}
           {busy&&<p className="ai-request-status" role="status">{ready?"正在处理，请稍候…":"正在检索原文…"}</p>}<div ref={bottom}/>
         </div>
         <div className="ai-compose">{error&&<div className="inline-error" role="alert">{error}</div>}<form onSubmit={event=>{event.preventDefault();if(ready)submit();else findEvidence();}}>

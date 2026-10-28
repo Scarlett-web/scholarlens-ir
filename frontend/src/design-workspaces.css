@@ -189,15 +189,17 @@
 .agent-status::before{content:"";width:6px;height:6px;border-radius:50%;background:#39a68a;box-shadow:0 0 0 3px #39a68a20}
 .agent-capability-row{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 18px}
 .agent-capability-row span{display:inline-flex;align-items:center;gap:6px;padding:6px 9px;border:1px solid #cfe4e6;border-radius:999px;background:#f4fbfb;color:#2e706e;font-size:11px}
-.agent-trace{margin:16px 0 4px;border:1px solid #dbe8ed;border-radius:10px;background:#f7fbfd;padding:10px 12px}
-.agent-trace summary{display:flex;align-items:center;gap:7px;cursor:pointer;color:#3d6073;font-size:12px;font-weight:600;list-style:none}
+.agent-trace{margin:16px 0 4px;border:1px solid #dbe8ed;border-radius:12px;background:#f7fbfd;padding:12px}
+.agent-trace summary{display:flex;align-items:center;gap:8px;cursor:pointer;color:#3d6073;font-size:12px;font-weight:600;list-style:none}
 .agent-trace summary::-webkit-details-marker{display:none}
 .agent-trace summary span{margin-left:auto;color:#7893a0;font-weight:400}
 .agent-trace ol{display:grid;gap:8px;margin:12px 0 0;padding:0;list-style:none}
-.agent-trace li{display:grid;grid-template-columns:16px minmax(0,1fr) auto;align-items:center;gap:7px;color:#526b78;font-size:11px}
+.agent-trace li{display:grid;grid-template-columns:16px minmax(0,1fr) auto;align-items:center;gap:8px;color:#526b78;font-size:12px}
 .agent-trace li[data-status=empty],.agent-trace li[data-status=skipped]{color:#9aa9b0}
 .agent-trace li svg{color:#36a18a}
-.agent-trace li code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;color:#8ca1aa;font-size:10px}
+.agent-trace li small{color:#526b78;font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.agent-trace li[data-status=error] svg{color:#996232}
+.agent-trace .agent-warning{margin:12px 0 0;color:#7d552f;font-size:12px;line-height:1.5}
 .agent-step-dot{display:block;width:7px;height:7px;margin:4px;border:1px solid #9ab0bb;border-radius:50%}
 .empty-state{background:rgba(252,254,255,.8);border-radius:12px;color:var(--app-muted)}
 .status-pill{font-size:12px;font-weight:500}

@@ -265,6 +265,8 @@ backend/.runtime/
 *.bak
 reports/generated/
 coverage/
+/output/
+/.playwright-cli/
 
 # Frontend QA runtime and the one synthetic upload fixture
 frontend/output/

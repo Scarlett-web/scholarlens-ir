@@ -1,23 +1,14 @@
-name: evidence-grounded-answer
-version: 1
-purpose: "从论文证据到可引用回答的可追踪工作流"
-steps:
-  - id: route
-    tool: search_papers
-    output: task_scope
-  - id: evidence
-    tool: retrieve_evidence
-    input: task_scope
-    output: verified_chunks
-  - id: answer
-    tool: grounded_answer
-    input: verified_chunks
-    guard: provider_configured
-    output: draft_answer
-  - id: guard
-    tool: citation_guard
-    input: [verified_chunks, draft_answer]
-    output: final_answer
-failure:
-  insufficient_evidence: "明确说明证据不足，不补写结论"
-  provider_unavailable: "保留原文证据结果，显示配置原因"
+{
+  "name": "evidence-grounded-answer",
+  "version": 2,
+  "purpose": "有界检索、原文核对、生成和引用修复；JSON 兼容 YAML",
+  "limits": {"max_queries": 3, "max_tool_calls": 10, "max_evidence": 10, "max_repairs": 1, "timeout_seconds": 120},
+  "tools": [
+    {"name": "plan_research", "label": "制定检索计划"},
+    {"name": "search_papers", "label": "检索论文来源"},
+    {"name": "verify_sources", "label": "核对原文"},
+    {"name": "grounded_answer", "label": "生成回答"},
+    {"name": "citation_guard", "label": "校验引用"}
+  ],
+  "failure": {"insufficient_evidence": "只返回可核对原文", "provider_unavailable": "保留证据，不公开未校验草稿"}
+}

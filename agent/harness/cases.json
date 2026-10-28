@@ -1,6 +1,10 @@
 [
-  {"id":"keyword-evidence","question":"magnetic resonance imaging","mode":"keyword","expect":"citations_are_source_slices"},
-  {"id":"insufficient-evidence","question":"a topic absent from the corpus","mode":"keyword","expect":"no_invented_answer"},
-  {"id":"scoped-compare","question":"比较方法和局限","operation":"compare","expect":"every_selected_paper_is_cited"},
-  {"id":"session-isolation","question":"总结这篇论文","operation":"summarize","expect":"personal_provider_is_request_scoped"}
+  {"id":"keyword-evidence","pytest":"backend/tests/test_agent.py::test_agent_endpoint_counts_actual_evidence_and_calls"},
+  {"id":"insufficient-evidence","pytest":"backend/tests/test_agent.py::test_agent_endpoint_does_not_generate_when_no_evidence"},
+  {"id":"scoped-compare","pytest":"backend/tests/test_agent.py::test_agent_compare_requires_citations_from_every_paper"},
+  {"id":"session-isolation","pytest":"backend/tests/test_agent.py::test_agent_personal_configuration_is_authenticated_and_isolated"},
+  {"id":"citation-repair","pytest":"backend/tests/test_agent.py::test_agent_repairs_invalid_citations_once_without_leaking_draft"},
+  {"id":"evidence-only","pytest":"backend/tests/test_agent.py::test_agent_evidence_mode_never_uses_a_model"},
+  {"id":"provider-failure","pytest":"backend/tests/test_agent.py::test_agent_provider_failure_preserves_evidence"},
+  {"id":"execution-budget","pytest":"backend/tests/test_agent.py::test_agent_tool_and_deadline_budgets_block_callbacks"}
 ]
