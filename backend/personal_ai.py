@@ -9,14 +9,14 @@ import httpx
 from backend.accounts import problem
 
 
-def personal_settings(settings, headers, authenticate):
+def personal_settings(settings, headers, authenticate, require_model=True):
     """Authenticate before using personal headers; never persist or echo secrets."""
-    fields = [headers.get("x-scholarlens-ai-" + name, "") for name in ("url", "model", "key", "token-parameter")]
+    fields = [headers.get("x-scholarlens-ai-" + name, "") for name in ("url", "model", "key", "token-parameter", "protocol")]
     if not any(fields):
         return settings
     authenticate()
-    url, model, key, parameter = (value.strip() for value in fields)
-    if not url or not model or not key or len(url) > 2048 or len(model) > 200 or len(key) > 2048:
+    url, model, key, parameter, protocol = (value.strip() for value in fields)
+    if not url or (require_model and not model) or not key or len(url) > 2048 or len(model) > 200 or len(key) > 2048:
         raise problem(400, "invalid_ai_configuration", "请填写完整的 API URL、模型与密钥")
     if any(ord(c) < 33 or ord(c) > 126 for c in model + key):
         raise problem(400, "invalid_ai_configuration", "模型和密钥不能含空白或非ASCII字符")
@@ -30,13 +30,22 @@ def personal_settings(settings, headers, authenticate):
         normalized = str(httpx.URL(url)).rstrip("/")
     except (ValueError, httpx.InvalidURL):
         raise problem(400, "invalid_ai_configuration", "个人 API 需要公共 HTTPS 地址（443端口），不要附带账号、查询参数或片段")
-    if normalized.endswith("/chat/completions"):
-        normalized = normalized[:-len("/chat/completions")]
+    if protocol and protocol not in ("chat_completions", "responses"):
+        raise problem(400, "invalid_ai_configuration", "请选择 Chat Completions 或 Responses 协议")
+    for suffix, kind in (("/chat/completions", "chat_completions"), ("/responses", "responses")):
+        if normalized.endswith(suffix):
+            normalized = normalized[:-len(suffix)]
+            protocol = kind
+            break
+    protocol = protocol or "chat_completions"
+    if protocol not in ("chat_completions", "responses"):
+        raise problem(400, "invalid_ai_configuration", "请选择 Chat Completions 或 Responses 协议")
     parameter = parameter or "max_completion_tokens"
     if parameter not in ("max_tokens", "max_completion_tokens"):
         raise problem(400, "invalid_ai_configuration", "不支持的 token 参数")
     return replace(settings, ai_base_url=normalized, ai_model=model, ai_api_key=key,
-                   ai_token_parameter=parameter, ai_personal=True)
+                   ai_token_parameter=parameter, ai_protocol=protocol,
+                   ai_timeout=max(settings.ai_timeout, 60), ai_personal=True)
 
 
 class PublicAITransport(httpx.BaseTransport):

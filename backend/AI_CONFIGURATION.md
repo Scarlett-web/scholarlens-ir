@@ -2,7 +2,7 @@
 
 V2.1已加入会话上下文/持久化、单篇总结、多文献方法与结论比较、完整校验后SSE，详见FRONTEND_API_GUIDE_V21.md。下方“尚无多轮上下文”属于旧V2状态；当前会话需登录，取最近12条消息，每条至多1000字符，paper_ids按每次请求传入，不自动继承上次论文选择。旧回答仅是语境，引用必须来自当前真实证据。真实Key仍留空，模型替身结果不代表真实云端生成成功。
 
-2026-10-27。当前真实Key保持空，不存在真实模型生成验收。后端已实现真实论文证据召回、兼容适配器、引用验证和错误处理；受控生成替身仅用于测试。
+2026-10-28：网站优先使用登录用户自行配置的个人 API，全局配置保持为空。支持 Chat Completions 和 Responses，可读取模型列表并进行一次真实小请求测试。新契约及最新验证边界见 [个人 AI 配置](../docs/10_RELEASE_AND_PERSONAL_AI.md)。下方旧 V2 验收说明仅代表当时状态。
 
 在项目私有.env中自行设置（不要提交、截图或粘贴真实Key）：
 
@@ -13,11 +13,12 @@ AI_MODEL=
 AI_TIMEOUT_SECONDS=30
 AI_MAX_OUTPUT_TOKENS=800
 AI_TOKEN_PARAMETER=max_completion_tokens
+AI_PROTOCOL=chat_completions
 ```
 
-AI_BASE_URL是服务商OpenAI-compatible API的根地址，通常以/v1结束；程序追加/chat/completions，不重复填完整终点。模型名按服务商文档填写，不猜测你账号可用模型。只有服务器配置地址，客户端不允许指定URL、Key或模型。
+AI_BASE_URL 是兼容 API 的根地址，通常以 /v1 结束；程序按 AI_PROTOCOL 追加 /chat/completions 或 /responses。个人配置通过按请求生效的专用头传入，需登录，不修改服务器环境。模型须选供应商当前可用项，不自动替换已下线模型。
 
-默认使用Chat Completions messages和max_completion_tokens，无需安装大型LLM。旧兼容服务若只支持max_tokens，可将AI_TOKEN_PARAMETER改为max_tokens；其他值拒绝启动调用。不强制temperature/JSON mode等供应商可能不支持的参数；通过提示词请求JSON并在服务端校验。
+默认使用 Chat Completions messages 和 max_completion_tokens；旧服务可选 max_tokens。Responses 使用 input、max_output_tokens、store:false，仅接受 completed 的 assistant output_text。规划与回答使用同一协议，不强制 temperature 或 JSON mode；引用仍在服务端校验。
 
 参考[官方Chat Completions API](https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create)。此项目选择兼容端点方便更换供应商，不宣称所有兼容服务都已实测。更换后用短问题验证响应形状和引用。
 
@@ -38,6 +39,6 @@ AI未配置为503 ai_not_configured。配置后但尚未成功调用，能力仍
 
 POST /api/evidence使用同一AskInput但不调用生成服务，可在Key缺失时先验证证据。keyword使用真实基库词项召回和透明的内容词覆盖启发式；semantic使用真实向量和cosine≥0.30的证据候选；hybrid对片段排名RRF。阈值是保守启发式，尚无人工标注校准，不能当答案置信概率。
 
-每条引用先核对索引原文字段字符区间，模型输出再核对chunk_id、原文quote子串与行内引用。无法证明所有生成语句事实正确，前端应保留原文引用入口并提示用户核对；检测失败不展示未经验证的答案。论文文本作为不可信数据进入提示词，不能覆盖系统指令。没有证据时返回insufficient_evidence，不调用生成或空答案弃答。
+每条引用先核对索引原文字段字符区间，模型输出再核对 chunk_id、原文 quote 子串与行内引用。无法证明所有生成语句事实正确，前端保留原文入口供用户核对；引用检测失败不展示未经验证的论文答案。论文文本作为不可信数据进入提示词。严格 `/ask` 保留证据不足语义；`/agent/run` 在缺少论文证据时可以自然回答，并明确标注通用回答，不伪造本库引用。
 
-当前不保存多轮聊天上下文，conversation_id传null。模型商、资费、数据出境和联网额度由组长配置时确认；本轮未发送真实论文到外部生成服务。
+当前支持账户隔离的多轮对话；临时对话传 null，不自动保存。模型商与额度由各用户自行选择。读取模型列表不代表生成成功；连接测试只发送短问题，论文问答则按用户选择发送必要证据。供应商验收须注明日期、模型和真实调用范围，不以替身测试或 HTTP 200 代替。

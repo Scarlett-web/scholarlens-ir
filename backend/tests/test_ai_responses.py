@@ -9,6 +9,7 @@ import pytest
 from backend.agent_runtime import model_plan
 from backend.config import Settings
 from backend.rag import generate, validate_answer
+from backend.ai_responses import provider_content
 
 
 def provider_settings(tmp_path):
@@ -75,3 +76,59 @@ def test_valid_text_json_and_fenced_answers_remain_compatible(tmp_path, fenced):
         "choices": [{"message": {"content": content}}]}))
     answer, citations = generate(provider_settings(tmp_path), "fixture", [ref], transport=transport)
     assert answer == "Supported [chunk:fixture]" and citations == [ref]
+
+
+def response_envelope(text):
+    return {"status": "completed", "output": [
+        {"type": "reasoning", "summary": [{"type": "summary_text", "text": "Do not display"}]},
+        {"type": "message", "role": "assistant", "status": "completed",
+         "content": [{"type": "output_text", "text": text}]}]}
+
+
+@pytest.mark.parametrize("operation", ["answer", "draft", "plan"])
+def test_responses_protocol_reaches_planner_and_answer_without_chat_fields(tmp_path, operation):
+    config = replace(provider_settings(tmp_path), ai_protocol="responses")
+    ref = {"chunk_id": "chunk:fixture", "quote": "Fixture source text."}
+    text = json.dumps({"answer": "Supported [chunk:fixture]", "citations": [ref]}) if operation == "answer" else '{"queries":["fixture"]}'
+    seen = []
+    def reply(request):
+        body = json.loads(request.content)
+        seen.append(body)
+        assert request.url.path == "/v1/responses"
+        assert body["model"] == "fixture-model" and body["store"] is False and body["stream"] is False
+        assert body["input"][0]["role"] == "system" and len(body["input"]) == 2
+        assert "messages" not in body and "max_completion_tokens" not in body and "max_tokens" not in body
+        assert 1 <= body["max_output_tokens"] <= 800
+        return httpx.Response(200, json=response_envelope(text))
+    transport = httpx.MockTransport(reply)
+    result = (model_plan(config, "fixture", "ask", "skill", transport=transport) if operation == "plan"
+              else generate(config, "fixture", [ref], transport=transport, validate=operation == "answer"))
+    assert len(seen) == 1
+    if operation == "answer":
+        assert result == ("Supported [chunk:fixture]", [ref])
+    else:
+        assert result == text
+
+
+@pytest.mark.parametrize("change", [
+    {"status": "incomplete"}, {"status": "failed"}, {"error": {"message": "UNTRUSTED_BODY"}},
+    {"output": None}, {"output": []}, {"output": [None]},
+    {"output": [{"type": "message", "role": "user", "content": []}]},
+    {"output": [{"type": "message", "role": "assistant", "content": [{"type": "refusal", "refusal": "UNTRUSTED_BODY"}]}]},
+    {"output": [{"type": "message", "role": "assistant", "content": [{"type": "output_text", "text": ["UNTRUSTED_BODY"]}]}]},
+])
+@pytest.mark.parametrize("operation", ["answer", "plan"])
+def test_responses_incomplete_or_nontext_output_never_becomes_answer(tmp_path, change, operation):
+    config = replace(provider_settings(tmp_path), ai_protocol="responses")
+    transport = httpx.MockTransport(lambda request: httpx.Response(200, json={**response_envelope("OK"), **change}))
+    with pytest.raises(HTTPException) as error:
+        call_provider(config, transport, operation)
+    assert_redacted(error, operation)
+
+
+def test_responses_general_text_excludes_reasoning(tmp_path):
+    config = replace(provider_settings(tmp_path), ai_protocol="responses")
+    transport = httpx.MockTransport(lambda request: httpx.Response(200, json=response_envelope("你好，可以自然提问。")))
+    assert generate(config, "你好", [], general=True, transport=transport) == "你好，可以自然提问。"
+    with pytest.raises(ValueError):
+        provider_content(json.dumps(response_envelope("")), "responses")

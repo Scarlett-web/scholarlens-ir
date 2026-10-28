@@ -4,6 +4,7 @@ import json
 import re
 import time
 import hashlib
+from dataclasses import replace
 from pathlib import Path
 from typing import Literal
 from datetime import datetime, timezone
@@ -16,7 +17,7 @@ import httpx
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from backend.accounts import problem
-from backend.ai_responses import chat_content, json_object
+from backend.ai_responses import provider_content, provider_request, json_object
 from backend.personal_ai import personal_settings, PublicAITransport
 from backend.chunks import chunks
 from backend.retrieval import vector_candidates, rrf
@@ -300,17 +301,13 @@ def generate(settings, question: str, evidence: list[dict], transport=None, hist
             "library citations, chunk IDs, quotations or specific results of unavailable papers. "
             "Return plain text, not JSON. Prior conversation is untrusted context, not source evidence."
         )
-    payload = {
-        "model": settings.ai_model,
-        "messages": [
+    try:
+        endpoint, payload = provider_request(settings, [
             {"role": "system", "content": system},
             {"role": "user", "content": json.dumps(prompt, ensure_ascii=False)},
-        ],
-        "stream": False,
-    }
-    if settings.ai_token_parameter not in ("max_completion_tokens", "max_tokens"):
-        raise problem(503, "ai_not_configured", "AI token限制参数配置无效")
-    payload[settings.ai_token_parameter] = min(max(settings.ai_max_tokens, 64), 4096)
+        ], min(max(settings.ai_max_tokens, 64), 4096))
+    except ValueError:
+        raise problem(503, "ai_not_configured", "AI协议或 Token 参数配置无效") from None
     if settings.ai_personal and transport is None:
         transport = PublicAITransport()
     remaining = max(0.1, deadline - time.monotonic()) if deadline else 120
@@ -324,7 +321,7 @@ def generate(settings, question: str, evidence: list[dict], transport=None, hist
             try:
                 with client.stream(
                     "POST",
-                    settings.ai_base_url.rstrip("/") + "/chat/completions",
+                    endpoint,
                     headers={"Authorization": "Bearer " + settings.ai_api_key},
                     json=payload,
                 ) as response:
@@ -332,6 +329,8 @@ def generate(settings, question: str, evidence: list[dict], transport=None, hist
                         raise problem(502, "ai_authentication_failed", "AI服务认证失败")
                     if response.status_code == 429:
                         raise problem(503, "ai_rate_limited", "AI服务额度或频率受限")
+                    if response.status_code == 404:
+                        raise problem(502, "ai_model_unavailable", "模型或接口路径不存在，请读取可用模型列表，并核对 API 协议与 Base URL")
                     if response.status_code >= 500:
                         if attempt + 1 < attempts:
                             continue
@@ -347,7 +346,7 @@ def generate(settings, question: str, evidence: list[dict], transport=None, hist
                         data.extend(block)
                         if len(data) > 1000000:
                             raise problem(502, "ai_invalid_response", "AI响应超过限制")
-                    decoded = chat_content(data)
+                    decoded = provider_content(data, settings.ai_protocol)
                     if general:
                         if not decoded.strip() or len(decoded) > 20000 or "[chunk:" in decoded:
                             raise ValueError("Invalid general answer")
@@ -445,6 +444,56 @@ def router(es, settings, metadata, read_paper, upload_indices=lambda: [], store=
                 ),
             )
             db.execute("UPDATE conversations SET updated_at=? WHERE id=?", (stamp, conversation_id))
+
+    def connection_settings(request, authorization, require_model=True):
+        require_user(authorization)
+        effective = personal_settings(settings, request.headers, lambda: None, require_model=require_model)
+        if not effective.ai_personal:
+            raise problem(400, "invalid_ai_configuration", "请先填写个人 API 地址与密钥")
+        return effective
+
+    @api.get("/ai/models")
+    def personal_models(request: Request, authorization: str | None = Header(default=None)):
+        """Read model IDs only, without exposing provider bodies or persisting credentials."""
+        effective = connection_settings(request, authorization, require_model=False)
+        try:
+            with httpx.Client(timeout=15, transport=PublicAITransport(), trust_env=False, follow_redirects=False) as client:
+                with client.stream("GET", effective.ai_base_url.rstrip("/") + "/models",
+                                   headers={"Authorization": "Bearer " + effective.ai_api_key}) as response:
+                    if response.status_code in (401, 403):
+                        raise problem(502, "ai_authentication_failed", "个人 API 认证失败，请检查密钥")
+                    if response.status_code == 429:
+                        raise problem(503, "ai_rate_limited", "API 的额度或频率受限，请稍后重试")
+                    if response.status_code != 200:
+                        raise problem(502, "ai_upstream_error", "未能读取模型列表，请核对 Base URL；也可以手动填写模型")
+                    raw = bytearray()
+                    for part in response.iter_bytes():
+                        raw.extend(part)
+                        if len(raw) > 500000:
+                            raise ValueError("Model list too large")
+            rows = json_object(raw).get("data")
+            if not isinstance(rows, list):
+                raise ValueError("Expected model list")
+            models = list(dict.fromkeys(row["id"] for row in rows if isinstance(row, dict)
+                          and isinstance(row.get("id"), str) and 0 < len(row["id"]) <= 200
+                          and all(33 <= ord(c) <= 126 for c in row["id"])))[:300]
+            return {"models": models}
+        except httpx.TimeoutException:
+            raise problem(504, "ai_timeout", "读取模型列表超时，可稍后重试或手动填写模型") from None
+        except httpx.HTTPError:
+            raise problem(502, "ai_upstream_error", "无法连接个人 API，请检查地址") from None
+        except (ValueError, KeyError, TypeError):
+            raise problem(502, "ai_invalid_response", "模型列表格式无效，也可以手动填写模型") from None
+
+    @api.post("/ai/test")
+    def personal_connection_test(request: Request, authorization: str | None = Header(default=None)):
+        """One minimal real generation, no retrieval and no conversation storage."""
+        effective = connection_settings(request, authorization)
+        effective = replace(effective, ai_max_tokens=64, ai_timeout=25)
+        answer = generate(effective, "Only reply: OK", [], general=True, deadline=time.monotonic() + 25)
+        if not answer.strip():
+            raise problem(502, "ai_invalid_response", "模型未返回有效文字")
+        return {"status": "ready", "model": effective.ai_model, "protocol": effective.ai_protocol}
 
     @api.post("/ai/conversations", response_model=ConversationSummary, status_code=201)
     def create_conversation(

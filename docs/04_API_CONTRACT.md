@@ -4,6 +4,8 @@
 
 ## 1. 通用约定
 
+2026-10-28：个人 AI 新增协议选择、`GET /api/ai/models` 和 `POST /api/ai/test`，输入、输出、认证、错误与验收见 [个人 AI 契约](10_RELEASE_AND_PERSONAL_AI.md)。
+
 ### V2.1 业务与AI增补（负责人组长）
 
 输入/输出、认证和验收以backend/archive/20261026-27/V21_PARITY_GOAL.md及FRONTEND_API_GUIDE_V21.md为准。新增profile/avatar/password、绑定邮箱验证与密码找回、收藏夹、七日浏览记录、随机推荐、受控DOCX下载、管理员用户管理、审核预览/通知、我的文献、AI会话/总结/比较，以及上传向量化。原搜索/收藏接口保持兼容。SQLite使用幂等加法迁移、迁移前backup与本地恢复命令；不删除旧索引或原数据。邮件/AI未配置503，不伪造发送、生成、解析或原PDF读取。stream=true采用校验完整回答后分段SSE，未通过引用校验不发送内容；不冒充上游token流。用户及会话数据隔离、转换限时/清理、双路真实上传召回须通过新增测试。

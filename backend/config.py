@@ -28,6 +28,7 @@ class Settings:
     uploads_index: str = "scholarlens-uploads-real"
     upload_vector_index: str = "scholarlens-vectors-uploads-real"
     ai_token_parameter: str = "max_completion_tokens"
+    ai_protocol: str = "chat_completions"
     pdf_manifest_path: str = ""
     ai_personal: bool = False
     frontend_dir: str = ""
@@ -63,6 +64,7 @@ class Settings:
             uploads_index=os.getenv("UPLOADS_INDEX", cls.uploads_index),
             upload_vector_index=os.getenv("UPLOAD_VECTOR_INDEX", cls.upload_vector_index),
             ai_token_parameter=os.getenv("AI_TOKEN_PARAMETER", cls.ai_token_parameter),
+            ai_protocol=os.getenv("AI_PROTOCOL", cls.ai_protocol),
             pdf_manifest_path=os.getenv("SCHOLARLENS_PDF_MANIFEST", ""),
             frontend_dir=os.getenv("FRONTEND_DIST", ""),
         )
