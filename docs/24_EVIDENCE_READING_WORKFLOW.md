@@ -31,4 +31,17 @@
 - 同一交付构建的 `npm run test:browser` 全程退出 0；通过 4174 既有只读代理核对真实 API 的 859 篇、magnetic 的 61 条结果、关键词建议/分页/过滤、语义与混合检索、研究关系图、真实耗时与评价状态、阅读位置和临时游客收藏笔记。临时浏览器状态不写入生产账户。
 - 已查看最终交付构建的桌面证据台与真实论文定位截图；桌面为主要验收，390px 为布局回归。fixture 报告和截图位于忽略目录 `tools/audit/reports/evidence-workflow-2026-10-28T05-06-09-239Z/`。外层工作区 `output/deploy-evidence-workflow-20261028/` 保留真实 API、打包、部署与后续公网验收的机器证据，不提交运行文件。
 
-正式切换及公网验收结果完成后追加。供应商生成、隔离 ZAP、Squirrel 原生检查及其余全局审计未完成项继续保留，不计为本次通过。
+供应商生成、隔离 ZAP、Squirrel 原生检查及其余全局审计未完成项继续保留，不计为本次通过。
+
+## 正式发布与公网验收
+
+2026-10-28 13:08（北京时间）已将应用提交 `83bf92fc88230fc301df2df39128158c9eeb2408` 推送至 `origin/zjl`，部署为 `20261028T050800Z-83bf92f`。发布包 238 个文件，SHA-256 为 `5226c4630cae8aefd29a5c73d76452c35a97f6c045c86c6650da62b23828566b`。网站仍为 <https://scholarlens.lingion.cc.cd/>。
+
+上一版 `/opt/scholarlens/releases/20261028T044251Z-701ff54` 完整保留；一致性 SQLite 备份、环境副本与 rollback 脚本存入 `/opt/scholarlens/backups/20261028T050800Z-83bf92f`。数据库完整性和 rollback 语法检查通过。切换前后均为 859 篇、25 个用户；环境哈希、ES 容器身份/启动时间及 Tunnel PID 一致。只重启本应用，没有升级依赖、重建索引、修改原件、模型、域名或其他服务。
+
+- 公网 `build-info.json` 与全部三个 JS/CSS 资源哈希和发布 manifest 一致，包括关系图按需 chunk；实际加载的是本次 API 生产构建。
+- 公网真实 `magnetic` 搜索返回 61 条；Agent 0.2.0 返回 5 条证据，模型 `not_called`。原 PDF Range 返回 206、64 字节且以 `%PDF-` 开始，robots 与两个尺寸的冰岛图片均通过。
+- 项目局部 Playwright 启动独立 Chrome 实际访问公网证据助手：论文数 859、5 个来源，打开独立阅读页后，高亮与真实返回 quote 完全一致，实际位置 `fulltext:chars:12734-13632`。页面错误和业务写请求均为 0，桌面无横向溢出；已查看公网证据台和阅读页最终截图。验收仅允许只读证据检索 POST 与 GET/HEAD/OPTIONS，不创建账户、笔记、PDF 或审批，Cloudflare 统计 POST 单独拦截。
+- 本次提交的暂存差异通过局部 Gitleaks 脱敏扫描；未发现凭据线索。报告只针对本批差异，不代表全局安全审计完成。临时 4175 预览已停止，既有 4174 服务 PID 14080 保留。
+
+完整机器证据位于外层工作区 `output/deploy-evidence-workflow-20261028/origin-deployment-report.json`、`public-checks.json`、`live-evidence-report.json`，以及同目录的公网截图；`local-` 前缀保留发布前交付构建的截图和真实 API 报告。本记录的后续纯文档提交不改变应用资源，无需再次重启网站。总目标继续按未完成事项推进。
