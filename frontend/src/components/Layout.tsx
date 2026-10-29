@@ -26,6 +26,46 @@ export function SiteLayout({ children }: { children: ReactNode }) {
   const [menu, setMenu] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(false);
   const isToolActive = TOOL_NAV.some(({ to }) => to === pathname);
+  const toolsTimer = useRef<number | null>(null);
+  const toolsMenuRef = useRef<HTMLDivElement>(null);
+
+  const openTools = () => {
+    if (toolsTimer.current) {
+      clearTimeout(toolsTimer.current);
+      toolsTimer.current = null;
+    }
+    setToolsOpen(true);
+  };
+
+  const closeTools = () => {
+    if (toolsTimer.current) {
+      clearTimeout(toolsTimer.current);
+    }
+    toolsTimer.current = window.setTimeout(() => {
+      setToolsOpen(false);
+      toolsTimer.current = null;
+    }, 220);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (toolsTimer.current) {
+        clearTimeout(toolsTimer.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!toolsOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (toolsMenuRef.current && !toolsMenuRef.current.contains(e.target as Node)) {
+        if (toolsTimer.current) clearTimeout(toolsTimer.current);
+        setToolsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [toolsOpen]);
   const [dataStatus, setDataStatus] = useState(DATA_SOURCE === "demo" ? "演示空间 · 18 篇虚构论文" : "正在连接论文库…");
   useEffect(() => {
     if (DATA_SOURCE === "demo") return;
@@ -123,14 +163,15 @@ export function SiteLayout({ children }: { children: ReactNode }) {
               </NavLink>
             ))}
             <div
+              ref={toolsMenuRef}
               className="header-tools-menu"
-              onMouseEnter={() => setToolsOpen(true)}
-              onMouseLeave={() => setToolsOpen(false)}
+              onMouseEnter={openTools}
+              onMouseLeave={closeTools}
             >
               <button
                 type="button"
                 className={"header-dock-pill header-tools-trigger" + (isToolActive ? " active" : "")}
-                onClick={() => setToolsOpen(!toolsOpen)}
+                onClick={() => (toolsOpen ? closeTools() : openTools())}
                 aria-expanded={toolsOpen}
               >
                 <Sparkles size={15} strokeWidth={1.8} />
@@ -138,13 +179,21 @@ export function SiteLayout({ children }: { children: ReactNode }) {
                 <ChevronDown size={13} className={"tools-caret" + (toolsOpen ? " open" : "")} />
               </button>
               {toolsOpen && (
-                <div className="header-tools-popover" role="menu">
+                <div
+                  className="header-tools-popover"
+                  role="menu"
+                  onMouseEnter={openTools}
+                  onMouseLeave={closeTools}
+                >
                   {TOOL_NAV.map(({ to, label, Icon }) => (
                     <NavLink
                       key={to}
                       to={to}
                       className={({ isActive }) => "tools-popover-item" + (isActive ? " active" : "")}
-                      onClick={() => setToolsOpen(false)}
+                      onClick={() => {
+                        if (toolsTimer.current) clearTimeout(toolsTimer.current);
+                        setToolsOpen(false);
+                      }}
                     >
                       <Icon size={15} strokeWidth={1.8} />
                       <span>{label}</span>
