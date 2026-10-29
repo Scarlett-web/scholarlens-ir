@@ -1,9 +1,9 @@
 /* Glacier observatory: landscape, clear navigation glass, and quiet paper surfaces. */
 :root{
- --app-canvas:#edf4f8;--app-surface:#fff;--app-ink:#142d42;--app-muted:#385266;
+ --app-canvas:#edf4f8;--app-surface:#fff;--app-ink:#0a1926;--app-muted:#486377;
  --glass-clear:rgba(247,252,255,.2);--glass-soft:rgba(249,253,255,.72);--paper:transparent;
  --glass-edge:rgba(255,255,255,.8);--glass-shadow:0 16px 48px #173d5614, inset 0 1px 0 #ffffffb3;
- --app-hairline:rgba(70,109,134,.16);--app-blue:#0866c6;--app-blue-soft:#e3f1fb;--app-rail:0px;
+ --app-hairline:rgba(70,109,134,.16);--app-blue:#0b4d82;--app-blue-soft:rgba(235,243,250,.75);--app-rail:0px;
  --r-control:10px;--r-panel:18px;--r-feature:26px;--app-easing:cubic-bezier(.16,1,.3,1);
  --motion-control:200ms;--motion-base:500ms;--motion-scene:700ms;--motion-route:420ms;
  --glass-card-bg:rgba(255,255,255,.62);
@@ -13,9 +13,9 @@
  --glass-card-shadow:0 16px 44px -10px rgba(15,45,75,.12), 0 2px 10px rgba(15,45,75,.04);
  --glass-card-shadow-hover:0 24px 60px -12px rgba(15,45,75,.2), 0 4px 16px rgba(15,45,75,.06);
  --glass-card-blur:blur(20px) saturate(1.35);
- --btn-primary-gradient:linear-gradient(180deg,#1882ea 0%,#0866c6 100%);
- --btn-primary-shadow:inset 0 1px 0 rgba(255,255,255,.35), 0 6px 18px rgba(8,102,198,.32);
- --btn-primary-shadow-hover:inset 0 1px 0 rgba(255,255,255,.45), 0 8px 24px rgba(8,102,198,.45);
+ --btn-primary-gradient:linear-gradient(180deg,#184c78 0%,#0d3558 100%);
+ --btn-primary-shadow:inset 0 1px 0 rgba(255,255,255,.35), 0 8px 20px -4px rgba(8,28,52,.28);
+ --btn-primary-shadow-hover:inset 0 1px 0 rgba(255,255,255,.5), 0 10px 24px -4px rgba(8,28,52,.38);
  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
  color:var(--app-ink);background:#d5e5ee;font-variant-numeric:tabular-nums;
  -webkit-font-smoothing:antialiased;
@@ -103,7 +103,7 @@ button,input,select,textarea{font-family:inherit}
 .mobile-brand,.mobile-menu-button,.environment-strip{display:none!important}
 .site-main{min-height:0;flex:1;min-width:0;background:transparent}
 .site-main> *{animation:route-enter var(--motion-route) var(--app-easing) both}
-.site-footer,.footer-light,.footer-dark{background:rgba(249,253,255,.18);color:var(--app-muted);border-top:1px solid var(--app-hairline);border-radius:0 0 24px 24px;padding:24px 0}
+.site-footer,.footer-light,.footer-dark{background:rgba(255,255,255,.45);color:#24445c;border-top:1px solid rgba(255,255,255,.65);border-radius:0 0 24px 24px;padding:24px 0;backdrop-filter:blur(24px) saturate(1.3);-webkit-backdrop-filter:blur(24px) saturate(1.3)}
 .footer-inner{display:flex;align-items:center;justify-content:space-between;gap:24px}
 .footer-motto{font-size:12px;font-weight:600;white-space:nowrap}
 .footer-motto>span{margin-left:16px;font-weight:400;color:#86868b}
@@ -129,7 +129,7 @@ h2,h3{color:var(--app-ink)}
 @keyframes route-enter{from{opacity:.82;transform:translateY(6px)}to{opacity:1;transform:none}}
 .button:active:not(:disabled),.search-submit:active:not(:disabled){transform:scale(.97)}
 .button-primary,.search-submit,.ai-compose-footer .button-primary{background:var(--btn-primary-gradient);color:#fff;border:1px solid rgba(255,255,255,.25);box-shadow:var(--btn-primary-shadow);text-shadow:0 1px 2px rgba(0,20,60,.25)}
-.button-primary:hover,.search-submit:hover,.ai-compose-footer .button-primary:hover{background:linear-gradient(180deg,#228ef8 0%,#0a73dc 100%);box-shadow:var(--btn-primary-shadow-hover);color:#fff}
+.button-primary:hover,.search-submit:hover,.ai-compose-footer .button-primary:hover{background:linear-gradient(180deg,#1e588b 0%,#103d65 100%);box-shadow:var(--btn-primary-shadow-hover);color:#fff}
 .button-secondary{background:rgba(255,255,255,.65);color:#193a52;border:1px solid rgba(255,255,255,.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 2px 8px rgba(15,45,75,.05),inset 0 1px 0 #fff;border-radius:12px;font-weight:550}
 .button-secondary:hover:not(:disabled){background:rgba(255,255,255,.9);border-color:#fff;color:var(--app-blue);box-shadow:0 6px 20px rgba(15,45,75,.1),inset 0 1px 0 #fff;transform:translateY(-1px)}
 .button-disabled{background:var(--app-canvas);border-radius:8px;color:#86868b}
@@ -216,27 +216,30 @@ dialog.pdf-viewer-backdrop::backdrop{background:#16384e66;backdrop-filter:blur(1
 /* Daylight glacier: white glass panels floating over the lagoon photograph.
    --glass-* variables are the only transparency knobs; [data-glass] on the shell
    switches the whole set so the surface never mixes two levels by accident. */
-.workspace-shell{--glass-sidebar:.36;--glass-stage:.54;--glass-home:.46;--glass-header:.5;--glass-shell:.18;--glass-card-bg:rgba(255,255,255,.62);--glass-card-hover:rgba(255,255,255,.78);--glass-card-border:rgba(255,255,255,.75);--glass-card-blur:blur(20px) saturate(1.35);--glass-card-shadow:0 16px 44px -10px rgba(15,45,75,.12), 0 2px 10px rgba(15,45,75,.04)}
-.workspace-shell[data-glass=clear]{--glass-sidebar:.2;--glass-stage:.3;--glass-home:.24;--glass-header:.3;--glass-shell:.08;--glass-card-bg:rgba(255,255,255,.38);--glass-card-hover:rgba(255,255,255,.54);--glass-card-border:rgba(255,255,255,.55);--glass-card-blur:blur(24px) saturate(1.55);--glass-card-shadow:0 14px 36px -10px rgba(10,35,60,.1), inset 0 1px 1px 0 rgba(255,255,255,.85)}
-.workspace-shell[data-glass=solid]{--glass-sidebar:.68;--glass-stage:.82;--glass-home:.76;--glass-header:.8;--glass-shell:.45;--glass-card-bg:rgba(255,255,255,.88);--glass-card-hover:rgba(255,255,255,.95);--glass-card-border:rgba(255,255,255,.9);--glass-card-blur:blur(16px) saturate(1.2);--glass-card-shadow:0 18px 48px -12px rgba(12,38,64,.16)}
-.observatory-backdrop{background:#cfe4f0;overflow:hidden;max-width:100vw;}
-.observatory-backdrop img{filter:brightness(1.02) saturate(1.16) contrast(1.06);transform:scale(1.05);animation:glacier-drift 52s ease-in-out infinite alternate;will-change:transform}
-.observatory-backdrop:before{content:"";position:absolute;inset:0;background:radial-gradient(120% 82% at 14% -10%,#ffffff5c,transparent 56%),linear-gradient(180deg,#f6fcff2e,#ecf7fd0a 62%,#e3f2f95c)}
-.observatory-backdrop:after{background:radial-gradient(86% 60% at 50% 112%,#b9d5e48f,transparent 74%)}
+/* Pure White Crystal Glass & Obsidian Sapphire Surface System */
+.workspace-shell{--glass-sidebar:.25;--glass-stage:.36;--glass-home:.3;--glass-header:.38;--glass-shell:.08;--glass-card-bg:rgba(255,255,255,.55);--glass-card-hover:rgba(255,255,255,.72);--glass-card-border:rgba(255,255,255,.8);--glass-card-blur:blur(24px) saturate(1.3);--glass-card-shadow:0 16px 40px -10px rgba(10,30,55,.08), inset 0 1px 0 #ffffff}
+
+/* 纯白通透 (完全白色透明 · 晶莹透境) */
+.workspace-shell[data-glass=clear]{--glass-sidebar:0;--glass-stage:0;--glass-home:0;--glass-header:.16;--glass-shell:0;--glass-card-bg:rgba(255,255,255,.45);--glass-card-hover:rgba(255,255,255,.62);--glass-card-border:rgba(255,255,255,.75);--glass-card-blur:blur(28px) saturate(1.35);--glass-card-shadow:0 16px 44px -12px rgba(0,20,50,.1), inset 0 1px 1px 0 #ffffff}
+.workspace-shell[data-glass=clear]:before{background:transparent!important;box-shadow:none!important;border-color:rgba(255,255,255,.35)!important;backdrop-filter:blur(4px) saturate(1.05)!important;-webkit-backdrop-filter:blur(4px) saturate(1.05)!important}
+.workspace-shell[data-glass=clear] .app-stage:before{background:transparent!important;box-shadow:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+.workspace-shell[data-glass=clear] .site-header{background:rgba(255,255,255,.18);border-bottom-color:rgba(255,255,255,.4);backdrop-filter:blur(24px) saturate(1.2);-webkit-backdrop-filter:blur(24px) saturate(1.2)}
+
+/* 标准微霜 */
+.workspace-shell[data-glass=soft]{--glass-sidebar:.28;--glass-stage:.38;--glass-home:.32;--glass-header:.42;--glass-shell:.12;--glass-card-bg:rgba(255,255,255,.62);--glass-card-hover:rgba(255,255,255,.8);--glass-card-border:rgba(255,255,255,.85);--glass-card-blur:blur(20px) saturate(1.25);--glass-card-shadow:0 16px 40px -10px rgba(10,30,55,.08), inset 0 1px 0 #ffffff}
+
+/* 凝脂厚雾 */
+.workspace-shell[data-glass=solid]{--glass-sidebar:.65;--glass-stage:.78;--glass-home:.72;--glass-header:.76;--glass-shell:.35;--glass-card-bg:rgba(255,255,255,.88);--glass-card-hover:rgba(255,255,255,.96);--glass-card-border:rgba(255,255,255,.92);--glass-card-blur:blur(16px) saturate(1.15);--glass-card-shadow:0 18px 48px -12px rgba(10,30,55,.14), inset 0 1px 0 #ffffff}
+
+.observatory-backdrop{background:#cfe4f0;overflow:hidden;max-width:100vw}
+.observatory-backdrop img{filter:brightness(1.01) saturate(1.03) contrast(1.02);transform:scale(1.05);animation:glacier-drift 52s ease-in-out infinite alternate;will-change:transform}
+.observatory-backdrop:before{content:"";position:absolute;inset:0;background:radial-gradient(120% 70% at 50% -5%,rgba(255,255,255,.4) 0%,transparent 70%)}
+.observatory-backdrop:after{background:linear-gradient(180deg,transparent 70%,rgba(15,35,60,.08) 100%)}
 @keyframes glacier-drift{from{transform:scale(1.05) translate3d(0,0,0)}to{transform:scale(1.1) translate3d(-1.4%,-1.1%,0)}}
-.workspace-shell:before{background:rgba(255,255,255,var(--glass-shell));border-color:#ffffffa8;box-shadow:inset 0 1px 0 #ffffffd9,inset 0 -1px 0 #ffffff5c,0 42px 112px -34px #2f5b6b2e,0 6px 26px #2f5b6b17;backdrop-filter:blur(6px) saturate(1.2);-webkit-backdrop-filter:blur(6px) saturate(1.2)}
-.app-sidebar{background:rgba(255,255,255,var(--glass-sidebar));border-right:1px solid #ffffffd1;backdrop-filter:blur(20px) saturate(1.4);-webkit-backdrop-filter:blur(20px) saturate(1.4);box-shadow:inset 1px 0 0 #ffffffd1,inset -1px 0 0 #2f5b6b1a}
-.app-sidebar .brand-wordmark,.app-sidebar .sidebar-brand>span,.app-sidebar .sidebar-section-label,.app-sidebar .nav-link,.app-sidebar .tool-item,.app-sidebar .site-motion-toggle,.app-sidebar .site-glass-toggle,.app-sidebar .presentation-toggle,.app-sidebar .sidebar-signature strong{color:#193348}
-.app-sidebar .sidebar-section-label,.app-sidebar .sidebar-signature small,.app-sidebar .tool-item small{color:#5b768a}
-.app-sidebar .nav-link:hover,.app-sidebar .tool-item:hover{background:#ffffffa8;color:#0f2839}
-.app-sidebar .nav-link.active,.app-sidebar .tool-item.active{background:#ffffffe6;border-color:#ffffff;color:#0f2839;box-shadow:0 6px 18px #2f5b6b1c,inset 0 1px 0 #fff;font-weight:600}
-.app-sidebar .nav-link.active>svg,.app-sidebar .tool-item.active>svg,.app-sidebar .brand-mark{color:#0969a9}
-.app-sidebar .presentation-toggle:hover,.app-sidebar .presentation-toggle.active,.app-sidebar .site-motion-toggle:hover:not(:disabled),.app-sidebar .site-glass-toggle:hover{background:#ffffffa8;color:#0f2839}
-.app-sidebar .sidebar-signature{border-top-color:#5b768a2b}
-.app-sidebar .sidebar-signature-mark{background:#ffffffd1;color:#2b5266}
-.app-stage:before{background:rgba(255,255,255,var(--glass-stage));box-shadow:inset 1px 0 0 #ffffffd6,inset 0 1px 0 #ffffffc7,inset 14px 0 26px -20px #2f5b6b26;backdrop-filter:blur(16px) saturate(1.3);-webkit-backdrop-filter:blur(16px) saturate(1.3)}
+.workspace-shell:before{background:rgba(255,255,255,var(--glass-shell));border-color:#ffffffa8;box-shadow:inset 0 1px 0 #ffffffd9,inset 0 -1px 0 #ffffff5c,0 42px 112px -34px #1a3c541c,0 6px 26px #1a3c5410;backdrop-filter:blur(6px) saturate(1.15);-webkit-backdrop-filter:blur(6px) saturate(1.15)}
+.app-stage:before{background:rgba(255,255,255,var(--glass-stage));box-shadow:inset 1px 0 0 #ffffffd6,inset 0 1px 0 #ffffffc7;backdrop-filter:blur(16px) saturate(1.2);-webkit-backdrop-filter:blur(16px) saturate(1.2)}
 .app-stage[data-space=home]:before{background:rgba(255,255,255,var(--glass-home))}
-.site-header{background:rgba(255,255,255,var(--glass-header));border-bottom-color:#ffffffd1;backdrop-filter:blur(20px) saturate(1.3);-webkit-backdrop-filter:blur(20px) saturate(1.3)}
+.site-header{background:rgba(255,255,255,var(--glass-header));border-bottom-color:rgba(255,255,255,.5);backdrop-filter:blur(20px) saturate(1.2);-webkit-backdrop-filter:blur(20px) saturate(1.2)}
 
 
 /* ============================================================
@@ -249,10 +252,10 @@ dialog.pdf-viewer-backdrop::backdrop{background:#16384e66;backdrop-filter:blur(1
 .header-dock-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;font-size:13px;font-weight:550;color:#335066;border-radius:999px;text-decoration:none;border:1px solid transparent;background:transparent;transition:all 220ms cubic-bezier(.16,1,.3,1);cursor:pointer;position:relative;white-space:nowrap}
 .header-dock-pill>svg{color:#5b778d;transition:color 200ms}
 .header-dock-pill:hover{color:#0c283d;background:rgba(255,255,255,.65)}
-.header-dock-pill:hover>svg{color:#0866c6}
-.header-dock-pill.active{color:#0866c6;background:#ffffff;border-color:rgba(255,255,255,.95);box-shadow:0 3px 10px rgba(10,55,90,.09),inset 0 1px 0 #fff;font-weight:600}
-.header-dock-pill.active>svg{color:#0866c6}
-.dock-pill-badge{background:#0866c6;color:#fff;font-size:10px;font-weight:700;line-height:1;padding:2px 6px;border-radius:999px;margin-left:2px}
+.header-dock-pill:hover>svg{color:#0b4d82}
+.header-dock-pill.active{color:#0b4272;background:#ffffff;border-color:rgba(255,255,255,.95);box-shadow:0 3px 10px rgba(10,35,65,.08),inset 0 1px 0 #fff;font-weight:600}
+.header-dock-pill.active>svg{color:#0b4272}
+.dock-pill-badge{background:#0b4d82;color:#fff;font-size:10px;font-weight:700;line-height:1;padding:2px 6px;border-radius:999px;margin-left:2px}
 .header-tools-menu{position:relative}
 .header-tools-trigger{display:inline-flex;align-items:center}
 .tools-caret{transition:transform 240ms cubic-bezier(.16,1,.3,1);margin-left:2px;color:#7a93a5}
@@ -261,17 +264,17 @@ dialog.pdf-viewer-backdrop::backdrop{background:#16384e66;backdrop-filter:blur(1
 @keyframes popover-drop{from{opacity:0;transform:translateX(-50%) translateY(-6px) scale(.97)}to{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}}
 .tools-popover-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;font-size:13px;font-weight:550;color:#2c475d;text-decoration:none;transition:all 180ms;position:relative}
 .tools-popover-item>svg{color:#6b8599}
-.tools-popover-item:hover{background:rgba(8,102,198,.08);color:#0866c6}
-.tools-popover-item:hover>svg{color:#0866c6}
-.tools-popover-item.active{background:rgba(8,102,198,.12);color:#0866c6;font-weight:600}
-.tools-popover-item.active>svg{color:#0866c6}
-.popover-tag{margin-left:auto;font-size:10px;color:#0866c6;background:#e3f1fb;padding:2px 6px;border-radius:6px;font-weight:600}
+.tools-popover-item:hover{background:rgba(11,77,130,.08);color:#0b4d82}
+.tools-popover-item:hover>svg{color:#0b4d82}
+.tools-popover-item.active{background:rgba(11,77,130,.12);color:#0b4272;font-weight:600}
+.tools-popover-item.active>svg{color:#0b4272}
+.popover-tag{margin-left:auto;font-size:10px;color:#0b4d82;background:rgba(235,243,250,.85);padding:2px 6px;border-radius:6px;font-weight:600}
 
 .header-actions{display:flex;align-items:center;gap:10px;flex-shrink:0}
 .header-action-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;font-size:12px;font-weight:550;color:#3b576d;background:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.85);backdrop-filter:blur(10px);cursor:pointer;transition:all 200ms;white-space:nowrap}
 .header-action-pill:hover{background:rgba(255,255,255,.9);color:#0c283d;border-color:#fff;box-shadow:0 2px 8px rgba(15,45,75,.06)}
 .header-action-icon{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.85);color:#3b576d;cursor:pointer;transition:all 200ms;padding:0;flex-shrink:0}
 .header-action-icon:hover:not(:disabled){background:rgba(255,255,255,.9);color:#0866c6;border-color:#fff;box-shadow:0 2px 8px rgba(15,45,75,.06)}
-.account-initial-mark{display:grid;place-items:center;width:20px;height:20px;border-radius:50%;background:#0866c6;color:#fff;font-size:11px;font-weight:700;margin-right:2px;flex-shrink:0}
+.account-initial-mark{display:grid;place-items:center;width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,#184c78 0%,#0d3558 100%);color:#fff;font-size:11px;font-weight:700;margin-right:2px;flex-shrink:0}
 .header-data-status{white-space:nowrap;font-size:12px;color:var(--app-muted);display:inline-flex;align-items:center;gap:6px}
 .account-entry{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;padding:6px 14px;border-radius:999px;min-height:36px;height:36px}

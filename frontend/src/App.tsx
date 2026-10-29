@@ -23,9 +23,9 @@ import { NotFoundPage } from "./pages/NotFoundPage";
 /** Surface transparency presets. Purely visual; stored per browser. */
 export type GlassLevel = "clear" | "soft" | "solid";
 export const GLASS_PRESETS: { value: GlassLevel; label: string; hint: string }[] = [
-  { value: "clear", label: "通透", hint: "玻璃最薄，冰川最清楚" },
-  { value: "soft", label: "标准", hint: "文字与背景的默认平衡" },
-  { value: "solid", label: "厚雾", hint: "玻璃最实，正文对比最强" },
+  { value: "clear", label: "纯白通透", hint: "完全白色透明 · 晶莹透境" },
+  { value: "soft", label: "标准微霜", hint: "轻盈白玻璃 · 柔和平衡" },
+  { value: "solid", label: "凝脂厚雾", hint: "柔润厚白 · 对比度增强" },
 ];
 export const normalizeGlass = (value: unknown): GlassLevel =>
   value === "clear" || value === "solid" ? value : "soft";
@@ -147,7 +147,7 @@ function StudioProvider({ children }: { children: ReactNode }) {
   const [uploads, setUploads] = useState<LocalUpload[]>(() => readLocal("uploads", []));
   const [presentation, setPresentation] = useState<boolean>(() => readLocal("presentation", false));
   const [motionPaused, setMotionPaused] = useState<boolean>(() => readLocal<boolean>("motion-paused", false) === true);
-  const [glass, setGlass] = useState<GlassLevel>(() => normalizeGlass(readLocal("glass", "soft")));
+  const [glass, setGlass] = useState<GlassLevel>(() => normalizeGlass(readLocal("glass", "clear")));
   const [reducedMotion, setReducedMotion] = useState(() => window.matchMedia("(prefers-reduced-motion: reduce)").matches);
   const [toast, setToast] = useState<string | null>(null);
 
