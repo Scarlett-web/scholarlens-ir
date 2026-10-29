@@ -28,6 +28,7 @@ export function SiteLayout({ children }: { children: ReactNode }) {
   const isToolActive = TOOL_NAV.some(({ to }) => to === pathname);
   const toolsTimer = useRef<number | null>(null);
   const toolsMenuRef = useRef<HTMLDivElement>(null);
+  const isPinned = useRef(false);
 
   const openTools = () => {
     if (toolsTimer.current) {
@@ -37,14 +38,32 @@ export function SiteLayout({ children }: { children: ReactNode }) {
     setToolsOpen(true);
   };
 
-  const closeTools = () => {
+  const closeTools = (force = false) => {
     if (toolsTimer.current) {
       clearTimeout(toolsTimer.current);
     }
+    if (isPinned.current && !force) {
+      return;
+    }
     toolsTimer.current = window.setTimeout(() => {
       setToolsOpen(false);
+      isPinned.current = false;
       toolsTimer.current = null;
     }, 220);
+  };
+
+  const toggleToolsPin = () => {
+    if (toolsTimer.current) {
+      clearTimeout(toolsTimer.current);
+      toolsTimer.current = null;
+    }
+    if (toolsOpen && isPinned.current) {
+      isPinned.current = false;
+      setToolsOpen(false);
+    } else {
+      isPinned.current = true;
+      setToolsOpen(true);
+    }
   };
 
   useEffect(() => {
@@ -60,11 +79,23 @@ export function SiteLayout({ children }: { children: ReactNode }) {
     const handleClickOutside = (e: MouseEvent) => {
       if (toolsMenuRef.current && !toolsMenuRef.current.contains(e.target as Node)) {
         if (toolsTimer.current) clearTimeout(toolsTimer.current);
+        isPinned.current = false;
+        setToolsOpen(false);
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (toolsTimer.current) clearTimeout(toolsTimer.current);
+        isPinned.current = false;
         setToolsOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
   }, [toolsOpen]);
   const [dataStatus, setDataStatus] = useState(DATA_SOURCE === "demo" ? "演示空间 · 18 篇虚构论文" : "正在连接论文库…");
   useEffect(() => {
@@ -77,7 +108,11 @@ export function SiteLayout({ children }: { children: ReactNode }) {
   const menuRef = useRef<HTMLElement>(null);
   const menuButton = useRef<HTMLButtonElement>(null);
   const current = [...MAIN_NAV,...TOOL_NAV].find(({to})=>to===pathname)?.label ?? (pathname==="/account"?"研究账户":pathname.startsWith("/paper/")?"论文阅读":"页面");
-  useEffect(() => { setMenu(false); setToolsOpen(false); }, [pathname]);
+  useEffect(() => {
+    setMenu(false);
+    isPinned.current = false;
+    setToolsOpen(false);
+  }, [pathname]);
   useEffect(() => { document.title = (current === "页面" ? "页面未找到" : current) + " · ScholarLens"; }, [current, pathname]);
   useEffect(() => {
     if (!menu) return;
@@ -166,12 +201,12 @@ export function SiteLayout({ children }: { children: ReactNode }) {
               ref={toolsMenuRef}
               className="header-tools-menu"
               onMouseEnter={openTools}
-              onMouseLeave={closeTools}
+              onMouseLeave={() => closeTools(false)}
             >
               <button
                 type="button"
                 className={"header-dock-pill header-tools-trigger" + (isToolActive ? " active" : "")}
-                onClick={() => (toolsOpen ? closeTools() : openTools())}
+                onClick={toggleToolsPin}
                 aria-expanded={toolsOpen}
               >
                 <Sparkles size={15} strokeWidth={1.8} />
@@ -183,7 +218,7 @@ export function SiteLayout({ children }: { children: ReactNode }) {
                   className="header-tools-popover"
                   role="menu"
                   onMouseEnter={openTools}
-                  onMouseLeave={closeTools}
+                  onMouseLeave={() => closeTools(false)}
                 >
                   {TOOL_NAV.map(({ to, label, Icon }) => (
                     <NavLink
@@ -192,6 +227,7 @@ export function SiteLayout({ children }: { children: ReactNode }) {
                       className={({ isActive }) => "tools-popover-item" + (isActive ? " active" : "")}
                       onClick={() => {
                         if (toolsTimer.current) clearTimeout(toolsTimer.current);
+                        isPinned.current = false;
                         setToolsOpen(false);
                       }}
                     >
