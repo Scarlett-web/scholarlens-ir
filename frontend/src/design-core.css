@@ -25,13 +25,13 @@ button,input,select,textarea{font-family:inherit}
 ::selection{background:#d9eaff;color:var(--app-ink)}
 .content-wrap{width:100%;max-width:1248px;padding-inline:48px;margin-inline:auto}
 .shell,.shell-light,.shell-home{background:transparent;color:var(--app-ink)}
-.workspace-shell{display:block;min-height:100dvh;padding:24px 0;position:relative;isolation:isolate}
-.workspace-shell:before{content:"";position:absolute;inset:24px;z-index:-1;pointer-events:none;border:1px solid #ffffff85;border-radius:24px;background:linear-gradient(110deg,#ffffff8c,#f3fbff66 65%,#ffffff73);backdrop-filter:blur(6px) saturate(1.08);-webkit-backdrop-filter:blur(6px) saturate(1.08);box-shadow:inset 0 1px 0 #ffffffbf,inset 0 -1px 0 #ffffff52,0 16px 48px #14354c1a}
+.workspace-shell{display:block;min-height:100dvh;padding:0;position:relative;isolation:isolate}
+.workspace-shell:before{display:none!important;content:none!important}
 .observatory-backdrop{position:fixed;inset:0;width:100%;max-width:100vw;overflow:hidden;z-index:-2;pointer-events:none;background:#d5e5ee}
 .observatory-backdrop img{width:100%;height:100%;object-fit:cover;object-position:center 52%;filter:saturate(.95)}
 .observatory-backdrop:after{content:"";position:absolute;inset:0;background:rgba(235,247,255,.06)}
-.app-stage{position:relative;isolation:isolate;display:flex;flex-direction:column;min-height:calc(100dvh - 48px);margin:0 24px;max-width:1560px;margin-inline:auto;width:calc(100% - 48px);min-width:0;background:transparent;border:0;border-radius:24px;box-shadow:none}
-.app-stage:before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;border-radius:inherit;background:rgba(244,251,255,.38)}
+.app-stage{position:relative;isolation:isolate;display:flex;flex-direction:column;min-height:100dvh;margin:0;max-width:100%;width:100%;min-width:0;background:transparent;border:0;border-radius:0;box-shadow:none}
+.app-stage:before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;border-radius:0;background:rgba(255,255,255,var(--glass-stage));backdrop-filter:blur(16px) saturate(1.15);-webkit-backdrop-filter:blur(16px) saturate(1.15)}
 .app-stage[data-space=home]:before{background:transparent}
 .app-stage[data-space=reading]:before{background:var(--paper)}
 .app-sidebar{display:none!important;position:fixed;inset:24px auto 24px 24px;z-index:50;width:var(--app-rail);height:calc(100dvh - 48px);background:rgba(247,252,255,.04);border:0;border-right:1px solid #ffffff38;border-radius:24px 0 0 24px;box-shadow:none;padding:32px 16px 16px;display:flex;flex-direction:column;overflow-y:auto;scrollbar-width:thin;scrollbar-color:transparent transparent}
@@ -236,8 +236,8 @@ dialog.pdf-viewer-backdrop::backdrop{background:#16384e66;backdrop-filter:blur(1
 .observatory-backdrop:before{content:"";position:absolute;inset:0;background:radial-gradient(120% 70% at 50% -5%,rgba(255,255,255,.4) 0%,transparent 70%)}
 .observatory-backdrop:after{background:linear-gradient(180deg,transparent 70%,rgba(15,35,60,.08) 100%)}
 @keyframes glacier-drift{from{transform:scale(1.05) translate3d(0,0,0)}to{transform:scale(1.1) translate3d(-1.4%,-1.1%,0)}}
-.workspace-shell:before{background:rgba(255,255,255,var(--glass-shell));border-color:#ffffffa8;box-shadow:inset 0 1px 0 #ffffffd9,inset 0 -1px 0 #ffffff5c,0 42px 112px -34px #1a3c541c,0 6px 26px #1a3c5410;backdrop-filter:blur(6px) saturate(1.15);-webkit-backdrop-filter:blur(6px) saturate(1.15)}
-.app-stage:before{background:rgba(255,255,255,var(--glass-stage));box-shadow:inset 1px 0 0 #ffffffd6,inset 0 1px 0 #ffffffc7;backdrop-filter:blur(16px) saturate(1.2);-webkit-backdrop-filter:blur(16px) saturate(1.2)}
+.workspace-shell:before{display:none!important}
+.app-stage:before{background:rgba(255,255,255,var(--glass-stage));backdrop-filter:blur(16px) saturate(1.2);-webkit-backdrop-filter:blur(16px) saturate(1.2)}
 .app-stage[data-space=home]:before{background:rgba(255,255,255,var(--glass-home))}
 .site-header{background:rgba(255,255,255,var(--glass-header));border-bottom-color:rgba(255,255,255,.5);backdrop-filter:blur(20px) saturate(1.2);-webkit-backdrop-filter:blur(20px) saturate(1.2)}
 

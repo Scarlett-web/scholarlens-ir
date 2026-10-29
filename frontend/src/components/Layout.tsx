@@ -12,10 +12,16 @@ const MAIN_NAV = [
   {to:"/",label:"首页",Icon:Home}, {to:"/search",label:"论文检索",Icon:Search},
   {to:"/explore",label:"探索论文",Icon:Compass}, {to:"/library",label:"我的文献",Icon:BookOpen}
 ] as const;
-const TOOL_NAV = [
-  {to:"/evaluation",label:"检索评测",Icon:BarChart3},
+const ALL_TOOLS = [
   {to:"/upload",label:"PDF 工作区",Icon:FilePlus2},
-  {to:"/admin",label:"审核工作台",Icon:FolderCheck},
+  {to:"/assistant",label:"证据助手",Icon:Sparkles},
+  {to:"/evaluation",label:"检索评测",Icon:BarChart3},
+  {to:"/admin",label:"审核工作台",Icon:FolderCheck}
+] as const;
+
+// 顶部下拉菜单展示的核心工具（按用户要求暂不显示检索评测与审核工作台）
+const TOOL_NAV = [
+  {to:"/upload",label:"PDF 工作区",Icon:FilePlus2},
   {to:"/assistant",label:"证据助手",Icon:Sparkles}
 ] as const;
 
@@ -25,7 +31,7 @@ export function SiteLayout({ children }: { children: ReactNode }) {
   const { favorites, presentation, setPresentation, toast, notify, motionPaused, setMotionPaused, glass, setGlass, reducedMotion } = useStudio();
   const [menu, setMenu] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(false);
-  const isToolActive = TOOL_NAV.some(({ to }) => to === pathname);
+  const isToolActive = ALL_TOOLS.some(({ to }) => to === pathname);
   const toolsTimer = useRef<number | null>(null);
   const toolsMenuRef = useRef<HTMLDivElement>(null);
   const isPinned = useRef(false);
@@ -107,7 +113,7 @@ export function SiteLayout({ children }: { children: ReactNode }) {
   }, []);
   const menuRef = useRef<HTMLElement>(null);
   const menuButton = useRef<HTMLButtonElement>(null);
-  const current = [...MAIN_NAV,...TOOL_NAV].find(({to})=>to===pathname)?.label ?? (pathname==="/account"?"研究账户":pathname.startsWith("/paper/")?"论文阅读":"页面");
+  const current = [...MAIN_NAV,...ALL_TOOLS].find(({to})=>to===pathname)?.label ?? (pathname==="/account"?"研究账户":pathname.startsWith("/paper/")?"论文阅读":"页面");
   useEffect(() => {
     setMenu(false);
     isPinned.current = false;
