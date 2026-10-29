@@ -1,55 +1,49 @@
 # ScholarLens — 学术论文检索与研究工作台
 
-ScholarLens 是《信息检索》课程项目（对应 Scholar IR System），连接真实论文、三模式检索、原文阅读、收藏笔记、账户与受审核上传，并提供可核验的原文证据。
+ScholarLens 是信息检索课程项目，将真实论文检索、原文阅读、收藏笔记、账户、受审核上传与证据助手连接成完整研究流程。
 
-**在线访问：[ScholarLens](https://scholarlens.lingion.cc.cd/)**。网站运行于华为云，经 Cloudflare Tunnel 提供 HTTPS，个人电脑关机后仍可访问。
+在线访问：[scholarlens.lingion.cc.cd](https://scholarlens.lingion.cc.cd/)。华为云运行，经 Cloudflare Tunnel 提供 HTTPS，个人电脑关机后仍可访问。
 
-## 汇报与文档
+## 从这里了解项目
 
-- [项目总报告](docs/PROJECT_REPORT_20261028.md)：现有资产、逐功能说明、检索原理、数据库、实现过程、优化、安全、测试、部署、局限和答辩。
-- [PPT 逐页底稿](docs/PPT_OUTLINE_20261028.md)：22 页结构、可复制页面文字、配图和讲稿。
-- [文档索引](docs/README.md)：维护入口、历史归档及清理清单。
-- [当前验证与发布](docs/32_CONTINUOUS_VERIFICATION.md)、[剩余边界](docs/33_PASSIVE_CHECKS_AND_RESIDUALS.md)。
-
-## 当前状态（2026-10-28）
-
-| 项目 | 当前事实 |
+| 你要做什么 | 阅读入口 |
 | --- | --- |
-| 正式论文 | 859 篇；215 success、644 partial；4 篇正文因严重乱码隔离，元数据保留 |
-| 向量 | 49,420 个片段，384 维 MiniLM CPU ONNX；RRF k=60 |
-| 原件 | 正式库 859 份 PDF 已接通，共 22,686 页；完整 999 份原包和正式元数据在独立[数据 Release](https://github.com/Scarlett-web/scholarlens-ir/releases/tag/papers-originals-2026-10-28) |
-| 页面 | 搜索、论文、探索、书架、账户、助手、评测、上传、审核与 404 |
-| 接口 | FastAPI 0.2.1；本轮公网 OpenAPI 列出 63 个路径、79 个操作 |
-| 验证 | 最新前端 35 项；10 个独立后端模块 135 项；Chrome/Edge 44 组检查，范围见验证记录 |
-| 线上应用 | `20261028T090257Z-42c81c9`；本轮只读核对服务 active/running、NRestarts=0 |
-| 保留能力 | 个人 AI URL/模型/密钥自行配置；真实上游与邮件未验收；XML 未交付；GitHub CI 为待启用草稿 |
+| 了解项目做了什么、有什么、原理和边界 | [项目总报告](docs/PROJECT_REPORT.md) |
+| 做课堂 PPT、准备讲稿和答辩 | [PPT 逐页底稿](docs/PPT_OUTLINE.md) |
+| 找技术规范、运行手册和历史记录 | [文档中心](docs/README.md) |
+| 核对当前线上版本和证据时间 | [当前状态](docs/operations/STATUS.md) |
 
-## 运行
+## 当前事实（2026-10-29）
 
-在已配置依赖、数据和模型的 Windows 克隆根目录：
+| 项目 | 已核对内容 |
+| --- | --- |
+| 数据 | 859 篇正式论文、49,420 个向量片段；正式库原 PDF 已接通 |
+| 检索 | 六字段 BM25、MiniLM CPU ONNX、RRF 混合与筛选高亮 |
+| 用户功能 | 注册/登录/退出、收藏分类、笔记、历史、对话、上传审核 |
+| 研究助手 | 原文检索、引用核验、个人 API 两协议、模型列表与连接测试 |
+| 最新外观 | 冰川白玻璃、顶部 Dock、三档材质、3D 最近阅读与大对话区 |
+| 在线应用 | `20261029T022557Z-d7cfc56`；同源 `/api` 正式构建 |
+| 接口 | FastAPI 0.2.1，公网 OpenAPI 65 路径、81 操作 |
+| 已有外部验收 | 指定个人模型真实生成与引用链已验收；全站共享 AI 仍默认未配置 |
+| 待办 | 邮件、XML、正式中文导入/多语言向量、相关性金标准、托管 CI 和容量验证 |
+
+原包 999 份 PDF 与正式元数据存于独立[数据 Release](https://github.com/Scarlett-web/scholarlens-ir/releases/tag/papers-originals-2026-10-28)。原包数量、正式库数量、向量片段数是不同概念。
+
+## 开发和运行
+
+已有数据、模型和依赖的 Windows 克隆根目录：
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File infra/start-scholarlens.ps1
 Invoke-RestMethod 'http://127.0.0.1:8000/api/stats'
 ```
 
-首次运行按[后端启动与恢复](backend/BACKEND_STARTUP.md)准备环境。克隆源码不会自动得到模型、数据库、运行索引和原始论文；原件与元数据从独立数据 Release 恢复，索引按受控导入流程重建。
+首次准备环境看[后端启动手册](docs/development/backend/BACKEND_STARTUP.md)，前端命令看[前端入口](frontend/README.md)。克隆代码不会自动得到用户库、索引、模型和原论文。
 
-前端开发见[前端说明](frontend/README.md)。**正式发布必须执行 `npm run build:production`**；普通 build 默认可能生成 18 篇明确标记的虚构演示包。生产入口固定使用同源 `/api`，生成 `dist/build-info.json`；发布后同时检查页面真实数据和资源 hash。
+正式应用发布使用 `npm run build:production`，同源 `/api` 并核对 `build-info.json`；普通 build 可能生成明确标记的 18 篇演示包。文档修改不需要重新构建或重启应用。
 
-## 代码目录
+## 目录与维护
 
-| 目录 | 职责 |
-| --- | --- |
-| `frontend/` | React/Vite/TypeScript 页面、状态管理、浏览器存储和交互检查 |
-| `backend/` | FastAPI、BM25/向量/RRF、账户、工作区、上传、证据与转换 |
-| `agent/` | Workflow、MCP 客户端配置示例 |
-| `.agents/skills/` | 项目设计参考与证据 Agent 运行规则 |
-| `infra/` | 本机启动、服务器 systemd/Tunnel 示例、CI 草稿 |
-| `tools/audit/`、`tools/agent/` | 局部验证工具与 Harness；运行输出被忽略 |
-| `docs/` | 总报告、PPT、协议、交付与归档索引 |
-| `scripts/`、`data/` | 数据组约定与样本；原始大数据不进入源码历史 |
+`frontend/` 为页面与浏览器交互，`backend/` 为 API/检索/账户/上传，`agent/` 为运行工作流，`infra/` 为启动和部署示例，`tools/` 为限定范围验证，`docs/` 为统一文档中心。模块 README 和少量兼容入口只负责指路，正文集中维护。
 
-## 维护边界
-
-源码分支为 `zjl`，不自动合并其他分支。个人密钥仅在标签页会话中保存，URL/模型偏好按用户保存在浏览器；服务器不保存个人密钥。不提交原始论文、用户库、模型、运行索引、凭据、日志或测试报告。只读验收不代表全部业务或真实供应商已成功。部署和回滚见[服务器说明](docs/11_SERVER_DEPLOYMENT.md)，历史记录从[文档索引](docs/README.md)查阅。
+持续使用 `zjl` 分支，不自动合并其他分支。用户库、原件、模型、索引、密钥、日志和运行报告不进入源码提交。个人 API key 仅在标签页会话中使用，不能放进 Vite 变量。发布、恢复和文档同步见[操作手册](docs/operations/11_SERVER_DEPLOYMENT.md)与[文档维护](docs/operations/DOCUMENTATION.md)。

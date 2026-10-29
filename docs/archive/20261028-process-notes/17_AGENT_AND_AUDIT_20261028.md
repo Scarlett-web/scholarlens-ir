@@ -1,6 +1,6 @@
 # ScholarLens 全局审计、Agent 与设计优化（2026-10-28）
 
-本文件记录 10:36 发布的历史状态；后续实际 Agent 运行时、MCP 插件和 Harness 的实现及当前验证见 [运行契约](../../18_AGENT_RUNTIME_CONTRACT.md)。下文的旧 `backend/agent.py` 和“仅声明”限制已由后续版本取代，不能用于描述新版本。
+本文件记录 10:36 发布的历史状态；后续实际 Agent 运行时、MCP 插件和 Harness 的实现及当前验证见 [运行契约](../../specs/18_AGENT_RUNTIME_CONTRACT.md)。下文的旧 `backend/agent.py` 和“仅声明”限制已由后续版本取代，不能用于描述新版本。
 
 本轮结合两份外部聊天记录完成：
 

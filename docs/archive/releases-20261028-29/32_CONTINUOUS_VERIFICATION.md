@@ -1,0 +1,58 @@
+# 持续验证与并行收尾
+
+> 历史快照：内容和测试只对应原记录日期/版本。当前进度看[项目总报告](../../PROJECT_REPORT.md)与[当前状态](../../operations/STATUS.md)。
+
+2026-10-28。负责人：项目维护者。输入是用户明确要求使用多智能体加快总目标收尾。界面、只读源码复核和桌面验收工具分别限定文件所有权；构建、真实浏览器、ES等占资源检查由主代理顺序调度，主代理统一审查、提交、推送和既有服务发布。
+
+## 自动检查草稿（尚未启用）
+
+配置保存在 `infra/ci/verify.yml`，不在 GitHub 自动执行目录内。2026-10-28 尝试推送 `.github/workflows/verify.yml` 时，GitHub 明确拒绝：当前 OAuth 凭据没有 `workflow` scope。已保存被拒绝提交的精确补丁，并仅撤回本轮未推送提交；没有强制推送或更改全局登录授权。其他应用改动仍可正常推送。
+
+以下为草稿启用后的约定，当前 GitHub 三平台运行均为**未执行**。仓库维护者以后通过正常授权将配置移入 `.github/workflows/` 后，应以实际 Actions 结果验收，不把本机通过视作 CI 已启用。
+
+- 触发`zjl`分支推送、拉取请求和手动运行；不使用`pull_request_target`，不读取生产秘密或拥有部署权限。
+- GitHub托管Windows、macOS、Ubuntu分别执行同一组前端类型/生产构建、前端单元和结构检查，以及明确列出的不依赖外部服务的后端单元/真实SQLite路由测试。
+- Actions固定完整提交SHA，checkout不保留Git凭据，权限只读contents，单作业超时20分钟；并发新提交取消旧检查。
+- npm使用锁文件`npm ci`，Python使用固定版本锁文件。不会下载论文、模型或启动ES，不连接生产、邮件或AI供应商。
+- 后端测试列表仅包含已审阅的独立模块，不用`pytest backend/tests`将历史固定9200/859篇测试混入普通CI。CI绿色只证明选定范围；真实ES/MiniLM上传链仍使用文档31的隔离入口单独验收。
+- CI结果必须从实际运行确认。配置已写、语法已解析或本机通过均不代表GitHub三平台成功，也不代表真实Mac桌面/账号/外部服务通过。
+
+## 本机验证
+
+工作流使用前，所列9个后端模块已在本机Windows/Python3.11.15实际执行：132项通过，87.10秒，报告`tools/audit/reports/ci-local-20261028-1605/junit.xml`。默认运行目录指向本轮隔离目录，ES地址设为未使用的回环9端口；没有启动ES或调用正式数据。`ruff --select E9,F63,F7,F82`通过，只检查语法和未定义名称，不冒充全量风格审计。此venv未安装pip，使用已有`uv pip check --python backend/.venv/Scripts/python.exe`确认49个安装包兼容；GitHub的setup-python环境另运行pip check。
+
+PyYAML解析并核对触发器、3平台矩阵、只读权限和40位Actions SHA通过；各SHA来自Actions官方仓库对应tag的当次只读查询。当前只代表配置和Windows本机所列范围，GitHub自动检查受上述权限限制尚未启用。
+
+## 本轮界面状态修复验收契约
+
+- Explore：输入发现或换批请求失败；输出保留当前 `focus` URL，错误节点可被辅助技术识别，并提供可再次发起请求的重试入口。
+- 上传队列：同一账户、队列、页码和筛选条件下刷新失败；输出保留上次 `rows/total` 与筛选上下文并显示错误和重试；账户、队列、页码或筛选变化时清空旧队列，迟到响应不得回填。
+- Assistant 演示模式：输入 `DATA_SOURCE=demo`；输出明确说明当前仅为演示/不可检索，提交控件保持禁用且不宣称“无需配置即可检索原文”。
+- Assistant 能力失败：输入真实能力接口返回的非敏感 `reason` 或请求失败；输出展示经长度限制和脱敏后的原因，不输出密钥、认证头或上游响应原文。
+
+## 前端资源策略验收契约
+
+隔离 ZAP 被动检查确认 HTML 未设置 CSP。这是浏览器防护缺口，不是已确认 XSS。仅生产前端 FileResponse 增加同源资源策略；保留 React 动态 style、同源/Blob PDF iframe、头像与本机 Blob 图片。独立 API 和 Swagger 文档沿用各自响应，不给它们强加前端策略。验收包括前端路由响应头、真实隔离账户界面及 Blob PDF 无策略阻断；不把 CSP 当成输入/输出安全验证的替代品。
+
+## 最新代码验证与保留的失败
+
+- 最终前端 35 项单元测试、结构检查、TypeScript 与 `build:production` 通过；生产包仍固定 `api` 与同源 `/api`，共享供应商配置留空。
+- 10 个明确列出的独立后端模块在本机通过 135 项检查；报告 `tools/audit/reports/ci-final-retry-20261028/junit.xml`。其后 CSP 改动再运行网页及发现契约 6 项通过；`ruff E9,F63,F7,F82` 和 49 包环境兼容检查通过。
+- 首次后端复跑因 Windows 旧 `pytest-of-lenovo` 目录访问被拒绝，129 项在 setup 阶段报错；失败 JUnit 保留在 `ci-final-20261028`。改用全新、明确不存在的项目临时目录复跑，没有更改旧目录权限或删除历史测试数据。
+- 页面初筛首次因每浏览器 12 个论文内链探测额度耗尽而有 4 项未完成；保留失败报告，将有界额度提高至 64 并去重后实际覆盖每浏览器 19 个独特论文链接。最终 Chrome/Edge 共 44 组检查通过，报告 `desktop-quality-2026-10-28T08-50-02-819Z-152b078c`。桌面与 390px 截图已查看。
+- 关系/动效真实只读 API 与浏览器内故障夹具共 13 项通过，报告 `relation-motion-2026-10-28T08-46-26-907Z-0ff03011`。21→20 聚焦保留、迟到响应、退出/前后退、未知 focus、错误重试、专注模式、暂停与系统减少动态均有实际运行。
+- 上传界面夹具验证刷新 503 保留旧记录、重试、身份失效清除和迟到预览隔离，通过 `upload-workflow-2026-10-28T08-51-07-924Z`。证据界面与能力原因脱敏通过 `evidence-workflow-2026-10-28T08-52-40-053Z`。前者不代替文档31的真实解析/索引链，后者不代替真实供应商生成。
+- 一次并行复核违背只读分工执行了普通 `npm run build`，覆盖本机生产 dist 为 demo，导致关系检查等待详情超时。已停止该并行任务并由主代理重建生产包；线上没有发布过该演示包。另一次新详情组件触发了旧证据 fixture 未定义的 `GET /discover`，已显式补合成响应后重跑通过；没有关闭未知请求断言。
+- CSP 下真实隔离账户浏览器通过，报告 `account-security-2026-10-28T09-00-53-961Z`：注册/登录、真实笔记持久化、改密/停用、旧会话迟到401以及本机合成 Blob PDF 载入均通过，策略违例0。初次工具把 Chrome 自带 PDF 阅读器的 `chrome://resources` / 固定 PDF 扩展资源误归为外网，失败报告保留；现仅将这两个精确浏览器内部来源记录为内部资源，外部 HTTP/HTTPS 仍拒绝，最终外网请求0。此验证不证明所有原始 PDF 的渲染质量。
+
+## 推送与既有服务发布
+
+应用提交 `42c81c9c8020aaee9b2457bb87ad8c6f32bfc07c` 已推送到 `origin/zjl`，未合并其他分支。暂存的29个源码/文档/工具文件经 Gitleaks 100% 脱敏检查，无命中；`.serena/`、运行报告、数据库、模型、原件与密钥均未提交。
+
+华为云 release：`/opt/scholarlens/releases/20261028T090257Z-42c81c9`。前端 HTML、3个JS/CSS资源、`build-info.json`及背景图按 SHA-256 校验；生产构建为真实 API 同源 `/api`。前置校验包含 Agent/Skill/Workflow资源与18项受控供应商格式检查，未调用真实模型。
+
+发布前一致性数据库和环境副本：`/opt/scholarlens/backups/20261028T090257Z-42c81c9/`；数据库 integrity_check=ok，备份权限仅服务管理者。上一 release `20261028T074402Z-6c9eaa7` 保留，回滚脚本只切 `current` 并重启本 API，不恢复/覆盖发布后的用户数据。Tunnel PID 和 ES 容器/启动时间前后相同；用户25、论文859不变。
+
+公网 `https://scholarlens.lingion.cc.cd/` 只读验收通过：构建及资源哈希匹配，859篇、magnetic关键词61条、Agent原文证据5段且model=not_called、PDF206/64字节与原始PDF魔数、robots纯文本和2张背景图哈希均匹配。额外核对 `/account` CSP 已生效，`/api/discover?limit=20` 20条摘要均有真实非空机构数组。公网没有注册账号、上传、审批、调用个人模型或操作原索引。
+
+发布证据位于外层忽略目录 `output/parallel-release-20261028/`：`release-manifest.json`、`origin-deployment-report.json`、`public-checks.json`、`public-new-contract-checks.json`。本节后续文档提交不改变已部署应用哈希，无需重复重启服务。GitHub自动三平台检查仍为待启用草稿，不因这次普通代码推送而自动生效。

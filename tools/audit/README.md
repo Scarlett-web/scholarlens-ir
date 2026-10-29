@@ -83,7 +83,7 @@ $env:SCHOLARLENS_URL='http://127.0.0.1:4175'
 node tools/audit/evidence-workflow-browser.mjs
 ```
 
-此脚本同样只接受 localhost，并显式拦截全部 API。覆盖逐字核对、Unicode 偏移、来源上下文、复制、笔记追加与容量、独立阅读页定位、坏定位、停止与迟到响应、账户失效隔离，以及同帧布局测量和滚动时的阅读位置保存。合成论文和账户仅用于界面契约验证，不会写入真实服务，也不代表供应商生成或真实账户持久化已通过。报告与桌面/390px 截图保存在忽略目录；契约及真实 API 验收见 `docs/24_EVIDENCE_READING_WORKFLOW.md`。
+此脚本同样只接受 localhost，并显式拦截全部 API。覆盖逐字核对、Unicode 偏移、来源上下文、复制、笔记追加与容量、独立阅读页定位、坏定位、停止与迟到响应、账户失效隔离，以及同帧布局测量和滚动时的阅读位置保存。合成论文和账户仅用于界面契约验证，不会写入真实服务，也不代表供应商生成或真实账户持久化已通过。报告与桌面/390px 截图保存在忽略目录；契约及真实 API 验收见 `docs/specs/24_EVIDENCE_READING_WORKFLOW.md`。
 
 ## 搜索记录流与账户读取回归
 
@@ -92,7 +92,7 @@ $env:SCHOLARLENS_URL='http://127.0.0.1:4175'
 node tools/audit/search-account-browser.mjs
 ```
 
-仅访问 localhost，全部 API 使用明确 fixture，未知调用使检查失败。检查记录行、真实字段与零评分、条件移除和分页参数、游客收藏、登录输入和失败恢复、动态暂停、账户资料/通知/用户列表的失败重试、历史清空与迟到分页隔离，以及编辑资料不重复读取头像。不会向真实服务注册、登录、上传或清空历史；头像内容与账户写入均为接口 fixture，不能据此声称后端端到端通过。契约及发布证据见 `docs/25_SEARCH_ACCOUNT_WORKFLOW.md`。
+仅访问 localhost，全部 API 使用明确 fixture，未知调用使检查失败。检查记录行、真实字段与零评分、条件移除和分页参数、游客收藏、登录输入和失败恢复、动态暂停、账户资料/通知/用户列表的失败重试、历史清空与迟到分页隔离，以及编辑资料不重复读取头像。不会向真实服务注册、登录、上传或清空历史；头像内容与账户写入均为接口 fixture，不能据此声称后端端到端通过。契约及发布证据见 `docs/specs/25_SEARCH_ACCOUNT_WORKFLOW.md`。
 
 ## 研究书架与账户同步边界回归
 
@@ -101,7 +101,7 @@ $env:SCHOLARLENS_URL='http://127.0.0.1:4175'
 node tools/audit/library-shelf-browser.mjs
 ```
 
-仅接受 localhost 并明确拦截所有 API，未知调用或浏览器异常使检查失败。覆盖分类、排序、相邻笔记、真实本机阅读位置、备份、账户首次读取失败/重试、同步失败保留和导出草稿、账户过期的迟到响应隔离及动态暂停；报告与桌面/390px截图写入忽略目录。不会操作生产账户或真实索引，不能代替真实后端写入和跨设备同步验收。说明与本轮证据见 `docs/27_LIBRARY_RESEARCH_SHELF.md`。
+仅接受 localhost 并明确拦截所有 API，未知调用或浏览器异常使检查失败。覆盖分类、排序、相邻笔记、真实本机阅读位置、备份、账户首次读取失败/重试、同步失败保留和导出草稿、账户过期的迟到响应隔离及动态暂停；报告与桌面/390px截图写入忽略目录。不会操作生产账户或真实索引，不能代替真实后端写入和跨设备同步验收。说明与本轮证据见 `docs/specs/27_LIBRARY_RESEARCH_SHELF.md`。
 
 ## 真实账户二次凭证与会话边界验收
 
@@ -111,7 +111,7 @@ node tools/audit/account-security-browser.mjs
 
 脚本不接受服务URL，也不使用 `SCHOLARLENS_URL`。它自行启动随机回环端口的隔离服务，以实例挑战核对身份后才写入；生产账户/工作区路由和SQLite是真实实现，论文为明确标注的单篇测试夹具。覆盖UI注册、笔记持久化、密码/停用确认错误的重试、真实撤销令牌清理、迟到401保护新会话、成功修改密码撤销全部会话和停用/用户隔离。测试服务不加载生产配置，不连接ES、邮件或供应商；结束时关闭本轮浏览器与服务，运行目录和报告保留在忽略路径。
 
-旧 `frontend/tests/account-browser-smoke.mjs` 会写账户和上传，现强制要求匹配隔离实例挑战，禁止指向生产或普通本地代理。其搜索/上传旧流程尚未整体迁移，不作为本轮通过的证据。以上新工具只验收列明的账户和工作区边界，不能代替全产品端到端验收。见 `docs/28_ACCOUNT_CREDENTIAL_BOUNDARIES.md`。
+旧 `frontend/tests/account-browser-smoke.mjs` 会写账户和上传，现强制要求匹配隔离实例挑战，禁止指向生产或普通本地代理。其搜索/上传旧流程尚未整体迁移，不作为本轮通过的证据。以上新工具只验收列明的账户和工作区边界，不能代替全产品端到端验收。见 `docs/specs/28_ACCOUNT_CREDENTIAL_BOUNDARIES.md`。
 
 ## 真实隔离上传、向量与所有权验收
 
@@ -125,4 +125,4 @@ backend/.venv/Scripts/python.exe tools/audit/run-upload-integration.py
 
 覆盖上传→审批→本地解析→关键词/实际向量→三模式检索→证据/片段→PDF206/DOCX→归档、受控失败、私有文件/对话/收藏/历史/通知/工作区隔离。清除继承的ES/AI/SMTP/GROBID配置；不连接生产、不改全局配置/安装config/模型，不清理历史报告。结束核对拥有的ES/pytest进程退出、端口关闭及config/model哈希不变；pytest失败、跳过、超时或清理失败均不得计为通过。重型ES与浏览器测试应顺序运行，保留失败日志。
 
-Windows AMD64当前通过5组、163次路由状态检查及2项runner守卫；macOS/POSIX只提供路径与进程组实现，尚无实际运行证据。不使用FakeES或固定向量，但合成PDF通过不代表正式语料解析质量、OCR、GROBID或真实供应商生成已通过。权限表、已修复API-only响应头问题和工具失败见`docs/31_ISOLATED_UPLOAD_AND_OWNERSHIP.md`。
+Windows AMD64当前通过5组、163次路由状态检查及2项runner守卫；macOS/POSIX只提供路径与进程组实现，尚无实际运行证据。不使用FakeES或固定向量，但合成PDF通过不代表正式语料解析质量、OCR、GROBID或真实供应商生成已通过。权限表、已修复API-only响应头问题和工具失败见`docs/specs/31_ISOLATED_UPLOAD_AND_OWNERSHIP.md`。
