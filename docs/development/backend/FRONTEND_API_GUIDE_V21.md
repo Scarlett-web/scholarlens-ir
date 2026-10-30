@@ -137,7 +137,7 @@ data: {"answer":"...","evidence_status":"sufficient","citations":[],"retrieval":
 ## 复现与联调
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File infra/start-scholarlens.ps1 -RestartApi
+powershell -NoProfile -ExecutionPolicy Bypass -File infra/start-scholarlens1.ps1 -RestartApi
 Invoke-RestMethod 'http://127.0.0.1:8000/api/stats'
 Invoke-RestMethod 'http://127.0.0.1:8000/api/discover/random?limit=3'
 Invoke-RestMethod 'http://127.0.0.1:8000/api/data-quality'

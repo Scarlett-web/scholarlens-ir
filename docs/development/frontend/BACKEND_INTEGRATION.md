@@ -1,5 +1,12 @@
 # 前后端集成
 
+## 本地4000篇接入（2026-10-30）
+
+负责人：组长。输入为本地8000端口真实API；frontend/.env.local启用api及同源/api代理，不改后端。
+首页和搜索页显示stats返回的文库数量，不硬编码4000；探索页区分候选数量与全库数量，并提供全库检索入口。
+验收：真实API构建、自动测试、桌面和390px检查，新旧论文、三种模式、分页、高亮、年份筛选及详情/PDF。
+本地旧859份原件使用已有不可用提示，不回退演示数据。报告放output/corpus-expansion/frontend-06/；不push、不部署。
+
 > 阅读口径：本文件保留原阶段的协议、命令与验收条件。当前实现、部署和外部服务状态见[项目总报告](../../PROJECT_REPORT.md)与[当前状态](../../operations/STATUS.md)。旧阶段的“待接通/待交付”不覆盖后续已完成内容。
 
 仓库 frontend/ 为 React + Vite + TypeScript 源码，backend/ 为 FastAPI。源码默认 demo（18 篇明确标记的虚构样本）；真实部署构建时设置 VITE_DATA_SOURCE=api，VITE_API_BASE_URL=/api。不在 VITE_ 变量中放密钥。

@@ -23,7 +23,7 @@ from backend.api_models import (
 )
 from fastapi.openapi.utils import get_openapi
 from backend.config import Settings, make_client
-from backend.pdf_access import resolve_pdf, resolve_document_pdf
+from backend.pdf_access1 import resolve_pdf, resolve_document_pdf
 from backend.schema import SEARCH_FIELDS
 from backend.search_text import has_cjk, search_highlights, highlight_query_text
 from backend.discovery import router as discovery_router

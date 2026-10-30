@@ -7,7 +7,7 @@ if (-not (Test-Path -LiteralPath $pidFile)) { Write-Output 'No recorded API proc
 $savedPid = [int](Get-Content -LiteralPath $pidFile)
 $proc = Get-CimInstance Win32_Process -Filter "ProcessId=$savedPid"
 if ($proc) {
-    if ($proc.CommandLine -notlike '*uvicorn*backend.app:app*' -or $proc.CommandLine -notlike "*--port $Port*" -or $proc.ExecutablePath -ne (Join-Path $projectRoot 'backend/.venv/Scripts/python.exe').Replace('/','\')) { throw 'Recorded PID no longer belongs to this ScholarLens API/port.' }
+    if ($proc.CommandLine -notlike '*uvicorn*backend.app1:app*' -or $proc.CommandLine -notlike "*--port $Port*" -or $proc.ExecutablePath -ne (Join-Path $projectRoot 'backend/.venv/Scripts/python.exe').Replace('/','\')) { throw 'Recorded PID no longer belongs to this ScholarLens API/port.' }
     # Windows venv python.exe starts the base interpreter as a child. Stop the
     # validated project-owned tree so no listener or inherited pipe remains.
     & taskkill.exe /PID $savedPid /T /F

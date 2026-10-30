@@ -6,7 +6,7 @@ from elasticsearch import Elasticsearch
 from fastapi.testclient import TestClient
 import pytest
 
-from backend.app import SearchParams, build_search, create_app
+from backend.app1 import SearchParams, build_search, create_app
 from backend.config import Settings
 from backend.retrieval import encoder, rrf, vector_candidates, vector_metadata
 from elasticsearch.helpers import scan

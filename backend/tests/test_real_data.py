@@ -13,7 +13,7 @@ import pytest
 
 from backend.import_jsonl import import_records, load_jsonl
 from backend.prepare_real_data import audit_delivery, prepare, save_new
-from backend.real_data_checks import select_representatives, verify_index
+from backend.real_data_checks1 import select_representatives, verify_index
 
 pytestmark = [pytest.mark.integration, pytest.mark.real_data]
 
@@ -213,7 +213,7 @@ def test_own_api_restart_preserves_real_index(delivery, request, tmp_path):
         "-ExecutionPolicy",
         "Bypass",
         "-File",
-        "infra/start-backend.ps1",
+        "infra/start-backend1.ps1",
         "-Port",
         "8002",
         "-Index",

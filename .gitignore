@@ -279,3 +279,8 @@ frontend/qa-*.png
 
 # Local agent tooling metadata
 .serena/
+
+# Local expansion delivery originals and nested test artifacts
+/data/ScholarLensData/
+/data/kaggle_arxiv_papers_jsonl/
+/backend/output/

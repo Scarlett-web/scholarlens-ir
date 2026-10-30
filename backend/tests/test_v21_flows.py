@@ -12,7 +12,7 @@ import httpx
 import pytest
 
 from backend.accounts import Store
-from backend.app import create_app
+from backend.app1 import create_app
 from backend.db_migrations import restore
 from backend.docx_convert import convert_pdf_to_docx
 from backend.tests.test_v21 import v21, token, pdf_bytes, REAL_ID  # noqa: F401

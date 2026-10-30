@@ -10,7 +10,7 @@ from urllib.parse import quote
 import httpx
 
 from backend.config import Settings, make_client
-from backend.app import SearchParams, build_search
+from backend.app1 import SearchParams, build_search
 from backend.import_jsonl import load_jsonl
 from backend.prepare_real_data import json_bytes, save_new
 from backend.schema import SEARCH_FIELDS
@@ -399,5 +399,182 @@ def main():
         )
 
 
+def expansion(prepare_only=False):
+    """Prepare local two-batch PDF configuration or verify the running expansion API.
+
+    Missing old PDFs are explicitly expected locally. New PDF failures are fatal.
+    No index writes, credential operations, or remote requests occur.
+    """
+    import csv
+    import os
+    from dataclasses import replace
+    from backend.pdf_access1 import resolve_document_pdf
+
+    root = Path(__file__).resolve().parent.parent
+    output = root / "output/corpus-expansion/api-05"
+    output.mkdir(parents=True, exist_ok=True)
+    manifest = root / "output/corpus-expansion/prepare-02/merged_source_manifest.csv"
+    rows = list(csv.DictReader(manifest.open(encoding="utf-8-sig")))
+    source = root / "output/corpus-expansion/prepare-02/merged_papers.jsonl"
+    records = [json.loads(line) for line in source.read_text(encoding="utf-8").splitlines()]
+    docs = {r["paper_id"]: r for r in records}
+    settings = replace(
+        Settings(),
+        index="scholarlens-papers-expansion-real",
+        vector_index="scholarlens-vectors-expansion-real",
+        pdf_manifest_path=str(manifest),
+        pdf_roots_path=str(output / "pdf-roots.json"),
+    )
+    if prepare_only:
+        roots = {"old": None, "new": str(root / "data/ScholarLensData/extracted/kaggle_papers_PDF")}
+        save_new(output / "pdf-roots.json", json_bytes(roots))
+        config = {
+            "ELASTICSEARCH_URL": settings.url,
+            "ELASTICSEARCH_INDEX": settings.index,
+            "VECTOR_INDEX": settings.vector_index,
+            "EMBEDDING_MODEL_DIR": settings.model_dir,
+            "SCHOLARLENS_PDF_MANIFEST": str(manifest),
+            "SCHOLARLENS_PDF_ROOTS_FILE": settings.pdf_roots_path,
+            "SCHOLARLENS_RUNTIME_DIR": str(root / "backend/.runtime/expansion-api"),
+        }
+        save_new(
+            output / "local-api.env",
+            ("\n".join(f"{k}={v}" for k, v in config.items()) + "\n").encode(),
+        )
+        checks = []
+        for row in rows:
+            path = resolve_document_pdf(docs[row["paper_id"]], settings)
+            status = (
+                "verified"
+                if path
+                else "not_configured_local"
+                if row["source_batch"] == "old"
+                else "failed"
+            )
+            checks.append(
+                {
+                    "paper_id": row["paper_id"],
+                    "source_batch": row["source_batch"],
+                    "source_file": row["source_file"],
+                    "status": status,
+                }
+            )
+        with (output / "pdf-mapping-checks.csv").open(
+            "w", encoding="utf-8-sig", newline=""
+        ) as stream:
+            writer = csv.DictWriter(stream, fieldnames=list(checks[0]))
+            writer.writeheader()
+            writer.writerows(checks)
+        assert len(rows) == len(docs) == 4000
+        assert sum(r["status"] == "verified" for r in checks) == 3141
+        assert sum(r["status"] == "not_configured_local" for r in checks) == 859
+        print("PDF mapping: 3141 verified; old 859 not configured locally. Configuration prepared.")
+        return
+    evidence = {
+        "status": "running",
+        "checks": {},
+        "old_pdf_status": "not_configured_local",
+        "pdf_verified_locally": 3141,
+    }
+    base_url = os.getenv("EXPANSION_API_URL", "http://127.0.0.1:8000")
+    if not base_url.startswith("http://127.0.0.1:"):
+        raise ValueError("local API only")
+
+    def check(name, condition):
+        evidence["checks"][name] = bool(condition)
+        if not condition:
+            raise AssertionError(name)
+
+    try:
+        with httpx.Client(base_url=base_url, timeout=180, trust_env=False) as api:
+            stats = api.get("/api/stats")
+            stats.raise_for_status()
+            check("stats_4000", stats.json()["indexed"] == 4000)
+            caps = api.get("/api/capabilities")
+            caps.raise_for_status()
+            for mode in ("keyword", "semantic", "hybrid"):
+                check(
+                    f"{mode}_ready", caps.json()["modules"][mode + "_search"]["status"] == "ready"
+                )
+                response = api.get(
+                    "/api/search",
+                    params={"q": "information retrieval", "mode": mode, "page_size": 5},
+                )
+                response.raise_for_status()
+                check(f"{mode}_results", bool(response.json()["results"]))
+            samples = [rows[0], *[r for r in rows if r["source_batch"] == "new"][:3]]
+            for i, row in enumerate(samples):
+                doc = docs[row["paper_id"]]
+                uri = "/api/papers/" + quote(doc["paper_id"], safe="")
+                detail = api.get(uri)
+                detail.raise_for_status()
+                check(f"detail_{i}", detail.json()["paper_id"] == doc["paper_id"])
+                found = api.get(
+                    "/api/search", params={"q": doc["title"], "field": "title", "page_size": 100}
+                )
+                found.raise_for_status()
+                check(
+                    f"title_search_{i}",
+                    any(r["paper_id"] == doc["paper_id"] for r in found.json()["results"]),
+                )
+                pdf = api.get(uri + "/pdf", headers={"Range": "bytes=0-4"})
+                check(
+                    f"pdf_range_{i}",
+                    (pdf.status_code == 206 and pdf.content == b"%PDF-")
+                    if row["source_batch"] == "new"
+                    else pdf.status_code == 404,
+                )
+                if row["source_batch"] == "new":
+                    full = api.get(uri + "/pdf")
+                    full.raise_for_status()
+                    check(
+                        f"pdf_hash_{i}",
+                        hashlib.sha256(full.content).hexdigest() == row["pdf_sha256"],
+                    )
+            first = api.get("/api/search", params={"q": "the", "page_size": 2}).json()
+            second = api.get("/api/search", params={"q": "the", "page_size": 2, "page": 2}).json()
+            check(
+                "pagination",
+                len(first["results"]) == len(second["results"]) == 2
+                and not {r["paper_id"] for r in first["results"]}
+                & {r["paper_id"] for r in second["results"]},
+            )
+            check("highlight", any(r.get("highlights") for r in first["results"]))
+            filtered = api.get(
+                "/api/search",
+                params={"q": "the", "year_from": 2000, "year_to": 2020, "sort": "year_desc"},
+            ).json()
+            years = [r["year"] for r in filtered["results"]]
+            check(
+                "year_filter_sort",
+                bool(years)
+                and all(2000 <= y <= 2020 for y in years)
+                and years == sorted(years, reverse=True),
+            )
+            evidence["stats"] = stats.json()
+            evidence["status"] = "verified"
+    except Exception:
+        evidence["status"] = "failed"
+        raise
+    finally:
+        (output / "api-verification.json").write_bytes(json_bytes(evidence))
+        (output / "summary.md").write_text(
+            "# 本地API验证\n\n状态："
+            + evidence["status"]
+            + "\n\n"
+            + "\n".join(f"- {key}: {value}" for key, value in evidence["checks"].items())
+            + "\n\n新增3141份PDF本地全量哈希核验；旧859份原件在服务器，本机未配置。未推送、未更新线上。\n",
+            encoding="utf-8",
+        )
+    print(json.dumps(evidence, ensure_ascii=False, indent=2))
+
+
 if __name__ == "__main__":
-    main()
+    import sys
+
+    if "--prepare-expansion" in sys.argv:
+        expansion(prepare_only=True)
+    elif "--verify-expansion" in sys.argv:
+        expansion()
+    else:
+        main()

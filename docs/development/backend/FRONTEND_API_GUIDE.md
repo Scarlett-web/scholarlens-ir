@@ -11,7 +11,7 @@
 Windows项目根目录运行：
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File infra/start-scholarlens.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File infra/start-scholarlens1.ps1
 Invoke-RestMethod 'http://127.0.0.1:8000/api/stats'
 Invoke-RestMethod 'http://127.0.0.1:8000/api/capabilities' | ConvertTo-Json -Depth 8
 ```
