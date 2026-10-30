@@ -7,7 +7,7 @@ FastAPI 0.2.1，Elasticsearch 8.19.23、MiniLM CPU ONNX、SQLite 与独立原 PD
 已有模型/数据/依赖时，在克隆根目录执行：
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File infra/start-scholarlens1.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File infra/start-scholarlens.ps1
 Invoke-RestMethod 'http://127.0.0.1:8000/api/stats'
 ```
 

@@ -53,7 +53,7 @@ def plan_for(origin: str, output: Path) -> dict:
 
 
 def serve_fixture(output: Path) -> None:
-    # Import the isolated factory, never backend.app1 or its production settings.
+    # Import the isolated factory, never backend.app or its production settings.
     sys.path.insert(0, str(REPO))
     import uvicorn
     from fastapi.responses import JSONResponse

@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { AlertCircle, List, Network, RefreshCcw, Search, SlidersHorizontal, X } from "lucide-react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { PageHeading, IntegrationNotice } from "../components/Layout";
 import { PaperCard } from "../components/PaperCard";
 import { DATA_SOURCE, getDiscovery, getPaper, getRandomDiscovery } from "../services/papers";
@@ -97,8 +97,7 @@ export function ExplorePage() {
     <PageHeading eyebrow="DISCOVER / RESEARCH" title="探索论文" desc={DATA_SOURCE === "demo" ? "从研究领域出发，筛选感兴趣的主题与文献。" : "从近期论文出发，发现下一条值得追寻的研究线索。"}
       extra={<button className="button button-secondary" onClick={()=>void shuffle()} disabled={loading}>
         <RefreshCcw size={17}/> 换一批</button>}/>
-    {DATA_SOURCE==="api"&&<IntegrationNotice title={loading ? "正在读取论文库…" : error ? "论文库读取失败" : "论文库 · "+total.toLocaleString("zh-CN")+" 篇"} desc={"当前选读 "+papers.length+" 篇候选；“换一批”会重新从真实论文库随机取样。筛选与排序作用于当前候选。"}/>}
-    {DATA_SOURCE==="api"&&<Link className="text-action" to={"/search"+(term.trim()?"?q="+encodeURIComponent(term.trim()):"")}>前往全库检索 <Search size={16}/></Link>}
+    {DATA_SOURCE==="api"&&<IntegrationNotice title={"论文库 · "+total+" 篇"} desc={"当前选读 "+papers.length+" 篇候选；“换一批”会重新从真实论文库随机取样。筛选与排序作用于当前候选。"}/>}
     {(focusPaper||focusError)&&<div className={"explore-focus-note"+(focusError?" is-error":"")} role={focusError?"alert":"status"}>{focusError?<AlertCircle size={16}/>:<Network size={16}/>}<span>{focusError?"无法载入聚焦论文，已恢复普通探索候选。"+focusError:focusVisible?("已将“"+focusPaper!.title+"”加入候选并在关系图中聚焦。连线只代表可核对的共同元数据。"):"当前筛选已排除聚焦论文；清除筛选后可在关系图中聚焦。"}</span><button className="text-action" type="button" onClick={()=>{++requestToken.current;setFocusPaper(null);setFocusError("");navigate("/explore",{replace:true});}}>退出聚焦</button></div>}
     <section className="explore-controls">
       <div className="topic-selector" role="group" aria-label="研究领域">

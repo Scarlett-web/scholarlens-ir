@@ -3,7 +3,6 @@ import type { PointerEvent } from "react";
 import { ArrowRight, BookOpen, ChevronLeft, ChevronRight, Clock3, Pause, Play, Quote } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useStudio } from "../App";
-import { DATA_SOURCE } from "../services/papers";
 import type { HistoryEntry } from "../types";
 
 function ReadingFace({ entry, preview = false }: { entry: HistoryEntry; preview?: boolean }) {
@@ -137,7 +136,7 @@ export function RecentReadingDeck() {
         <h3>开启你的学术阅读</h3>
         <p>检索文献并打开原文，你的最近阅读足迹与笔记进度将在此以 3D 叠层形式实时呈现。</p>
         <div className="empty-artifact-features">
-          <span>✦ {DATA_SOURCE === "api" ? "真实论文库" : "18 篇演示论文"}</span>
+          <span>✦ 18+ 经典论文库</span>
           <span>✦ 毫秒级原文定位</span>
           <span>✦ 多维证据链核查</span>
         </div>

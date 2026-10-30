@@ -12,7 +12,7 @@ from backend.retrieval import vector_metadata, upload_vector_indices
 import os
 from backend.retrieval import encoder
 from backend.rag import provider_verified
-from backend.pdf_access1 import resolve_document_pdf, resolve_pdf
+from backend.pdf_access import resolve_document_pdf, resolve_pdf
 import httpx
 
 
@@ -81,7 +81,7 @@ def router(es, settings, metadata, store):
             resolve_pdf("uploads/files/" + r["stored_name"], own) is not None
             for r in uploaded_files
         )
-        if not preview_ready and base and (settings.pdf_roots_path or (settings.pdf_root and Path(settings.pdf_root).is_dir())):
+        if not preview_ready and base and settings.pdf_root and Path(settings.pdf_root).is_dir():
             preview_ready = any(
                 resolve_document_pdf(h["_source"], settings) is not None
                 for h in scan(es, index=base, source=["paper_id", "source_file", "pdf_path"])
@@ -90,12 +90,12 @@ def router(es, settings, metadata, store):
             "status": "ready"
             if preview_ready
             else "dependency_unavailable"
-            if settings.pdf_root or settings.pdf_roots_path
+            if settings.pdf_root
             else "not_configured",
             "reason": "至少一篇PDF已核验可读；其余逐篇见pdf_available"
             if preview_ready
             else "PDF目录已配置但尚未找到可核验文件"
-            if settings.pdf_root or settings.pdf_roots_path
+            if settings.pdf_root
             else "原始PDF目录未配置，文本检索可用",
         }
         try:

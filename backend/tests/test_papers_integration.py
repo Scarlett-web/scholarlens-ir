@@ -9,7 +9,7 @@ from elasticsearch import Elasticsearch
 from fastapi.testclient import TestClient
 import pytest
 
-from backend.app1 import create_app
+from backend.app import create_app
 from backend.config import Settings
 from backend.import_jsonl import import_records, load_jsonl
 

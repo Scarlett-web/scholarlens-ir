@@ -34,7 +34,7 @@ def create_fixture_app(runtime: Path, frontend=None, challenge=""):
 
     @app.exception_handler(StarletteHTTPException)
     async def http_error(request, exc):
-        # Same public error envelope as backend.app1; never import its default app/settings.
+        # Same public error envelope as backend.app; never import its default app/settings.
         detail = exc.detail if isinstance(exc.detail, dict) else {
             "code": "not_found", "message": str(exc.detail), "details": {},
         }

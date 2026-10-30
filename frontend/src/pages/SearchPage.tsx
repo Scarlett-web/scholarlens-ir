@@ -5,7 +5,7 @@ import { SearchRecord } from "../components/PaperCard";
 import { IntegrationNotice, PageHeading } from "../components/Layout";
 import { SearchBox } from "../components/SearchBox";
 import { useStudio } from "../App";
-import { DATA_SOURCE, searchPapers, getLibraryStats } from "../services/papers";
+import { DATA_SOURCE, searchPapers } from "../services/papers";
 import { useSearchCapabilities } from "../services/useSearchCapabilities";
 import {useAuth} from "../services/AuthContext";
 import {accountApi} from "../services/backend";
@@ -38,12 +38,6 @@ export function SearchPage() {
   const yearTo = validYear(toValue);
   const [draftFrom, setDraftFrom] = useState(fromValue);
   const [draftTo, setDraftTo] = useState(toValue);
-  const [libraryCount, setLibraryCount] = useState<number|null>(null);
-  useEffect(() => {
-    let active = true;
-    getLibraryStats().then(data => { if(active) setLibraryCount(data.count); }).catch(() => {});
-    return () => { active = false; };
-  }, []);
   const [result, setResult] = useState<SearchResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -140,7 +134,7 @@ export function SearchPage() {
   const pages = paginationItems(page, totalPages);
   return (
     <div className="workspace-page content-wrap search-page">
-      <PageHeading eyebrow="RESEARCH / SEARCH" title="论文检索" desc={libraryCount !== null ? (DATA_SOURCE === "api" ? "真实论文库 · " : "演示论文 · ")+libraryCount.toLocaleString("zh-CN")+" 篇；输入关键词检索全库。" : undefined}/>
+      <PageHeading eyebrow="RESEARCH / SEARCH" title="论文检索"/>
       <SearchBox variant="compact" initialQuery={q} initialField={field} initialMode={mode}/>
       {blocked && <IntegrationNotice title="此检索模式尚未就绪" desc={capabilityError || capabilities?.[mode].reason || "正在检查模型与向量索引，请稍候。"}/>}
       {DATA_SOURCE === "api" && !q.trim() && <IntegrationNotice title="先浏览，再展开检索" desc="这里选取最多20篇近期论文，分页与年份筛选仅作用于这些候选。输入关键词可检索整个论文库。"/>}

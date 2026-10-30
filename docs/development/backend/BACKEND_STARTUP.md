@@ -29,13 +29,13 @@ DOCX转换使用本地受限子进程（30秒），没有额外后台服务；�
 
 ```powershell
 # 当前终端先进入自己的 ScholarLens 克隆根目录
-powershell -NoProfile -ExecutionPolicy Bypass -File infra/start-scholarlens1.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File infra/start-scholarlens.ps1
 ```
 
 已有健康ES和API会复用；停机时启动隐藏后台进程，不要求保持两个可见终端。它读取私有.env的白名单设置，不自动导入JSONL、不下载模型、不重建索引。检查输出版本和papers/status，再打开http://127.0.0.1:8000/docs 。代码或配置更新后：
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File infra/start-scholarlens1.ps1 -RestartApi
+powershell -NoProfile -ExecutionPolicy Bypass -File infra/start-scholarlens.ps1 -RestartApi
 ```
 
 重启只停止经项目PID、命令和路径校验的API进程树。ES不会随API重启。电脑关机、重启或休眠后需再次检查服务，之前任务结束时的“运行中”不是永久状态。

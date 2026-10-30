@@ -61,7 +61,7 @@ def isolated(tmp_path_factory):
     assert info['cluster_name'] == config['cluster'] and info['cluster_uuid'] == config['cluster_uuid']
     assert info['version']['number'] == '8.19.23'
     # Import the default app only AFTER proving that its settings point to this new run.
-    from backend.app1 import create_app
+    from backend.app import create_app
     from backend.import_jsonl import load_jsonl, import_records
     from backend.vector_index import build
     root = tmp_path_factory.mktemp('synthetic-base')

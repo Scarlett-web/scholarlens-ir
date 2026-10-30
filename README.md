@@ -31,20 +31,10 @@ ScholarLens 是信息检索课程项目，将真实论文检索、原文阅读�
 
 ## 开发和运行
 
-### 本地4000篇扩容（2026-10-30）
-
-仅本地：4000篇关键词/向量索引已接通，新增3141份PDF全量哈希通过；旧859份PDF仍在服务器，本机不提供旧原件。
-首次执行 `backend/.venv/Scripts/python.exe -m backend.real_data_checks1 --prepare-expansion` 生成被忽略的本地配置。
-之后使用 `powershell -NoProfile -ExecutionPolicy Bypass -File infra/start-scholarlens1.ps1` 启动；API地址 http://127.0.0.1:8000/docs 。
-真实只读验证命令：`backend/.venv/Scripts/python.exe -m backend.real_data_checks1 --verify-expansion`。
-配置和报告见 `output/corpus-expansion/api-05/`；PID见 `backend/.runtime/api.pid`，日志/独立用户库见 `backend/.runtime/expansion-api/`。
-核心模块已按本地扩容要求改名为app1/pdf_access1/real_data_checks1，旧启动文件改为start-backend1/start-scholarlens1；调用引用已同步。
-本次不更新线上，以下859篇线上基线仍保留其原证据时间。后续前端适配和页面验收另行执行。
-
 已有数据、模型和依赖的 Windows 克隆根目录：
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File infra/start-scholarlens1.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File infra/start-scholarlens.ps1
 Invoke-RestMethod 'http://127.0.0.1:8000/api/stats'
 ```
 

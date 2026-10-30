@@ -5,7 +5,7 @@ import { SearchBox } from "../components/SearchBox";
 import { useStudio } from "../App";
 import { RecentReadingDeck } from "../components/RecentReadingDeck";
 import { ResearchPrism } from "../components/ResearchPrism";
-import { DATA_SOURCE, getDiscovery, getLibraryStats } from "../services/papers";
+import { DATA_SOURCE, getDiscovery } from "../services/papers";
 
 const TOPICS = [
   { title:"计算机科学", description:"计算方法、视觉与信息检索", query:"computer", index:"01" },
@@ -15,13 +15,6 @@ const TOPICS = [
 export function HomePage(){
   const {favorites,history,motionPaused:paused,setMotionPaused:setPaused,reducedMotion}=useStudio();
   const lastRead=history[0]?.paper;
-  const [libraryCount, setLibraryCount] = useState<number|null>(null);
-  const [statsError, setStatsError] = useState(false);
-  useEffect(() => {
-    let active = true;
-    getLibraryStats().then(data => { if(active) setLibraryCount(data.count); }).catch(() => { if(active) setStatsError(true); });
-    return () => { active = false; };
-  }, []);
   const [topics, setTopics] = useState(TOPICS);
   useEffect(() => {
     if (DATA_SOURCE === "demo") return;
@@ -92,7 +85,7 @@ export function HomePage(){
         <span className="badge-dot"/>
         <span className="badge-title">ScholarLens</span>
         <span className="badge-sep">/</span>
-        <span className="badge-desc" aria-live="polite">{libraryCount !== null ? (DATA_SOURCE === "api" ? "真实论文库 · " : "演示论文 · ")+libraryCount.toLocaleString("zh-CN")+" 篇" : statsError ? "文库统计暂不可用" : "正在读取论文库…"}</span>
+        <span className="badge-desc">学术文献确定性检索与核验引擎</span>
       </div>
       <div className="hero-composition">
         <div className="hero-inner">

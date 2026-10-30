@@ -28,7 +28,7 @@ def accept(port: int, output: Path):
         "-ExecutionPolicy",
         "Bypass",
         "-File",
-        "infra/start-backend1.ps1",
+        "infra/start-backend.ps1",
         "-Port",
         str(port),
     ]
