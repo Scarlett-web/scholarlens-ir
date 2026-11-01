@@ -156,3 +156,8 @@ search 的 query 回显全部已验证参数（包括 year_from/year_to/phrase/f
 
 `400 invalid_parameter`、`401 unauthenticated`、`401 invalid_credentials`（仅已认证的密码/停用二次确认错误）、`403 forbidden`、`404 paper_not_found`、`404 pdf_not_available`、`409 duplicate_record`、`413 file_too_large`、`429 rate_limited`、`500 internal_error`、`503 dependency_unavailable`。错误 `details` 只放可诊断的非敏感信息。
 
+
+
+## 2026-11-01 拼写纠正增补
+
+输入建议和无结果后手动纠正规则、输入输出、负责人及验收见[拼写纠正协议](40_SPELLCHECK.md)。不自动改写查询，不重建索引。

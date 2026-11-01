@@ -5,7 +5,8 @@ import { SearchRecord } from "../components/PaperCard";
 import { IntegrationNotice, PageHeading } from "../components/Layout";
 import { SearchBox } from "../components/SearchBox";
 import { useStudio } from "../App";
-import { DATA_SOURCE, searchPapers, getLibraryStats } from "../services/papers";
+import { DATA_SOURCE, searchPapers, getLibraryStats, getSpellingCorrections } from "../services/papers";
+import type { QuerySuggestion } from "../services/paperApi";
 import { useSearchCapabilities } from "../services/useSearchCapabilities";
 import {useAuth} from "../services/AuthContext";
 import {accountApi} from "../services/backend";
@@ -45,6 +46,7 @@ export function SearchPage() {
     return () => { active = false; };
   }, []);
   const [result, setResult] = useState<SearchResult | null>(null);
+  const [spelling, setSpelling] = useState<QuerySuggestion[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [retryKey, setRetryKey] = useState(0);
@@ -65,7 +67,7 @@ export function SearchPage() {
       setParams(normalized, {replace:true}); return;
     }
     if (blocked || invalidYears) { setResult(null); setError(null); setLoading(false); return; }
-    setLoading(true); setError(null); setResult(null);
+    setLoading(true); setError(null); setResult(null); setSpelling([]);
     searchPapers({ q, field, mode, page, pageSize: PAGE_SIZE, sort, yearFrom, yearTo })
       .then((data) => { if (active) {
         const lastPage = Math.max(1, Math.ceil(data.total / PAGE_SIZE));
@@ -73,7 +75,12 @@ export function SearchPage() {
           const next = new URLSearchParams(params); next.set("page", String(lastPage));
           setParams(next, {replace:true}); return;
         }
-        setResult(data);if(user&&q.trim()&&lastRecorded.current!==JSON.stringify([user.id,q,field,mode])){lastRecorded.current=JSON.stringify([user.id,q,field,mode]);void accountApi.recordQuery(q,field,mode).catch(()=>notify("检索成功，但账户搜索历史未能保存"));}} })
+        setResult(data);
+        if(data.total===0 && q.trim() && mode!=="semantic") {
+          void getSpellingCorrections({q,field,mode,page:1,pageSize:PAGE_SIZE,sort,yearFrom,yearTo})
+            .then(items=>{if(active)setSpelling(items);}).catch(()=>{});
+        }
+        if(user&&q.trim()&&lastRecorded.current!==JSON.stringify([user.id,q,field,mode])){lastRecorded.current=JSON.stringify([user.id,q,field,mode]);void accountApi.recordQuery(q,field,mode).catch(()=>notify("检索成功，但账户搜索历史未能保存"));}} })
       .catch((cause) => { if (active) setError(cause instanceof Error ? cause.message : "检索请求失败"); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
@@ -213,6 +220,7 @@ export function SearchPage() {
               </nav>
             </> : <div className="empty-state">
               <h3>没有找到符合条件的论文</h3><p>试试更短的关键词，调整年份，或使用“全部字段”检索。</p>
+              {spelling.length>0&&<div className="spelling-corrections" role="status" aria-label="拼写纠正建议"><p>你是否想搜索：</p>{spelling.map(item=><button key={item.text} type="button" className="button button-secondary" onClick={()=>update("q",item.text)}>{item.text}</button>)}</div>}
               <button className="button button-secondary" onClick={() => setParams(new URLSearchParams({q:"",field:"all",mode:"keyword"}))}>浏览全部论文</button>
             </div>}
         </section>

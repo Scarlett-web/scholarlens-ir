@@ -9,6 +9,10 @@ import os from "node:os";
 import path from "node:path";
 import { spawn } from "node:child_process";
 
+if (process.env.SCHOLARLENS_SPELLCHECK === "1") {
+  await import("./spellcheck-browser.mjs");
+  process.exit(0);
+}
 if (process.env.SCHOLARLENS_REAL_API === "1") {
   await import("./expansion-browser.mjs");
   process.exit(0);
