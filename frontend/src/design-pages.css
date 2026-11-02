@@ -53,6 +53,7 @@
 .apple-home .hero{display:block;min-height:0;position:relative;padding-block:32px 24px;text-align:left;background:transparent;overflow:visible}
 .hero-composition{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,.85fr);gap:48px;align-items:center}
 .apple-home .hero-inner{width:100%;max-width:none;margin:0;min-width:0;position:relative;isolation:isolate}
+.apple-home .hero-inner:focus-within{z-index:10}
 .hero-knowledge-map{position:absolute;z-index:-1;inset:-48px -16px auto auto;width:100%;height:auto;pointer-events:none;opacity:.05}
 .knowledge-paths{fill:none;stroke:#d6e4f7;stroke-width:1;stroke-dasharray:1200;animation:knowledge-draw 2200ms var(--app-easing) both}
 .knowledge-nodes circle{fill:#9cbde8;transform-box:fill-box;transform-origin:center;animation:knowledge-pulse 4s var(--app-easing) infinite}
@@ -203,7 +204,7 @@
 .search-input-wrap input{font-size:16px;color:var(--app-ink);height:48px}
 .search-input-wrap input::placeholder{color:#86868b}
 .search-input-wrap svg{color:#86868b}
-.suggestion-popover{border:1px solid var(--app-hairline);border-radius:12px;box-shadow:0 8px 24px #1d1d1f14}
+.suggestion-popover{border:1px solid var(--app-hairline);border-radius:12px;box-shadow:0 8px 24px #1d1d1f14;max-height:min(50vh,360px);overflow-y:auto}
 .suggestion-popover button:hover,.suggestion-popover button[aria-selected=true]{background:var(--app-canvas);color:var(--app-blue)}
 .search-options{position:relative;width:max-content;margin:8px 0 0 auto;font-size:12px;color:var(--app-muted);text-align:left}
 .search-options summary{display:flex;align-items:center;gap:4px;cursor:pointer;list-style:none;padding:4px 0}

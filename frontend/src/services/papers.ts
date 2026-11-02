@@ -29,11 +29,14 @@ export async function getDiscovery() {
     ? {papers: recommendations(18), total: 18, examples: [], years: []}
     : api.discover();
 }
-export async function getSuggestions(q: string) {
+export async function getSuggestions(q: string, field="all") {
   if (!q.trim()) return [];
   return DATA_SOURCE === "demo"
     ? DEMO_PAPERS.filter(p => p.title.toLowerCase().includes(q.toLowerCase())).slice(0,4).map(p => ({text: p.title, field: "title"}))
-    : api.suggestions(q);
+    : api.suggestions(q,field);
+}
+export async function getSpellingCorrections(query: SearchQuery) {
+  return DATA_SOURCE === "api" ? api.corrections(query) : [];
 }
 let capabilityRequest: Promise<SearchCapabilities> | undefined;
 let capabilityExpires = 0;

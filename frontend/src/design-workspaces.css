@@ -229,6 +229,26 @@
 .ai-page .ai-chat-citations{border-color:var(--app-hairline);margin-top:24px;padding-top:16px}
 .ai-page .ai-chat-citations a{font-size:14px;color:var(--app-blue)}
 .ai-page .ai-chat-citations small{font-size:12px;color:var(--app-muted);line-height:1.6}
+.assistant-inline-citation{display:inline;padding:0 4px;margin:0 2px;border:0;border-radius:4px;background:var(--app-blue-soft);color:var(--app-blue);font:inherit;font-size:12px;font-weight:600;line-height:1.8;vertical-align:super;cursor:pointer;white-space:nowrap}
+.assistant-inline-citation:hover,.assistant-source-link:hover{background:var(--app-blue-soft);color:var(--app-blue)}
+.assistant-inline-citation:active,.assistant-source-link:active{transform:translateY(1px)}
+.assistant-inline-citation:focus-visible,.assistant-source-link:focus-visible{outline:2px solid var(--app-blue);outline-offset:2px}
+.assistant-citation-missing{font-size:12px;color:var(--app-muted)}
+.assistant-numbered-sources ol{list-style:none;padding:0;margin:0;display:grid;gap:8px}
+.assistant-source-link{display:flex;align-items:flex-start;gap:8px;width:100%;text-align:left;padding:8px;border:0;border-radius:8px;background:transparent;color:var(--app-blue);font:inherit;font-size:14px;line-height:1.6;cursor:pointer}
+.assistant-source-link>span:first-child{flex:none;font-variant-numeric:tabular-nums}
+.assistant-source-link>span:nth-child(2){flex:1;min-width:0;overflow-wrap:anywhere}
+.assistant-source-link>svg{flex:none;margin-top:4px}
+.assistant-source-link small{display:block}
+.assistant-verify-sources{margin-top:16px}
+.assistant-citation-dialog{box-sizing:border-box;width:min(680px,calc(100vw - 32px));max-height:calc(100dvh - 32px);padding:0;border:1px solid var(--app-hairline);border-radius:16px;background:var(--app-surface);color:var(--app-ink);box-shadow:var(--glass-shadow);overflow:auto;overscroll-behavior:contain}
+.assistant-citation-dialog::backdrop{background:var(--app-hairline);backdrop-filter:blur(4px)}
+.assistant-citation-dialog>header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 16px;border-bottom:1px solid var(--app-hairline);font-size:14px;color:var(--app-muted)}
+.assistant-citation-body{padding:24px;overflow-wrap:anywhere}
+.assistant-citation-body h2{font-size:18px;line-height:1.6;margin:0 0 8px;font-weight:600}
+.assistant-citation-body .assistant-citation-position{font-size:12px;color:var(--app-muted);margin:0}
+.assistant-citation-body blockquote{margin:24px 0;padding:16px;background:var(--app-blue-soft);border:0;border-radius:8px;font-size:14px;line-height:1.85;white-space:pre-wrap}
+.assistant-citation-body>.button{margin-top:16px;font-size:14px;white-space:normal}
 .assistant-copy-row{margin-top:-24px;margin-bottom:24px}
 .ai-page .ai-request-status{display:flex;align-items:center;gap:8px;margin:16px 0;color:var(--app-muted);font-size:14px}
 .ai-page .ai-compose{flex:none;padding:12px max(24px,calc((100% - 800px)/2)) 16px;background:transparent;border:0}
@@ -711,3 +731,11 @@
 @media(max-width:1100px){.evidence-workbench{grid-template-columns:minmax(0,1fr)}.evidence-source-list{grid-template-columns:repeat(2,minmax(0,1fr))}.evidence-list-caption{grid-column:1/-1}.evidence-detail{border-left:0;padding-left:0;border-top:1px solid var(--app-hairline);padding-top:24px}}
 @media(max-width:760px){.evidence-results{padding:16px}.evidence-workbench{gap:16px}.evidence-source-list{grid-template-columns:minmax(0,1fr)}.evidence-detail h3{font-size:16px}.reader-evidence-notice{padding:16px;font-size:12px}.reader-evidence-notice>span{flex-basis:calc(100% - 32px)}}
 @media(max-width:600px){.detail-relations{padding:16px}.detail-relation-item{grid-template-columns:minmax(0,1fr) auto}.detail-relation-reasons{grid-column:1/-1;max-width:none;text-align:left}}
+
+/* Bound the flex chain so long answers scroll instead of displacing the composer. */
+.workspace-page.ai-page{min-height:0}
+.ai-page .assistant-workspace{flex:none;height:var(--assistant-height,calc(100dvh - 120px));min-height:0}
+.ai-page .ai-shell{flex:1 1 0;height:100%;min-height:0;max-height:100%}
+.ai-page .ai-conversation{flex:1 1 0;min-height:0;overflow-y:auto;overflow-wrap:anywhere}
+.ai-page .ai-compose{flex:0 0 auto}
+@media(max-height:600px){.ai-page .ai-shell-header{min-height:44px;padding:8px 16px}.ai-page .ai-compose{padding-top:6px;padding-bottom:6px}.ai-page .ai-compose form{padding:10px}.ai-page .assistant-compose-note{padding-top:4px;min-height:0}.ai-page .ai-compose textarea{min-height:40px;height:40px}}

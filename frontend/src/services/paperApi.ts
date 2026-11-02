@@ -47,6 +47,7 @@ export interface Discovery {
   years: { year: number; papers: number }[];
 }
 export type SearchCapabilities = Record<SearchMode, { ready: boolean; reason: string }>;
+export interface QuerySuggestion { text: string; field: string; kind?: "completion" | "spelling" }
 
 export function createPaperApi(base: string, transport: typeof fetch = fetch) {
   const root = base.replace(/\/$/, "");
@@ -113,10 +114,19 @@ export function createPaperApi(base: string, transport: typeof fetch = fetch) {
       const json = record(await request("/stats")), data = record(json.data ?? json);
       return {count: number(data.papers ?? data.indexed ?? data.total) ?? 0, status: String(data.status ?? "api")};
     },
-    async suggestions(q: string): Promise<{text: string; field: string}[]> {
-      const data = record(await request("/suggest?" + new URLSearchParams({q, limit: "4"})));
+    async corrections(query: SearchQuery): Promise<QuerySuggestion[]> {
+      const params = new URLSearchParams({q:query.q,field:query.field,mode:query.mode ?? "keyword",limit:"3"});
+      if(query.yearFrom !== undefined) params.set("year_from",String(query.yearFrom));
+      if(query.yearTo !== undefined) params.set("year_to",String(query.yearTo));
+      const data = record(await request("/spellcheck?"+params));
+      return (Array.isArray(data.suggestions)?data.suggestions:[]).map(item=>{
+        const row=record(item); return {text:String(row.text??""),field:query.field,kind:"spelling" as const};
+      }).filter(item=>item.text && item.text!==query.q);
+    },
+    async suggestions(q: string, field="all"): Promise<QuerySuggestion[]> {
+      const data = record(await request("/suggest?" + new URLSearchParams({q, field, limit: "5"})));
       return (Array.isArray(data.suggestions) ? data.suggestions : []).map(item => {
-        const row = record(item); return {text: String(row.text ?? ""), field: String(row.field ?? "all")};
+        const row = record(item); return {text: String(row.text ?? ""), field: String(row.field ?? "all"), kind: row.kind === "spelling" ? "spelling" as const : "completion" as const};
       }).filter(item => item.text);
     },
     async capabilities(): Promise<SearchCapabilities> {

@@ -7,6 +7,7 @@ import { DATA_SOURCE, getSuggestions } from "../services/papers";
 import { useSearchCapabilities } from "../services/useSearchCapabilities";
 import { readLocal, writeLocal } from "../lib/storage";
 import { normalizeSearchField } from "../lib/searchParams";
+import type { QuerySuggestion } from "../services/paperApi";
 
 interface Props {
   variant?: "hero" | "compact";
@@ -20,7 +21,7 @@ export function SearchBox({ variant = "hero", initialQuery = "", initialField = 
   const [q, setQ] = useState(initialQuery);
   const [field, setField] = useState<SearchField>(initialField);
   const [mode, setMode] = useState<SearchMode>(initialMode);
-  const [suggestions, setSuggestions] = useState<{text: string; field: string}[]>([]);
+  const [suggestions, setSuggestions] = useState<QuerySuggestion[]>([]);
   const {capabilities, error: capabilityError} = useSearchCapabilities();
   const [focused, setFocused] = useState(false);
   const [dismissed, setDismissed] = useState(false);
@@ -38,12 +39,12 @@ export function SearchBox({ variant = "hero", initialQuery = "", initialField = 
     setSuggestions([]);
     if (!focused || q.trim().length < 2) return;
     const timer = window.setTimeout(() => {
-      getSuggestions(q.trim()).then(items => { if (active) setSuggestions(items); }).catch(() => { if (active) setSuggestions([]); });
-    }, 220);
+      getSuggestions(q.trim(),field).then(items => { if (active) setSuggestions(items); }).catch(() => { if (active) setSuggestions([]); });
+    }, 300);
     return () => { active = false; window.clearTimeout(timer); };
-  }, [q, focused]);
+  }, [q, focused, field]);
   const recentVisible = focused && q.trim().length === 0 && recent.length > 0;
-  const choices = recentVisible ? recent.map(text => ({text, field})) : suggestions;
+  const choices: QuerySuggestion[] = recentVisible ? recent.map(text => ({text, field})) : suggestions;
   const showChoices = focused && !dismissed && choices.length > 0;
   useEffect(() => { setActiveSuggestion(-1); }, [q, suggestions]);
 
@@ -103,12 +104,12 @@ export function SearchBox({ variant = "hero", initialQuery = "", initialField = 
               <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={clearRecent} aria-label="清空最近搜索">
                 <Trash2 size={13}/> 清空
               </button>
-            </div> : <span>{DATA_SOURCE === "demo" ? "本地示例论文标题建议" : "论文标题与作者建议"}</span>}
+            </div> : <span>{DATA_SOURCE === "demo" ? "本地示例论文标题建议" : "拼写与论文搜索建议"}</span>}
             <div id="main-search-suggestions" role="listbox" aria-label="搜索建议">
               {choices.map((item,index) => <button key={item.field+":"+item.text} id={"search-choice-"+index} type="button" role="option" tabIndex={-1}
                 aria-selected={index===activeSuggestion} onMouseDown={event=>event.preventDefault()}
                 onClick={()=>submit(item.text, normalizeSearchField(item.field,mode))}>
-                {item.text}<ArrowRight size={14}/>
+                <span>{item.kind === "spelling" ? "拼写建议：" : ""}{item.text}</span><ArrowRight size={14}/>
               </button>)}
             </div>
           </div>}

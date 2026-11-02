@@ -10,12 +10,16 @@ from elasticsearch.helpers import scan
 from fastapi import APIRouter, Query
 from pydantic import BaseModel
 from backend.api_models import PaperSummary
+from backend.spellcheck import FIELDS, corrections
+from elasticsearch import ApiError
+from elastic_transport import TransportError
 
 
 class Suggestion(BaseModel):
     text: str
     field: str
     paper_id: str
+    kind: str = "completion"
 
 
 class SuggestResponse(BaseModel):
@@ -48,14 +52,16 @@ class RandomDiscoverResponse(BaseModel):
     status: str
 
 
-def router(es, metadata):
+def router(es, metadata, spell_query=None):
     api = APIRouter(prefix="/api")
     cache = {"generation": None, "expires": 0, "items": []}
     lock = threading.Lock()
 
     @api.get("/suggest", response_model=SuggestResponse)
     def suggest(
-        q: str = Query(default="", max_length=200), limit: int = Query(default=8, ge=1, le=20)
+        q: str = Query(default="", max_length=200),
+        limit: int = Query(default=8, ge=1, le=20),
+        field: FIELDS = "all",
     ):
         query = q.strip()
         if not query:
@@ -66,12 +72,12 @@ def router(es, metadata):
                 items = []
                 for hit in scan(es, index=generation, source=["paper_id", "title", "authors"]):
                     doc = hit["_source"]
-                    for field, values in [
+                    for suggestion_field, values in [
                         ("title", [doc.get("title", "")]),
                         ("authors", doc.get("authors", [])),
                     ]:
                         items.extend(
-                            {"text": v, "field": field, "paper_id": doc["paper_id"]}
+                            {"text": v, "field": suggestion_field, "paper_id": doc["paper_id"]}
                             for v in values
                             if v
                         )
@@ -95,7 +101,35 @@ def router(es, metadata):
                     results.append(item)
                     if len(results) == limit:
                         break
-        return {"query": query, "suggestions": results}
+        if len(results) < min(limit, 5) and spell_query is not None:
+            try:
+                fixed = corrections(
+                    es, generation, query, field, None, None, 1, spell_query, require_empty=False
+                )
+            except (ApiError, TransportError):
+                fixed = []
+            if fixed:
+                correction = fixed[0]
+                results.insert(
+                    0,
+                    {
+                        "text": correction["text"],
+                        "field": field,
+                        "paper_id": "",
+                        "kind": "spelling",
+                    },
+                )
+                corrected_tokens = correction["text"].casefold().split()
+                for item in cache["items"]:
+                    if item["field"] != "title" or item["text"].casefold() in seen:
+                        continue
+                    words = re.findall(r"\w+", item["text"].casefold())
+                    if all(any(w.startswith(t) for w in words) for t in corrected_tokens):
+                        results.append(item)
+                        seen.add(item["text"].casefold())
+                    if len(results) >= min(limit, 5):
+                        break
+        return {"query": query, "suggestions": results[:limit]}
 
     @api.get("/discover", response_model=DiscoverResponse)
     def discover(limit: int = Query(default=6, ge=1, le=20)):

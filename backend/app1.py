@@ -27,6 +27,7 @@ from backend.pdf_access1 import resolve_pdf, resolve_document_pdf
 from backend.schema import SEARCH_FIELDS
 from backend.search_text import has_cjk, search_highlights, highlight_query_text
 from backend.discovery import router as discovery_router
+from backend.spellcheck import router as spellcheck_router
 from backend.retrieval import search_extended, validate_extended
 from backend.accounts import Store, router as accounts_router
 from backend.rag import router as rag_router
@@ -537,7 +538,11 @@ def create_app(settings: Settings | None = None, client=None) -> FastAPI:
             },
         }
 
-    app.include_router(discovery_router(es, metadata))
+    def spelling_query(q, field, year_from, year_to):
+        return build_search(SearchParams(q=q, field=field, year_from=year_from, year_to=year_to))
+
+    app.include_router(discovery_router(es, metadata, spelling_query))
+    app.include_router(spellcheck_router(es, metadata, spelling_query))
     app.include_router(accounts_router(store, read_paper))
     app.include_router(workspace_router(store, read_paper))
     app.include_router(email_router(store))

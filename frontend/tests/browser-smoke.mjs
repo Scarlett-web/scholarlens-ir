@@ -9,6 +9,10 @@ import os from "node:os";
 import path from "node:path";
 import { spawn } from "node:child_process";
 
+if (process.env.SCHOLARLENS_SPELLCHECK === "1") {
+  await import("./spellcheck-browser.mjs");
+  process.exit(0);
+}
 if (process.env.SCHOLARLENS_REAL_API === "1") {
   await import("./expansion-browser.mjs");
   process.exit(0);
@@ -162,7 +166,7 @@ async function runApi() {
   await fill("#main-search-input","mag");
   await evaluate("document.querySelector('#main-search-input').focus()");
   await waitFor("document.querySelector('.suggestion-popover button')!==null");
-  assert.ok(await evaluate("document.querySelector('.suggestion-popover').textContent.includes('作者建议')"));
+  assert.ok(await evaluate("document.querySelector('.suggestion-popover').textContent.includes('拼写与论文搜索建议')"));
   await send("Input.dispatchKeyEvent",{type:"keyDown",key:"ArrowDown",code:"ArrowDown"});
   await send("Input.dispatchKeyEvent",{type:"keyUp",key:"ArrowDown",code:"ArrowDown"});
   const suggestion=await waitFor("document.querySelector('[role=option][aria-selected=true]')?.textContent");
@@ -192,8 +196,9 @@ async function runApi() {
   await waitFor("(()=>{const years=Array.from(document.querySelectorAll('.paper-record-year')).map(el=>Number(el.textContent)).filter(Number.isFinite);return years.length>1&&years.every((year,i)=>!i||years[i-1]>=year)})()");
   const years=await evaluate("Array.from(document.querySelectorAll('.paper-record-year')).map(el=>Number(el.textContent)).filter(Number.isFinite)");
   assert.ok(years.every((year,i)=>!i||years[i-1]>=year));
-  await fill(".year-inputs label:first-child input","2000");
-  await click(".filter-apply-button");
+  await evaluate("(()=>{const el=document.querySelector('.year-inputs label:first-child input');el.focus();el.select();})()");
+  await send("Input.insertText",{text:"2000"});
+  await pointerClick(".filter-apply-button");
   await waitFor("new URLSearchParams(location.search).get('from')==='2000' && document.querySelectorAll('.paper-card').length>0");
   await waitFor("document.querySelectorAll('.paper-record').length>0 && Array.from(document.querySelectorAll('.paper-record-year')).every(el=>Number(el.textContent)>=2000)");
   assert.ok(await evaluate("Array.from(document.querySelectorAll('.paper-record-year')).every(el=>Number(el.textContent)>=2000)"));

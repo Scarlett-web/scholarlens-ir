@@ -9,6 +9,31 @@ import {paginationItems} from "../src/lib/pagination.ts";
 const query = {q:" magnetic ",field:"all",page:2,pageSize:6,sort:"newest",mode:"keyword",yearFrom:1990,yearTo:2026};
 const reply = data => new Response(JSON.stringify(data), {headers:{"Content-Type":"application/json"}});
 
+test("spelling request preserves field, mode and year conditions", async () => {
+  const api=createPaperApi("/api",async url=>{
+    const params=new URL(url,"http://local").searchParams;
+    assert.equal(params.get("q"),"machien learning");
+    assert.equal(params.get("field"),"title");
+    assert.equal(params.get("mode"),"hybrid");
+    assert.equal(params.get("year_from"),"2000");
+    assert.equal(params.get("year_to"),"2020");
+    return reply({suggestions:[{text:"machine learning",field:"title",kind:"spelling"}]});
+  });
+  const result=await api.corrections({...query,q:"machien learning",field:"title",mode:"hybrid",yearFrom:2000,yearTo:2020});
+  assert.equal(result[0].text,"machine learning");
+  assert.equal(result[0].kind,"spelling");
+});
+
+test("typing suggestions preserve spelling labels and request at most five", async () => {
+  const api=createPaperApi("/api",async url=>{
+    assert.equal(new URL(url,"http://local").searchParams.get("limit"),"5");
+    return reply({suggestions:[{text:"machine learning",field:"all",kind:"spelling"},{text:"Actual paper",field:"title"}]});
+  });
+  const results=await api.suggestions("machien learning");
+  assert.equal(results[0].kind,"spelling");
+  assert.equal(results[1].kind,"completion");
+});
+
 test("real contract maps summaries, nested parser state and page count without inventing fields", () => {
   const paper = normalizePaper({paper_id:"source-sha256:test",title:"Real delivery",abstract_snippet:"Actual abstract",
     highlights:{fulltext:["A <em>magnetic</em> field"]},source_status:{parse_status:"partial"},pages:{first:15,last:20,count:6}});
@@ -92,7 +117,7 @@ test("suggestions preserve author field; capabilities require explicit ready", a
   const api = createPaperApi("/api",async url => url.includes("suggest")
     ? reply({suggestions:[{text:"A. Author",field:"authors"}]})
     : reply({modules:{keyword_search:{status:"ready",reason:"索引可用"},semantic_search:{status:"dependency_unavailable",reason:"模型缺失"}}}));
-  assert.deepEqual(await api.suggestions("Author"),[{text:"A. Author",field:"authors"}]);
+  assert.deepEqual(await api.suggestions("Author"),[{text:"A. Author",field:"authors",kind:"completion"}]);
   const capabilities = await api.capabilities();
   assert.equal(capabilities.keyword.ready,true);
   assert.equal(capabilities.semantic.ready,false);

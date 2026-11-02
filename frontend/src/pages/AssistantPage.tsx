@@ -4,7 +4,8 @@ import {ArrowRight,ArrowUp,BookOpen,CheckCircle2,History,Plus,SlidersHorizontal,
 import {askAi,conversationApi,getAssistantAvailability,retrieveEvidence} from "../services/ai";
 import type {AgentTrace,AiMessage,AiOperation,Conversation} from "../services/ai";
 import {EvidenceWorkbench} from "../components/EvidenceWorkbench";
-import {evidenceHref} from "../lib/evidenceLocation";
+import {AssistantAnswer} from "../components/AssistantAnswer";
+import {assistantCitationText} from "../lib/assistantCitations";
 import type {EvidenceReference} from "../lib/evidenceLocation";
 import {useStudio} from "../App";
 import {useAuth} from "../services/AuthContext";
@@ -27,6 +28,23 @@ function ExecutionTrace({trace}:{trace:AgentTrace}){
   return <details className="agent-trace"><summary><Workflow size={14}/>执行记录<span>{trace.evidence_count} 条证据{trace.elapsed_ms!==undefined?" · "+(trace.elapsed_ms/1000).toFixed(1)+" 秒":""}</span></summary><ol>{trace.steps.map(step=><li key={step.id} data-status={step.status}><span>{step.status==="done"?<CheckCircle2 size={14}/>:step.status==="error"?<TriangleAlert size={14}/>:<span className="agent-step-dot"/>}</span><span>{step.label}{step.result_count!==undefined?" · "+step.result_count+" 项":""}</span><small>{statusLabel[step.status]}{step.elapsed_ms!==undefined?" · "+(step.elapsed_ms/1000).toFixed(1)+"s":""}</small></li>)}</ol>{trace.warnings?.map((warning,index)=><p className="agent-warning" key={index}>{warning}</p>)}</details>;
 }
 export function AssistantPage(){
+  const workspace=useRef<HTMLDivElement|null>(null);
+  useEffect(()=>{
+    const element=workspace.current;
+    if(!element)return;
+    const resize=()=>{
+      const viewport=window.visualViewport;
+      const bottom=(viewport?.height??window.innerHeight)+(viewport?.offsetTop??0);
+      element.style.setProperty("--assistant-height",`${Math.max(240,bottom-element.getBoundingClientRect().top-12)}px`);
+    };
+    resize();
+    window.addEventListener("resize",resize);
+    window.visualViewport?.addEventListener("resize",resize);
+    const observer=new ResizeObserver(resize);
+    const header=document.querySelector(".app-header");
+    if(header)observer.observe(header);
+    return()=>{window.removeEventListener("resize",resize);window.visualViewport?.removeEventListener("resize",resize);observer.disconnect();};
+  },[]);
   const [params]=useSearchParams(),focusedPaper=params.get("paper")||"";
   const {favorites,motionPaused,reducedMotion}=useStudio(),{user}=useAuth();
   const [personal,setPersonal]=useState(()=>user?loadPersonalAi(user.id):null);
@@ -75,7 +93,7 @@ export function AssistantPage(){
   useEffect(()=>{reset();setSelected(focusedPaper&&!focusedPaper.startsWith("demo-")?[focusedPaper]:[]);setPersonal(user?loadPersonalAi(user.id):null);},[user?.id,focusedPaper]);
   const loginUrl="/account?"+new URLSearchParams({next:"/assistant"+(focusedPaper?"?paper="+encodeURIComponent(focusedPaper):"")});
   return <div className="workspace-page content-wrap ai-page">
-    <div className="assistant-workspace">
+    <div className="assistant-workspace" ref={workspace}>
       <div className="ai-shell">
         <header className="ai-shell-header"><div className="ai-shell-title"><h1>研究助手</h1><span>{demoMode?"演示模式":personal?personal.model:ready?"论文问答":"原文检索"}</span></div><div className="assistant-tools" role="group" aria-label="助手工具">
           <button className="assistant-tool" aria-label="阅读方式" aria-expanded={tool==="reading"} aria-controls="assistant-panel-reading" onClick={event=>toggleTool("reading",event)}><SlidersHorizontal size={16}/><span>阅读方式</span></button>
@@ -85,11 +103,11 @@ export function AssistantPage(){
         </div></header>
         <div ref={conversation} className={"ai-conversation"+(evidence!==null&&!messages.length?" is-evidence-only":"")} aria-live="polite">
           {!messages.length&&!pendingQuestion&&evidence===null&&<div className="ai-welcome"><div className="assistant-welcome-icon"><BookOpen size={28} strokeWidth={1.4}/></div><h2>{demoMode?"演示模式 · 仅展示界面":ready?"今天想研究什么？":"从一段原文，开始探索"}</h2><p>{demoMode?"切换到 API 数据源后，可检索原文并使用问答。":ready?"聊聊你的问题，或选几篇论文一起读。":"直接检索论文片段，或连接自己的 API 开始对话。"}</p><div className="ai-starters" aria-label="原文检索示例">{EXAMPLES.map(question=><button key={question} disabled={busy||demoMode} title={demoMode?"演示模式未连接原文服务":undefined} onClick={()=>{setDraft(question);input.current?.focus();}}>{question}<ArrowRight size={14}/></button>)}</div>{!ready&&!demoMode&&<button className="text-action" onClick={event=>toggleTool("api",event)}>连接个人 API <ArrowRight size={14}/></button>}</div>}
-          {messages.map((message,index)=><div key={index} className={"ai-chat-message "+(message.role==="user"?"from-user":"from-assistant")}><div className="ai-chat-label">{message.role==="user"?"你的问题":message.answerKind==="general"?"通用回答 · 未由本库文献验证":"研究回答"}</div><p>{message.content}</p>{message.role==="assistant"&&message.agent&&<ExecutionTrace trace={message.agent}/ >}{Boolean(message.sources?.length)&&<div className="ai-chat-citations"><strong>{message.sourceLabel||"引用来源"}</strong>{message.sources?.map((source,i)=><Link key={source.chunk_id||source.paper_id+i} to={source.excerpt&&source.locator?evidenceHref({paper_id:source.paper_id,locator:source.locator,quote:source.excerpt}):"/paper/"+encodeURIComponent(source.paper_id)} target="_blank" rel="noopener noreferrer"><BookOpen size={15}/><span>{source.title}{source.excerpt&&<small>{source.excerpt}</small>}{source.locator&&<small>{source.locator}</small>}</span><ArrowRight size={15}/></Link>)}{message.sources?.some(source=>source.excerpt&&source.locator&&source.chunk_id)&&<button className="text-action" disabled={busy} onClick={()=>{
+          {messages.map((message,index)=><div key={index} className={"ai-chat-message "+(message.role==="user"?"from-user":"from-assistant")}><div className="ai-chat-label">{message.role==="user"?"你的问题":message.answerKind==="general"?"通用回答 · 未由本库文献验证":"研究回答"}</div>{message.role==="assistant"?<AssistantAnswer content={message.content} sources={message.sources} sourceLabel={message.sourceLabel}/>:<p>{message.content}</p>}{message.role==="assistant"&&message.agent&&<ExecutionTrace trace={message.agent}/ >}{message.sources?.some(source=>source.excerpt&&source.locator&&source.chunk_id)&&<div className="assistant-verify-sources"><button className="text-action" disabled={busy} onClick={()=>{
             setEvidence(message.sources!.flatMap(source=>source.excerpt&&source.locator&&source.chunk_id?[{paper_id:source.paper_id,paper_title:source.title,quote:source.excerpt,locator:source.locator,chunk_id:source.chunk_id}]:[]));
             setEvidenceQuestion(messages[index-1]?.role==="user"?messages[index-1].content:"这条回答的引用来源");setEvidenceTrace(message.agent);
-          }}>核对引用片段 <ArrowRight size={14}/></button>}</div>}</div>)}
-          {messages.length>0&&<div className="assistant-copy-row"><button className="text-action" onClick={()=>{const index=messages.map(message=>message.role).lastIndexOf("assistant");if(index>=0)void navigator.clipboard.writeText(messages[index].content).then(()=>setCopied(index)).catch(()=>setError("复制失败，请选中文字手动复制"));}}>{copied===messages.length-1?<Check size={14}/>:<Copy size={14}/>}复制最后一条回答</button></div>}
+          }}>核对引用片段 <ArrowRight size={14}/></button></div>}</div>)}
+          {messages.length>0&&<div className="assistant-copy-row"><button className="text-action" onClick={()=>{const index=messages.map(message=>message.role).lastIndexOf("assistant");if(index>=0)void navigator.clipboard.writeText(assistantCitationText(messages[index].content,messages[index].sources)).then(()=>setCopied(index)).catch(()=>setError("复制失败，请选中文字手动复制"));}}>{copied===messages.length-1?<Check size={14}/>:<Copy size={14}/>}复制最后一条回答</button></div>}
           {pendingQuestion&&busy&&<div className="ai-chat-message from-user"><div className="ai-chat-label">你的问题</div><p>{pendingQuestion}</p></div>}
           {busy&&<p className="ai-request-status" role="status"><Loader2 size={16} className="assistant-spinner"/>{pendingQuestion?"正在整理回答…":"正在检索原文…"}</p>}
           {evidence!==null&&<section ref={evidencePanel} className="evidence-results"><div className="evidence-results-heading"><h2>原文证据</h2><span>{evidence.length} 条片段</span><button className="text-action" onClick={()=>{setEvidence(null);input.current?.focus();}}>收起证据 <X size={14}/></button></div><p className="evidence-question">{evidenceQuestion}</p>{evidenceTrace&&<ExecutionTrace trace={evidenceTrace}/ >}{evidence.length?<EvidenceWorkbench key={evidenceQuestion+evidence.map(item=>item.chunk_id).join(":")} items={evidence} question={evidenceQuestion}/>:<div className="evidence-empty"><BookOpen size={24}/><h3>没有找到相关片段</h3><p>试试更短的关键词，或在阅读方式中扩大论文范围。</p></div>}</section>}
