@@ -27,13 +27,13 @@ AI_BASE_URL 是兼容 API 的根地址，通常以 /v1 结束；程序按 AI_PRO
 下列命令仅用于管理员主动修改全局环境后的本机启动；个人 API 页面保存无需重启。命令从仓库根目录执行：
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File infra/start-scholarlens.ps1 -RestartApi
+powershell -NoProfile -ExecutionPolicy Bypass -File infra/start-scholarlens1.ps1 -RestartApi
 Invoke-RestMethod 'http://127.0.0.1:8000/api/capabilities' | ConvertTo-Json -Depth 8
 $body = @{question='How is magnetic resonance used for brain imaging?'; mode='hybrid'; top_k=4} | ConvertTo-Json
 Invoke-RestMethod -Method Post -Uri 'http://127.0.0.1:8000/api/ask' -ContentType 'application/json' -Body $body | ConvertTo-Json -Depth 12
 ```
 
-不要使用Write-Output $env:AI_API_KEY检查。启动脚本只读取白名单变量、不执行.env内容、不打印密钥。直接start-backend.ps1继承当前Shell环境，不加载.env；一键脚本会加载私有.env。
+不要使用Write-Output $env:AI_API_KEY检查。启动脚本只读取白名单变量、不执行.env内容、不打印密钥。直接start-backend1.ps1继承当前Shell环境，不加载.env；一键脚本会加载私有.env。
 
 AI未配置为503 ai_not_configured。配置后但尚未成功调用，能力仍显示dependency_unavailable并说明待验证；成功生成及引用校验后5分钟内ready。问答不被这个“待验证”状态阻止。提供商401/403→502 ai_authentication_failed；429→503 ai_rate_limited；超时→504 ai_timeout；上游异常→502 ai_upstream_error；格式/引用不可信→502 ai_invalid_response或ai_invalid_citations。不给前端上游响应原文或认证头。
 

@@ -3,6 +3,7 @@
 from pathlib import Path
 import csv
 import hashlib
+import json
 from dataclasses import replace
 from functools import lru_cache
 
@@ -65,7 +66,7 @@ def resolve_document_pdf(doc: dict, settings: Settings) -> Path | None:
     """Use original path, or an explicitly provided ID/source/hash manifest for flat migration."""
     if not settings.pdf_manifest_path:
         return resolve_pdf(doc.get("pdf_path", ""), settings)
-    if not settings.pdf_root:
+    if not settings.pdf_root and not settings.pdf_roots_path:
         return None
     try:
         manifest_path = Path(settings.pdf_manifest_path)
@@ -73,6 +74,12 @@ def resolve_document_pdf(doc: dict, settings: Settings) -> Path | None:
         row = _manifest(str(manifest_path), stat.st_mtime_ns, stat.st_size).get(doc["paper_id"])
         if not row or row["source_file"] != doc.get("source_file"):
             return None
+        if settings.pdf_roots_path:
+            roots = json.loads(Path(settings.pdf_roots_path).read_text(encoding="utf-8"))
+            root = roots.get(row.get("source_batch", ""))
+            if not isinstance(root, str) or not root:
+                return None
+            settings = replace(settings, pdf_root=root, pdf_path_base=root)
         name = row["source_file"]
         if not name or any(c in name for c in "/\\:") or name in (".", ".."):
             return None
@@ -83,5 +90,5 @@ def resolve_document_pdf(doc: dict, settings: Settings) -> Path | None:
         if _file_hash(str(candidate), stat.st_mtime_ns, stat.st_size) != row["pdf_sha256"].lower():
             return None
         return candidate
-    except (OSError, ValueError, KeyError, RuntimeError):
+    except (OSError, ValueError, KeyError, RuntimeError, TypeError, AttributeError):
         return None

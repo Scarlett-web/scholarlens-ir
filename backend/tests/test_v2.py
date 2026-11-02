@@ -11,7 +11,7 @@ import httpx
 from pypdf import PdfWriter
 import pytest
 from backend.accounts import Store, password_hash
-from backend.app import create_app
+from backend.app1 import create_app
 from backend.chunks import chunks
 from backend.config import Settings
 from backend.embeddings import Encoder
@@ -435,7 +435,7 @@ def test_upload_tei_structures_and_entity_rejection():
 def test_pdf_manifest_migration_hash_and_boundary(tmp_path):
     import csv
     import hashlib
-    from backend.pdf_access import resolve_document_pdf
+    from backend.pdf_access1 import resolve_document_pdf
 
     content = pdf_bytes()
     (tmp_path / "controlled.pdf").write_bytes(content)

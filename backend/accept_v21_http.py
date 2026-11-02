@@ -59,7 +59,7 @@ def accept(port=8004):
             raise RuntimeError("owned API lifecycle failed, inspect private log")
 
     common = ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File"]
-    start = common + ["infra/start-backend.ps1", "-Port", str(port)]
+    start = common + ["infra/start-backend1.ps1", "-Port", str(port)]
     stop = common + ["infra/stop-backend.ps1", "-Port", str(port)]
     with httpx.Client(trust_env=False, timeout=3) as c:
         try:

@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 
 from backend.config import Settings, make_client
 from backend.accounts import Store
-from backend.app import create_app
+from backend.app1 import create_app
 from backend.personal_ai import PublicAITransport, personal_settings
 from backend.rag import generate
 import backend.rag as rag
