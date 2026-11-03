@@ -1,5 +1,29 @@
 # 01 论文扩容只读校验
 
+## 2026-11-03：文本先交付，原始 PDF 单独验收
+
+本轮实际重新核对仓库两批数据：859 + 3141 = 4000 个唯一 ID，来源 CSV 与 JSONL 的 ID、source_file、pdf_path 一一对应。新增 PDF 实物尚未交付，旧章节的本地 PDF 验收记录不能用作本轮线上交付证明。
+
+新增工具只处理文本与向量，不能替代 `01_audit_expansion.py` 的原始 PDF 实物验收，也不伪造其通过报告：
+
+- `offline_vectors.py`：调用现有 schema、导入隔离规则和分块算法，本机生成压缩论文、片段及 float32 向量；模型固定 MiniLM 原修订版本，输入/模型/片段指纹不匹配时拒绝续跑。每个批次落盘后更新检查点，完成后全量检查向量维度、有限值、单位范数和文件 SHA-256。
+- 默认 CPU；可选隔离安装的 Windows DirectML 加速，限定单工作线程，并在初始化时比对同一模型 CPU 输出（余弦 > 0.99999）。不改变项目或服务器的依赖锁文件，也不更换模型。DirectML 运行库不随仓库交付。
+- `stream_bundle.py`：先核对完整 bundle 哈希，只接受独立 `scholarlens-papers-expansion-*-real` / `scholarlens-vectors-expansion-*-real` 别名；每批 32 条写入并立即读回，对比全部源字段和向量，再更新检查点。只有数量完全一致才原子发布这两个新别名。工具不改线上环境、旧索引、账户库或 PDF。
+- 当前服务器内存较小，因此不在服务器重新加载全部论文或生成向量；离线 float32 文件以只读 memmap 分批导入。
+- 保留旧 PDF 清单和原件根目录：旧 859 篇继续按 ID、文件名与哈希核验；新增 ID 没有原件时明确不可下载，不猜测文件路径。
+
+示例（从仓库根目录，运行产物放 Git 之外）：
+
+```powershell
+backend/.venv/Scripts/python.exe -m tools.corpus_expansion.offline_vectors --input <merged.jsonl> --output <bundle> --model-dir backend/.runtime/minilm
+```
+
+```sh
+python -m tools.corpus_expansion.stream_bundle --bundle /path/to/bundle
+```
+
+原始两批 JSONL 不改字段、不改 ID；沿用既有规则隔离 27 篇乱码正文，保留其元数据。新片段总数本轮重新计算为 236947。运行完成、线上切换和公网验收是三个独立阶段，最终结果记录在发布文档中。
+
 ## 05 本地API与PDF接通（2026-10-30）
 
 负责人：组长。修改原启动、app、PDF解析、真实数据检查文件并改名加1；同步代码引用。
