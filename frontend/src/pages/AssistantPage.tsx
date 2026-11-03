@@ -59,6 +59,7 @@ export function AssistantPage(){
   const toolTrigger=useRef<HTMLButtonElement|null>(null),toolHeading=useRef<HTMLHeadingElement|null>(null);
   const controller=useRef<AbortController|null>(null),bottom=useRef<HTMLDivElement|null>(null),input=useRef<HTMLTextAreaElement|null>(null),conversation=useRef<HTMLDivElement|null>(null);
   const evidencePanel=useRef<HTMLElement|null>(null);
+  const pendingDraft=useRef("");
   const demoMode=DATA_SOURCE==="demo";
   const ready=!demoMode&&(Boolean(personal)||["ready","dependency_unavailable"].includes(availability.status));
   const availabilityReason=safeAvailabilityReason(availability.reason);
@@ -85,11 +86,20 @@ export function AssistantPage(){
   const submit=()=>{
     const question=draft.trim()||(operation==="summarize"?"总结这篇论文的研究问题、方法、结果与局限。":operation==="compare"?"逐篇比较所选论文的方法、结论和局限，并列出证据。":"");
     if(controller.current||!ready||!operationValid||!question)return;
-    setPendingQuestion(question);setCopied(null);
-    void request(async signal=>{const reply=await askAi({question,paperIds:selected,operation,conversationId,personal,history:messages},signal);if(signal.aborted)return;setEvidence(null);setEvidenceTrace(undefined);setMessages(old=>[...old,{role:"user",content:question},reply]);setPendingQuestion("");setDraft("");if(user)setConversations(await conversationApi.list());});
+    const submittedDraft=draft;pendingDraft.current=submittedDraft;
+    setPendingQuestion(question);setCopied(null);setDraft("");
+    void request(async signal=>{
+      const reply=await askAi({question,paperIds:selected,operation,conversationId,personal,history:messages},signal).catch(cause=>{
+        if(!signal.aborted)setDraft(current=>current||submittedDraft);
+        throw cause;
+      });
+      if(signal.aborted)return;
+      setEvidence(null);setEvidenceTrace(undefined);setMessages(old=>[...old,{role:"user",content:question},reply]);setPendingQuestion("");
+      if(user)setConversations(await conversationApi.list());
+    });
   };
   const findEvidence=()=>{const question=draft.trim();if(!question||DATA_SOURCE!=="api")return;void request(async signal=>{const result=await retrieveEvidence(question,selected,signal);if(!signal.aborted){setEvidence(result.evidence);setEvidenceQuestion(question);setEvidenceTrace(result.agent);}});};
-  const reset=()=>{controller.current?.abort();controller.current=null;setBusy(false);setPendingQuestion("");setCopied(null);setError("");setMessages([]);setEvidence(null);setEvidenceQuestion("");setEvidenceTrace(undefined);setDraft("");setConversationId("");};
+  const reset=()=>{controller.current?.abort();controller.current=null;pendingDraft.current="";setBusy(false);setPendingQuestion("");setCopied(null);setError("");setMessages([]);setEvidence(null);setEvidenceQuestion("");setEvidenceTrace(undefined);setDraft("");setConversationId("");};
   useEffect(()=>{reset();setSelected(focusedPaper&&!focusedPaper.startsWith("demo-")?[focusedPaper]:[]);setPersonal(user?loadPersonalAi(user.id):null);},[user?.id,focusedPaper]);
   const loginUrl="/account?"+new URLSearchParams({next:"/assistant"+(focusedPaper?"?paper="+encodeURIComponent(focusedPaper):"")});
   return <div className="workspace-page content-wrap ai-page">
@@ -114,8 +124,8 @@ export function AssistantPage(){
           <div ref={bottom}/>
         </div>
         <div className="ai-compose">{error&&<div className="inline-error" role="alert">{error}</div>}<form onSubmit={event=>{event.preventDefault();if(ready)submit();else findEvidence();}}>
-          <textarea ref={input} value={draft} rows={2} maxLength={2000} onChange={event=>setDraft(event.target.value)} onKeyDown={event=>{if(event.key==="Enter"&&!event.shiftKey&&!event.nativeEvent.isComposing&&event.keyCode!==229){event.preventDefault();if(!busy){if(ready)submit();else findEvidence();}}}} placeholder={ready?"随时提问，也可以接着上文聊…":"输入论文关键词，查找相关原文…"} aria-label="研究问题" disabled={busy}/>
-          <div className="ai-compose-footer"><button type="button" className="assistant-scope" onClick={event=>toggleTool("reading",event)}><SlidersHorizontal size={14}/>{operation==="ask"?"论文问答":operation==="summarize"?"单篇总结":"多篇比较"}<span>· {selected.length?selected.length+" 篇":"全部论文"}</span></button><div className="detail-buttons">{busy?<button type="button" className="button button-secondary" onClick={()=>{controller.current?.abort();controller.current=null;setBusy(false);setPendingQuestion("");setError("已停止本次请求");}}><Square size={15}/>停止</button>:<>{ready&&<button type="button" className="button button-secondary" disabled={!draft.trim()||demoMode} onClick={findEvidence}>只查原文</button>}<button type="submit" className="button button-primary" disabled={demoMode||DATA_SOURCE!=="api"||(ready?(!operationValid||operation==="ask"&&!draft.trim()):!draft.trim())}>{demoMode?<BookOpen size={15}/>:ready?<ArrowUp size={18}/>:<BookOpen size={15}/>} {demoMode?"演示模式不可用":ready?(operation==="ask"?"发送问题":operation==="summarize"?"生成总结":"比较论文"):"检索原文"}</button></>}</div></div>
+          <textarea ref={input} value={draft} rows={2} maxLength={2000} onChange={event=>setDraft(event.target.value)} onKeyDown={event=>{if(event.key==="Enter"&&!event.shiftKey&&!event.nativeEvent.isComposing&&event.keyCode!==229){event.preventDefault();if(!busy){if(ready)submit();else findEvidence();}}}} placeholder={ready?"随时提问，也可以接着上文聊…":"输入论文关键词，查找相关原文…"} aria-label="研究问题"/>
+          <div className="ai-compose-footer"><button type="button" className="assistant-scope" onClick={event=>toggleTool("reading",event)}><SlidersHorizontal size={14}/>{operation==="ask"?"论文问答":operation==="summarize"?"单篇总结":"多篇比较"}<span>· {selected.length?selected.length+" 篇":"全部论文"}</span></button><div className="detail-buttons">{busy?<button type="button" className="button button-secondary" onClick={()=>{if(pendingQuestion)setDraft(current=>current||pendingDraft.current);controller.current?.abort();controller.current=null;setBusy(false);setPendingQuestion("");setError("已停止本次请求");}}><Square size={15}/>停止</button>:<>{ready&&<button type="button" className="button button-secondary" disabled={!draft.trim()||demoMode} onClick={findEvidence}>只查原文</button>}<button type="submit" className="button button-primary" disabled={demoMode||DATA_SOURCE!=="api"||(ready?(!operationValid||operation==="ask"&&!draft.trim()):!draft.trim())}>{demoMode?<BookOpen size={15}/>:ready?<ArrowUp size={18}/>:<BookOpen size={15}/>} {demoMode?"演示模式不可用":ready?(operation==="ask"?"发送问题":operation==="summarize"?"生成总结":"比较论文"):"检索原文"}</button></>}</div></div>
         </form><div className="assistant-compose-note">{demoMode?"演示模式未连接真实服务":!operationValid&&ready?<button className="text-action" onClick={event=>toggleTool("reading",event)}>{operation==="summarize"?"请选择 1 篇论文":"请选择 2 至 10 篇论文"}</button>:<><span>Enter 发送 · Shift + Enter 换行</span><span>重要结论请核对原文</span></>}</div></div>
       </div>
       <aside className="assistant-sidebar" aria-label="论文助手设置" hidden={!tool}>
