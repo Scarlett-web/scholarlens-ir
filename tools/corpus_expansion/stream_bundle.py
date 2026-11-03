@@ -86,6 +86,8 @@ def vector_mapping(identity):
             "number_of_shards": 1,
             "number_of_replicas": 0,
             "refresh_interval": "-1",
+            "index.merge.policy.segments_per_tier": 1000,
+            "index.merge.policy.max_merge_at_once": 2,
         },
         "mappings": {"dynamic": "strict", "_meta": identity, "properties": properties},
     }

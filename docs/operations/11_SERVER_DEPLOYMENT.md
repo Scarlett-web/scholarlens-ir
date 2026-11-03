@@ -24,6 +24,8 @@
 
 2GB 主机仅适合课程规模的低并发演示；完整检索依赖 ES 和模型，资源不足必须如实报告并升级资源，不能将语义功能静默替换成模拟结果。
 
+2026-11-03 扩至 4000 篇后，现有 ES 容器通过在线 update 将 memory/memory-swap 从 700MiB 调为 800MiB，堆仍 256MiB；compose 已同步为 800m。未重建或重启 ES，旧索引保留。新向量代单独收紧后台合并策略，语义样例仍需数秒，未进行并发容量验收；详见 [扩库实际记录](16_CORPUS_4000_20261103.md)。未来重建前应重新核实主机可用内存，不能直接沿用历史容量结论。
+
 ## 当前原件部署（2026-10-28）
 
 - 正式原件根目录 `/var/lib/scholarlens/original-pdfs`，859 份；来源 CSV 位于 `/var/lib/scholarlens/original-delivery-20261028/paper_source_manifest.csv`，分别通过 `SCHOLARLENS_PDF_ROOT` 和 `SCHOLARLENS_PDF_MANIFEST` 配置。

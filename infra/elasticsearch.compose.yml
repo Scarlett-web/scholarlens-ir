@@ -5,8 +5,8 @@ services:
     restart: unless-stopped
     ports:
       - "127.0.0.1:19200:9200"
-    mem_limit: 700m
-    memswap_limit: 700m
+    mem_limit: 800m
+    memswap_limit: 800m
     cpus: 1.0
     environment:
       discovery.type: single-node
