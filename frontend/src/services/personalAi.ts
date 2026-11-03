@@ -1,12 +1,17 @@
 import {backend} from "./backend";
 
-export interface PersonalAi {url:string;model:string;key:string;tokenParameter:"max_tokens"|"max_completion_tokens";protocol?:"chat_completions"|"responses"}
+export interface PersonalAi {url:string;model:string;key:string;tokenParameter:"max_tokens"|"max_completion_tokens";protocol?:"chat_completions"|"responses";preferredModels?:string[]}
+export function personalModelIds(input:unknown):string[]{
+  if(!Array.isArray(input))return [];
+  return [...new Set(input.filter((id):id is string=>typeof id==="string"&&id.length>0&&id.length<=200&&/^[\x21-\x7e]+$/.test(id)))].slice(0,300);
+}
 export function personalAiPreferences(userId:number):PersonalAi {
   let value:Partial<PersonalAi>={};
   try{value=JSON.parse(localStorage.getItem("scholarlens-ai-preferences:"+userId)||"{}");}catch{}
   return {url:typeof value?.url==="string"?value.url:"",model:typeof value?.model==="string"?value.model:"",
     tokenParameter:value?.tokenParameter==="max_tokens"?"max_tokens":"max_completion_tokens",
     protocol:value?.protocol==="responses"?"responses":"chat_completions",
+    preferredModels:personalModelIds([...personalModelIds(value?.preferredModels),value?.model]),
     key:sessionStorage.getItem("scholarlens-ai-key:"+userId)||""};
 }
 export function loadPersonalAi(userId:number):PersonalAi|null{
@@ -17,7 +22,7 @@ export function normalizePersonalAi(input:PersonalAi,requireModel=true):Personal
   if(url.protocol!=="https:"||url.username||url.password||url.search||url.hash||url.port&&url.port!=="443")throw new Error("请填写公共 HTTPS API 地址，不要附带账号或查询参数");
   const endpoint=url.href.replace(/\/$/,"");
   const protocol=endpoint.endsWith("/responses")?"responses":endpoint.endsWith("/chat/completions")?"chat_completions":input.protocol||"chat_completions";
-  const value={...input,url:endpoint.replace(/\/(chat\/completions|responses)$/, ""),protocol,model:input.model.trim(),key:input.key.trim()};
+  const value={...input,url:endpoint.replace(/\/(chat\/completions|responses)$/, ""),protocol,model:input.model.trim(),key:input.key.trim(),preferredModels:personalModelIds([...personalModelIds(input.preferredModels),input.model.trim()])};
   if(requireModel&&!value.model||!value.key||!/^[\x21-\x7e]+$/.test(value.model+value.key))throw new Error("请填写有效的模型名称和 API 密钥");
   if(value.url.length>2048||value.model.length>200||value.key.length>2048)throw new Error("配置内容超过长度限制");
   return value;
@@ -40,5 +45,5 @@ export function personalAiHeaders(value?:PersonalAi|null):Record<string,string>{
     "X-ScholarLens-AI-Key":value.key,"X-ScholarLens-AI-Token-Parameter":value.tokenParameter,
     "X-ScholarLens-AI-Protocol":value.protocol||"chat_completions"}:{};
 }
-export const readPersonalModels=(value:PersonalAi,signal?:AbortSignal)=>backend<{models:string[]}>("/ai/models",{headers:personalAiHeaders(normalizePersonalAi(value,false)),signal});
+export const readPersonalModels=(value:PersonalAi,signal?:AbortSignal)=>backend<{models:string[]}>("/ai/models",{headers:personalAiHeaders(normalizePersonalAi(value,false)),signal}).then(result=>({models:personalModelIds(result.models)}));
 export const testPersonalConnection=(value:PersonalAi,signal?:AbortSignal)=>backend<{status:string;model:string;protocol:string}>("/ai/test",{method:"POST",headers:personalAiHeaders(normalizePersonalAi(value)),signal});

@@ -42,13 +42,15 @@ try{
   await page.getByLabel("个人API地址",{exact:true}).fill("https://provider.example/v1/responses");
   await page.getByLabel("个人API密钥",{exact:true}).fill("fixture-session-only-secret");
   await context.route("**/api/ai/models",route=>route.fulfill({json:{models:["fixture-available-model"]}}));
-  await page.getByRole("button",{name:"读取模型列表",exact:true}).click();
-  await page.getByLabel("选择可用模型").selectOption("fixture-available-model");
+  await page.getByRole("button",{name:"获取模型",exact:true}).click();
+  await page.getByRole("checkbox",{name:"添加 fixture-available-model",exact:true}).check();
+  await page.getByRole("button",{name:"加入可选模型（1）",exact:true}).click();
+  await page.getByLabel("个人API模型",{exact:true}).selectOption("fixture-available-model");
   await context.route("**/api/ai/test",route=>{assert.equal(route.request().headers()['x-scholarlens-ai-protocol'],"responses");return route.fulfill({json:{status:"ready",model:"fixture-available-model",protocol:"responses"}});});
   await page.getByRole("button",{name:"测试连接",exact:true}).click();
   await page.getByText("连接成功：fixture-available-model 已实际返回文字。保存后用于问答。",{exact:true}).waitFor();
   await page.getByRole("button",{name:"保存个人配置",exact:true}).click();
-  await page.getByText("配置已保存。可先测试连接，或直接开始对话。",{exact:true}).waitFor();
+  await page.getByText("配置已保存，当前模型：fixture-available-model。",{exact:true}).waitFor();
   assert.equal(await page.getByLabel("个人API协议").inputValue(),"responses");
   const stored=await page.evaluate(()=>({local:Object.values(localStorage).join(''),session:Object.values(sessionStorage).join('')}));
   assert.ok(!stored.local.includes("fixture-session-only-secret")&&stored.session.includes("fixture-session-only-secret"));

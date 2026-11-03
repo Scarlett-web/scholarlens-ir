@@ -287,6 +287,29 @@
 .assistant-mode-options button:hover{background:#ffffff80}
 .personal-ai-model-heading,.personal-ai-actions{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .personal-ai-model-heading .text-action{padding:0}
+.personal-ai-model-heading>span{font-size:14px;font-weight:600;color:var(--app-ink)}
+.personal-ai-model-heading .button{min-height:36px;padding:8px 12px;font-size:12px}
+.personal-ai-catalog{display:grid;gap:12px;padding:12px;border:1px solid var(--app-hairline);border-radius:12px;background:rgba(255,255,255,.36);min-width:0}
+.personal-ai-catalog-search{display:flex;align-items:center;gap:8px;color:var(--app-muted)}
+.personal-ai-catalog-search input{min-width:0}
+.personal-ai-catalog-heading,.personal-ai-catalog-actions{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--app-muted)}
+.personal-ai-catalog .text-action{padding:0;font-size:12px}
+.personal-ai-catalog-list{display:grid;align-content:start;max-height:240px;overflow:auto;overscroll-behavior:contain;gap:4px;scrollbar-width:thin}
+.account-form .personal-ai-catalog-option{display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;min-width:0;cursor:pointer;font-size:12px;font-weight:400}
+.personal-ai-catalog-option:hover{background:rgba(255,255,255,.64)}
+.account-form .personal-ai-catalog-option input{width:16px;min-height:16px;height:16px;flex:none;margin:0;accent-color:var(--app-blue)}
+.personal-ai-catalog-option>span{min-width:0;overflow-wrap:anywhere;flex:1}
+.personal-ai-catalog-option small{color:var(--app-muted);font-size:12px;flex:none}
+.personal-ai-catalog-actions .button{font-size:12px;min-height:36px;padding:8px 12px}
+.personal-ai-shortlist{display:flex;flex-wrap:wrap;gap:8px;max-height:144px;overflow:auto;min-width:0}
+.personal-ai-model-chip{display:inline-flex;align-items:center;gap:4px;max-width:100%;padding:4px 8px;border:1px solid var(--app-hairline);border-radius:8px;background:var(--app-blue-soft);color:var(--app-blue);font-size:12px}
+.personal-ai-model-chip>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.personal-ai-model-chip button{display:grid;place-items:center;flex:none;width:24px;height:24px;padding:0;border:0;border-radius:4px;background:transparent;color:inherit;cursor:pointer}
+.personal-ai-model-chip button:hover{background:rgba(255,255,255,.64)}
+.personal-ai-model-chip button:focus-visible{outline:2px solid var(--app-blue);outline-offset:2px}
+.personal-ai-manual{display:flex;align-items:center;gap:8px;min-width:0}
+.personal-ai-manual input{min-width:0;flex:1}
+.personal-ai-manual .button{flex:none;padding:8px 12px}
 .personal-ai-actions{margin-top:8px;justify-content:flex-start;flex-wrap:wrap}
 .assistant-sidebar .personal-ai-advanced{margin-top:0}
 .personal-ai-advanced label{margin-top:12px}

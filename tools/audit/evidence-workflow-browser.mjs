@@ -159,7 +159,8 @@ try{
   const general=await setup({user:true,answerMode:true,generalMode:true});const gp=general.page;
   await gp.goto(origin+"/assistant");
   await gp.getByRole("textbox",{name:"个人API地址",exact:true}).fill("https://provider.example/v1");
-  await gp.getByRole("textbox",{name:"个人API模型",exact:true}).fill("fixture-model");
+  await gp.getByRole("textbox",{name:"手动模型名称",exact:true}).fill("fixture-model");
+  await gp.getByRole("button",{name:"添加",exact:true}).click();
   await gp.getByRole("textbox",{name:"个人API密钥",exact:true}).fill("fixture-only-not-a-real-key");
   await gp.getByRole("button",{name:"保存个人配置",exact:true}).click();
   assert.equal(await gp.locator('.personal-ai-settings details').getAttribute('open'),null);

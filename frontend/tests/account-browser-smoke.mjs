@@ -228,7 +228,9 @@ async function run(){
 
  await pointerClick('.assistant-tools [aria-controls="assistant-panel-api"]');
  await fill('[aria-label=个人API地址]','https://provider.example/v1');
- await fill('[aria-label=个人API模型]','acceptance-model');
+ await fill('[aria-label=手动模型名称]','acceptance-model');
+ await click('.personal-ai-manual button');
+ await waitFor("document.querySelector('[aria-label=个人API模型]').value==='acceptance-model'");
  await fill('[aria-label=个人API密钥]','test-only-session-credential');
  await click('.personal-ai-settings .button-primary');
  await waitFor("document.querySelector('.personal-ai-settings .assistant-panel-intro').textContent.includes('已保存配置')");
