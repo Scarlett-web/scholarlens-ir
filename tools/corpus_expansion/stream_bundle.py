@@ -5,15 +5,19 @@ Every acknowledged batch is read back before checkpointing; reruns are idempoten
 """
 
 import argparse
+import ast
 import gzip
 import hashlib
 import json
+import math
+import mmap
 import re
+import struct
 import uuid
+from contextlib import closing
 from datetime import UTC, datetime
 from pathlib import Path
 
-import numpy as np
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk
 from filelock import FileLock
@@ -22,6 +26,40 @@ from backend.chunks import CHUNK_VERSION
 from backend.embeddings import DIMENSIONS, MODEL, REVISION
 from backend.mapping import index_definition
 from backend.vector_index import atomic_state
+
+
+class NpyVectors:
+    """Read the fixed little-endian float32 bundle without loading NumPy on the server."""
+
+    def __init__(self, path, count):
+        with path.open("rb") as stream:
+            if stream.read(8) != b"\x93NUMPY\x01\x00":
+                raise ValueError("unsupported vector file format")
+            length = struct.unpack("<H", stream.read(2))[0]
+            header = ast.literal_eval(stream.read(length).decode("ascii").strip())
+            if header != {
+                "descr": "<f4",
+                "fortran_order": False,
+                "shape": (count, DIMENSIONS),
+            }:
+                raise ValueError("vector shape/type differs")
+            self.offset = stream.tell()
+            if path.stat().st_size != self.offset + count * DIMENSIONS * 4:
+                raise ValueError("vector file size differs")
+            self.mapping = mmap.mmap(stream.fileno(), 0, access=mmap.ACCESS_READ)
+        self.count = count
+
+    def __getitem__(self, index):
+        if not 0 <= index < self.count:
+            raise IndexError(index)
+        return list(
+            struct.unpack_from(
+                "<384f", self.mapping, self.offset + index * DIMENSIONS * 4
+            )
+        )
+
+    def close(self):
+        self.mapping.close()
 
 
 def digest(path):
@@ -73,14 +111,16 @@ def checked_bulk(es, generation, batch, key):
         if key == "chunk_id":
             expected_vector = expected.pop("embedding")
             received_vector = received.pop("embedding")
-            array = np.asarray(received_vector)
             if (
-                array.shape != (384,)
-                or not np.isfinite(array).all()
-                or abs(np.linalg.norm(array) - 1) > 1e-4
+                len(received_vector) != DIMENSIONS
+                or not all(math.isfinite(x) for x in received_vector)
+                or abs(math.sqrt(sum(x * x for x in received_vector)) - 1) > 1e-4
             ):
                 raise ValueError("invalid read-back vector")
-            if not np.allclose(array, expected_vector, atol=1e-7, rtol=1e-6):
+            if not all(
+                math.isclose(a, b, abs_tol=1e-7, rel_tol=1e-6)
+                for a, b in zip(received_vector, expected_vector, strict=True)
+            ):
                 raise ValueError("read-back vector differs")
         if received != expected:
             raise ValueError("read-back source differs")
@@ -121,6 +161,7 @@ def run(args):
     with (
         FileLock(str(root / "import.lock"), timeout=0),
         Elasticsearch(args.url, request_timeout=60, max_retries=2) as es,
+        closing(NpyVectors(root / "vectors.npy", identity["chunks"])) as arrays,
     ):
         info = es.info()
         if (
@@ -171,9 +212,6 @@ def run(args):
             if state["chunks_completed"]:
                 raise ValueError("vector checkpoint generation missing")
             es.indices.create(index=vg, **vector_mapping(vi))
-        arrays = np.load(root / "vectors.npy", mmap_mode="r", allow_pickle=False)
-        if arrays.shape != (identity["chunks"], 384) or arrays.dtype != np.float32:
-            raise ValueError("vector shape/type differs")
         for kind, filename, key, generation, total in (
             ("papers", "papers.jsonl.gz", "paper_id", kg, identity["papers"]),
             ("chunks", "chunks.jsonl.gz", "chunk_id", vg, identity["chunks"]),
@@ -185,7 +223,7 @@ def run(args):
                 if offset < state[checkpoint]:
                     continue
                 if kind == "chunks":
-                    record["embedding"] = arrays[offset].tolist()
+                    record["embedding"] = arrays[offset]
                 batch.append(record)
                 if len(batch) == 32:
                     checked_bulk(es, generation, batch, key)
