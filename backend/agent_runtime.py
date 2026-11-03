@@ -101,6 +101,7 @@ class ResearchAgent:
         self.retrieve, self.verify = retrieve, verify
         self.generate, self.validate, self.planner = generate, validate, planner
         self.steps = []
+        self.repair_context = None
         self.started = time.monotonic()
         self.deadline = self.started + self.policy.timeout_seconds
 
@@ -127,10 +128,10 @@ class ResearchAgent:
         finally:
             step["elapsed_ms"] = round((time.monotonic() - start) * 1000)
 
-    def run(self, question, operation, paper_ids, top_k, provider_ready):
+    def run(self, question, operation, paper_ids, top_k, provider_ready, skip_research=False):
         queries = [question]
         warnings = []
-        if provider_ready and operation != "evidence":
+        if provider_ready and operation != "evidence" and not skip_research:
             def plan_queries():
                 value = json_object(self.planner(question, operation, self.skill))
                 proposed = value["queries"]
@@ -146,7 +147,7 @@ class ResearchAgent:
         raw = []
         seen = set()
         # Original terms remain a bounded fallback if a rewritten query finds nothing.
-        candidates = list(dict.fromkeys(queries + [question]))[:self.policy.max_queries]
+        candidates = [] if skip_research else list(dict.fromkeys(queries + [question]))[:self.policy.max_queries]
         for number, query in enumerate(candidates, 1):
             refs = self.call("search_papers", f"检索论文来源 · {number}", lambda: self.retrieve(query), len)
             for ref in refs:
@@ -155,7 +156,7 @@ class ResearchAgent:
                     raw.append(ref)
             if len(raw) >= min(top_k, self.policy.max_evidence):
                 break
-        refs = self.call("verify_sources", "逐段复核原文与范围",
+        refs = [] if skip_research else self.call("verify_sources", "逐段复核原文与范围",
                          lambda: self.verify(raw[:self.policy.max_evidence], paper_ids), len)
         refs = refs[:min(top_k, self.policy.max_evidence)]
         incomplete = paper_ids and operation == "compare" and not set(paper_ids) <= {r["paper_id"] for r in refs}
@@ -165,6 +166,7 @@ class ResearchAgent:
         state = "evidence_only" if refs and not incomplete else "insufficient_evidence"
         if refs and not incomplete and provider_ready and operation != "evidence":
             for attempt in range(self.policy.max_repairs + 1):
+                draft = None
                 try:
                     draft = self.call("grounded_answer", "根据原文生成回答" if not attempt else "重新生成并修复引用",
                                       lambda: self.generate(refs, attempt))
@@ -178,6 +180,11 @@ class ResearchAgent:
                     if code in ("unsafe_ai_endpoint", "invalid_ai_configuration"):
                         raise
                     if (code == "ai_invalid_citations" or isinstance(error, (ValueError, KeyError, TypeError))) and attempt < self.policy.max_repairs:
+                        reason = error.detail.get("details", {}).get("reason") if code == "ai_invalid_citations" else None
+                        if reason not in {"unknown_source_id", "quote_not_exact", "inline_citations_mismatch"}:
+                            reason = "invalid_answer_format_or_paper_coverage"
+                        self.repair_context = {"draft": draft[:16000] if isinstance(draft, str) else "",
+                                               "error": reason}
                         continue
                     invalid = code == "ai_invalid_citations" or isinstance(error, (ValueError, KeyError, TypeError))
                     warnings.append("回答引用未通过校验，已保留原文证据" if invalid else provider_failure_message(error))

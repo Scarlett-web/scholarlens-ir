@@ -35,7 +35,7 @@ docs/
 | --- | --- |
 | 基础规范 | [需求](specs/01_REQUIREMENTS.md)、[架构](specs/02_ARCHITECTURE.md)、[数据 Schema](specs/03_DATA_SCHEMA.md)、[API](specs/04_API_CONTRACT.md)、[UI](specs/05_UI_SPEC.md) |
 | 协作和决策 | [团队计划](specs/06_TEAM_PLAN.md)、[决策记录](specs/08_MEETING_DECISIONS.md) |
-| Agent | [运行契约](specs/18_AGENT_RUNTIME_CONTRACT.md)、[供应商边界](specs/26_AGENT_PROVIDER_BOUNDARIES.md) |
+| Agent | [运行契约](specs/18_AGENT_RUNTIME_CONTRACT.md)、[供应商边界](specs/26_AGENT_PROVIDER_BOUNDARIES.md)、[引用修复](specs/44_AI_CITATION_RECOVERY.md) |
 | 个人 AI | [模型获取与可选列表](specs/43_PERSONAL_MODEL_PICKER.md) |
 | 研究交互 | [关系与指标](specs/22_RESEARCH_MAP_AND_METRICS.md)、[证据阅读](specs/24_EVIDENCE_READING_WORKFLOW.md)、[搜索账户](specs/25_SEARCH_ACCOUNT_WORKFLOW.md)、[书架](specs/27_LIBRARY_RESEARCH_SHELF.md) |
 | 权限和上传 | [上传审核](specs/23_UPLOAD_REVIEW_WORKFLOW.md)、[凭证边界](specs/28_ACCOUNT_CREDENTIAL_BOUNDARIES.md)、[管理员事务](specs/30_ADMIN_TRANSACTION_BOUNDARIES.md)、[上传隔离](specs/31_ISOLATED_UPLOAD_AND_OWNERSHIP.md) |
