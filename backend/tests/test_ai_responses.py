@@ -98,7 +98,7 @@ def test_responses_protocol_reaches_planner_and_answer_without_chat_fields(tmp_p
         assert body["model"] == "fixture-model" and body["store"] is False and body["stream"] is False
         assert body["input"][0]["role"] == "system" and len(body["input"]) == 2
         assert "messages" not in body and "max_completion_tokens" not in body and "max_tokens" not in body
-        assert 1 <= body["max_output_tokens"] <= 800
+        assert 1 <= body["max_output_tokens"] <= config.ai_max_tokens
         return httpx.Response(200, json=response_envelope(text))
     transport = httpx.MockTransport(reply)
     result = (model_plan(config, "fixture", "ask", "skill", transport=transport) if operation == "plan"
@@ -132,3 +132,31 @@ def test_responses_general_text_excludes_reasoning(tmp_path):
     assert generate(config, "你好", [], general=True, transport=transport) == "你好，可以自然提问。"
     with pytest.raises(ValueError):
         provider_content(json.dumps(response_envelope("")), "responses")
+
+
+@pytest.mark.parametrize("protocol", ["chat_completions", "responses"])
+def test_token_truncated_answer_is_rejected_with_actionable_error(tmp_path, protocol):
+    config = replace(provider_settings(tmp_path), ai_protocol=protocol)
+    envelope = ({"choices":[{"finish_reason":"length", "message":{"content":"UNTRUSTED_PARTIAL"}}]}
+                if protocol == "chat_completions" else
+                {"status":"incomplete", "incomplete_details":{"reason":"max_output_tokens"}, "output":[]})
+    transport = httpx.MockTransport(lambda request: httpx.Response(200, json=envelope))
+    with pytest.raises(HTTPException) as error:
+        generate(config, "fixture", [], general=True, transport=transport)
+    assert error.value.detail["code"] == "ai_output_truncated"
+    assert "UNTRUSTED_PARTIAL" not in json.dumps(error.value.detail)
+
+
+@pytest.mark.parametrize("operation", ["answer", "plan"])
+@pytest.mark.parametrize("explicit_limit", [None, 256])
+def test_generation_budget_allows_structured_answer_and_respects_explicit_limit(tmp_path, operation, explicit_limit):
+    config = provider_settings(tmp_path)
+    if explicit_limit is not None:
+        config = replace(config, ai_max_tokens=explicit_limit)
+    expected = explicit_limit if explicit_limit else (4096 if operation == "plan" else 8192)
+    def provider(request):
+        payload = json.loads(request.content)
+        assert payload["max_completion_tokens"] == expected
+        content = '{"queries":["computer vision"]}' if operation == "plan" else '{"answer":"","citations":[]}'
+        return httpx.Response(200, json={"choices":[{"message":{"content":content},"finish_reason":"stop"}]})
+    call_provider(config, httpx.MockTransport(provider), operation)

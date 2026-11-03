@@ -2,6 +2,10 @@
 import json
 
 
+class OutputTokenLimit(ValueError):
+    """The provider explicitly ended an incomplete answer at its token budget."""
+
+
 def json_object(raw: str | bytes | bytearray) -> dict:
     """Require an object and normalize excessive nesting at the JSON boundary."""
     if not isinstance(raw, (str, bytes, bytearray)):
@@ -21,6 +25,8 @@ def chat_content(raw: str | bytes | bytearray) -> str:
     choices = envelope.get("choices")
     if not isinstance(choices, list) or not choices or not isinstance(choices[0], dict):
         raise ValueError("Expected a completion choice")
+    if choices[0].get("finish_reason") == "length":
+        raise OutputTokenLimit("Provider output token budget exhausted")
     message = choices[0].get("message")
     if not isinstance(message, dict) or not isinstance(message.get("content"), str):
         raise ValueError("Expected message text")
@@ -49,7 +55,10 @@ def provider_content(raw: str | bytes | bytearray, protocol: str) -> str:
     if protocol != "responses":
         raise ValueError("Unsupported provider protocol")
     envelope = json_object(raw)
-    if envelope.get("status") != "completed" or envelope.get("error") or envelope.get("incomplete_details"):
+    details = envelope.get("incomplete_details")
+    if envelope.get("status") == "incomplete" and isinstance(details, dict) and details.get("reason") == "max_output_tokens":
+        raise OutputTokenLimit("Provider output token budget exhausted")
+    if envelope.get("status") != "completed" or envelope.get("error") or details:
         raise ValueError("Response did not complete")
     output = envelope.get("output")
     if not isinstance(output, list):

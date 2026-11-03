@@ -222,7 +222,7 @@ def test_ai_adapter_controlled_response_and_citations():
     def respond(request):
         body = json.loads(request.content)
         assert (
-            body["max_completion_tokens"] == 800
+            body["max_completion_tokens"] == settings.ai_max_tokens
             and request.headers["Authorization"] == "Bearer test-only"
         )
         return httpx.Response(

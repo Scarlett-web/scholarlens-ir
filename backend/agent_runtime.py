@@ -28,6 +28,7 @@ def provider_failure_message(error):
         "ai_rate_limited": "API 的额度或频率受限，请检查供应商额度后重试。",
         "ai_timeout": "模型响应超时，请稍后重试；原文证据已保留。",
         "ai_invalid_response": "API 返回了无法识别的回答，请检查模型及所选协议的兼容性。",
+        "ai_output_truncated": "模型达到单次输出上限，回答未完整生成；已保留原文来源，请提高输出预算后重试。",
         "ai_model_unavailable": "模型或接口路径不存在，请在 API 设置中读取可用模型，并核对协议与地址。",
         "ai_upstream_error": "API 连接或请求失败，请检查地址、模型、协议及 Token 参数。",
     }.get(code, "模型暂不可用或已达到执行上限，已保留原文证据")
@@ -70,7 +71,7 @@ def model_plan(settings, question, operation, skill, transport=None, deadline=No
         {"role": "user", "content": json.dumps({"question": question, "operation": operation}, ensure_ascii=False)},
     ]
     try:
-        endpoint, payload = provider_request(settings, messages, min(settings.ai_max_tokens, 512))
+        endpoint, payload = provider_request(settings, messages, min(settings.ai_max_tokens, 4096))
         remaining = max(0.1, deadline - time.monotonic()) if deadline else 25
         with httpx.Client(timeout=min(max(settings.ai_timeout, 1), 25, remaining), trust_env=False,
                           follow_redirects=False, transport=transport) as client:

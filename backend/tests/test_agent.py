@@ -434,3 +434,45 @@ def test_provider_prompt_carries_short_ids_and_untrusted_repair(agent_api):
             "answer": "Verified [S1]", "citations": [{"chunk_id": "S1", "quote": agent_api.refs[0]["quote"]}]})}}]})
     text, refs = generate_from_provider(settings, "fixture", agent_api.refs, transport=httpx.MockTransport(provider), repair=repair)
     assert "[S1]" not in text and refs[0]["chunk_id"] == agent_api.refs[0]["chunk_id"]
+
+
+def test_library_question_with_verified_sources_never_drops_into_empty_general_chat(agent_api, monkeypatch):
+    calls = []
+    def empty(config, question, evidence, **kwargs):
+        calls.append(kwargs.get("general", False))
+        return "请提供论文列表" if kwargs.get("general") else '{"answer":"","citations":[]}'
+    monkeypatch.setattr(rag, "generate", empty)
+    monkeypatch.setattr(rag, "model_plan", lambda *args, **kwargs: "not a valid plan")
+    data = run(agent_api, question="“哪几篇是讲解计算机科学 CV 的？").json()
+    assert calls == [False]
+    assert data["evidence_status"] == "evidence_only"
+    assert "Fixture paper fixture-paper" in data["answer"] and "候选" in data["answer"]
+    assert len(data["citations"]) == 1 and len(data["evidence"]) == 3
+    assert not data["agent"]["grounded"] and data["model"]["status"] == "attempted"
+    assert not any(step["tool"] == "general_answer" for step in data["agent"]["steps"])
+    assert data["citations"][0]["quote"] in agent_api.refs[0]["quote"]
+
+
+def test_library_followup_keeps_candidates_and_conversation_sources(agent_api, monkeypatch):
+    monkeypatch.setattr(rag, "generate", lambda *args, **kwargs: '{"answer":"","citations":[]}')
+    conversation = agent_api.api.post("/api/ai/conversations", headers=personal(), json={"title":"CV论文"}).json()["id"]
+    data = run(agent_api, question="那具体有哪些？", context_messages=[{"role":"user","content":"我想找CV论文"}]).json()
+    assert data["evidence_status"] == "evidence_only" and data["answer"]
+    data = run(agent_api, question="哪几篇论文？", conversation_id=conversation).json()
+    messages = agent_api.api.get(f"/api/ai/conversations/{conversation}/messages", headers=personal()).json()
+    assert messages[1]["content"] == data["answer"] and messages[1]["citations"] == data["citations"]
+
+
+def test_library_candidates_are_deduplicated_by_paper_and_keep_exact_sources(agent_api, monkeypatch):
+    refs = [{"paper_id": c["paper_id"], "paper_title": c["title"], "chunk_id": c["chunk_id"],
+             "quote": c["text"], "locator": c["locator"], "relevance_score": 1.0}
+            for doc in agent_api.docs.values() for c in chunks(doc)]
+    monkeypatch.setattr(rag, "retrieve_evidence", lambda *args: refs)
+    monkeypatch.setattr(rag, "generate", lambda *args, **kwargs: '{"answer":"","citations":[]}')
+    data = run(agent_api, question="Which papers discuss computer vision?", top_k=10).json()
+    assert len(data["evidence"]) == 6 and len(data["citations"]) == 2
+    assert {c["paper_id"] for c in data["citations"]} == set(agent_api.docs)
+    for citation in data["citations"]:
+        source = next(ref for ref in refs if ref["chunk_id"] == citation["chunk_id"])
+        assert citation["quote"] in source["quote"]
+    assert data["evidence_status"] == "evidence_only" and not data["agent"]["grounded"]

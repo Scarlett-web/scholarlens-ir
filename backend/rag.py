@@ -17,7 +17,7 @@ import httpx
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from backend.accounts import problem
-from backend.ai_responses import provider_content, provider_request, json_object
+from backend.ai_responses import provider_content, provider_request, json_object, OutputTokenLimit
 from backend.personal_ai import personal_settings, PublicAITransport
 from backend.chunks import chunks
 from backend.retrieval import vector_candidates, rrf
@@ -313,7 +313,7 @@ def generate(settings, question: str, evidence: list[dict], transport=None, hist
         endpoint, payload = provider_request(settings, [
             {"role": "system", "content": system},
             {"role": "user", "content": json.dumps(prompt, ensure_ascii=False)},
-        ], min(max(settings.ai_max_tokens, 64), 4096))
+        ], min(max(settings.ai_max_tokens, 64), 16384))
     except ValueError:
         raise problem(503, "ai_not_configured", "AI协议或 Token 参数配置无效") from None
     if settings.ai_personal and transport is None:
@@ -364,6 +364,8 @@ def generate(settings, question: str, evidence: list[dict], transport=None, hist
                     if transport is None:
                         mark_provider(settings, True)
                     return result
+            except OutputTokenLimit:
+                raise problem(502, "ai_output_truncated", "模型达到单次输出上限，未生成完整回答") from None
             except httpx.TimeoutException:
                 if attempt + 1 == attempts:
                     raise problem(504, "ai_timeout", "AI服务超时")
@@ -416,6 +418,21 @@ def validate_answer(content: str, evidence: list[dict]):
     if not validated or not inline or inline != {c["chunk_id"] for c in validated}:
         raise citation_error("inline_citations_mismatch")
     return answer, validated
+
+
+def evidence_overview(evidence):
+    """List verified candidate papers, without inventing a model's conclusion."""
+    selected, seen = [], set()
+    lines = ["本库已检索并核对到以下候选论文，可点击引用查看原文：", ""]
+    for ref in evidence:
+        if ref["paper_id"] in seen:
+            continue
+        seen.add(ref["paper_id"])
+        selected.append({"chunk_id": ref["chunk_id"], "quote": ref["quote"][:220]})
+        title = re.sub(r"\s+", " ", ref["paper_title"]).replace("[", "［").replace("]", "］")
+        lines.append(f"{len(selected)}. {title} [{ref['chunk_id']}]")
+    lines.extend(["", "这是已找到的来源清单；模型尚未给出可靠的综合判断，不代表每篇都已确认符合问题范围。"])
+    return validate_answer(json.dumps({"answer": "\n".join(lines), "citations": selected}, ensure_ascii=False), evidence)
 
 
 def now_iso():
@@ -688,6 +705,12 @@ def router(es, settings, metadata, read_paper, upload_indices=lambda: [], store=
                 r"(?:你好|您好|嗨|哈喽|hello|hi|hey)[!！。.,，?？\s]*", body.question, flags=re.IGNORECASE))
             agent_result = runner.run(retrieval_question.strip(), operation, body.paper_ids, body.top_k, provider_ready,
                                       skip_research=greeting)
+            library_request = bool(re.search(r"论文|文献|哪.{0,8}篇|\b(?:papers?|articles?|publications?)\b",
+                                             retrieval_question, flags=re.IGNORECASE))
+            if operation == "ask" and provider_ready and library_request and agent_result["evidence"] and not agent_result["answer"]:
+                agent_result["answer"], agent_result["citations"] = evidence_overview(agent_result["evidence"])
+                agent_result["evidence_status"] = "evidence_only"
+                agent_result["agent"]["warnings"].append("已保留本库候选论文及核对过的原文引用，未转为无证据通用回答。")
             unsupported = not agent_result["evidence"] or (
                 agent_result["evidence_status"] == "insufficient_evidence"
                 and any(step["tool"] == "citation_guard" and step["status"] == "empty"
@@ -734,7 +757,7 @@ def router(es, settings, metadata, read_paper, upload_indices=lambda: [], store=
                 "scope_paper_ids": body.paper_ids,
                 "context_messages": len(history),
             },
-            "model": {"name": effective.ai_model, "status": "generated" if answer else "attempted" if agent_mode and any(s["tool"] in ("grounded_answer", "general_answer") for s in agent_result["agent"]["steps"]) else "not_called"},
+            "model": {"name": effective.ai_model, "status": "generated" if answer and agent_result.get("evidence_status") != "evidence_only" else "attempted" if agent_mode and any(s["tool"] in ("grounded_answer", "general_answer") for s in agent_result["agent"]["steps"]) else "not_called"},
             "operation": operation,
             "conversation_id": body.conversation_id,
         }
