@@ -1,5 +1,6 @@
 """Protocol payloads and strict text decoding at the untrusted provider boundary."""
 import json
+import re
 
 
 class OutputTokenLimit(ValueError):
@@ -17,6 +18,19 @@ def json_object(raw: str | bytes | bytearray) -> dict:
     if not isinstance(value, dict):
         raise ValueError("Expected a JSON object")
     return value
+
+
+def model_json_object(raw: str) -> dict:
+    """Decode one complete model object, optionally wrapped in a Markdown fence."""
+    if not isinstance(raw, str):
+        raise ValueError("Expected model JSON text")
+    text = raw.strip()
+    if text.startswith("```"):
+        fenced = re.fullmatch(r"```(?:json)?\s*([\s\S]*?)\s*```", text, flags=re.IGNORECASE)
+        if not fenced:
+            raise ValueError("Incomplete JSON fence")
+        text = fenced[1]
+    return json_object(text)
 
 
 def chat_content(raw: str | bytes | bytearray) -> str:

@@ -17,7 +17,7 @@ import httpx
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from backend.accounts import problem
-from backend.ai_responses import provider_content, provider_request, json_object, OutputTokenLimit
+from backend.ai_responses import provider_content, provider_request, json_object, model_json_object, OutputTokenLimit
 from backend.personal_ai import personal_settings, PublicAITransport
 from backend.chunks import chunks
 from backend.retrieval import vector_candidates, rrf
@@ -381,9 +381,7 @@ def validate_answer(content: str, evidence: list[dict]):
     """Reject unknown/altered quotes and missing inline citations; never fabricate a fix."""
     if not isinstance(content, str):
         raise ValueError("Expected answer text")
-    if content.startswith("```"):
-        content = re.sub(r"^```(?:json)?\s*|\s*```$", "", content)
-    data = json_object(content)
+    data = model_json_object(content)
     answer = data.get("answer", "")
     if not isinstance(answer, str) or len(answer) > 16000:
         raise ValueError("answer shape")

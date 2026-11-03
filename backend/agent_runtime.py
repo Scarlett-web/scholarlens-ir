@@ -13,7 +13,7 @@ from fastapi import HTTPException
 import httpx
 
 from backend.accounts import problem
-from backend.ai_responses import provider_content, provider_request, json_object
+from backend.ai_responses import provider_content, provider_request, model_json_object
 from backend.personal_ai import PublicAITransport
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -134,7 +134,7 @@ class ResearchAgent:
         warnings = []
         if provider_ready and operation != "evidence" and not skip_research:
             def plan_queries():
-                value = json_object(self.planner(question, operation, self.skill))
+                value = model_json_object(self.planner(question, operation, self.skill))
                 proposed = value["queries"]
                 if not isinstance(proposed, list) or not 1 <= len(proposed) <= self.policy.max_queries:
                     raise ValueError("Invalid query plan")

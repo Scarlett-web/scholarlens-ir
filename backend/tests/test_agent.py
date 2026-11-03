@@ -476,3 +476,12 @@ def test_library_candidates_are_deduplicated_by_paper_and_keep_exact_sources(age
         source = next(ref for ref in refs if ref["chunk_id"] == citation["chunk_id"])
         assert citation["quote"] in source["quote"]
     assert data["evidence_status"] == "evidence_only" and not data["agent"]["grounded"]
+
+
+@pytest.mark.parametrize("fence", ["```json\n", "  ```JSON\r\n", "```\n"])
+def test_fenced_gemini_plan_drives_english_retrieval(agent_api, monkeypatch, fence):
+    monkeypatch.setattr(rag, "model_plan", lambda *args, **kwargs: fence + '{"queries":["computer vision","计算机视觉"]}\n```  ')
+    data = run(agent_api, question="哪几篇是讲解计算机科学 CV 的？").json()
+    assert ("retrieve", "computer vision") in agent_api.calls
+    assert data["agent"]["steps"][0]["status"] == "done"
+    assert "检索计划不可用，已使用原问题继续" not in data["agent"]["warnings"]

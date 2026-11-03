@@ -160,3 +160,15 @@ def test_generation_budget_allows_structured_answer_and_respects_explicit_limit(
         content = '{"queries":["computer vision"]}' if operation == "plan" else '{"answer":"","citations":[]}'
         return httpx.Response(200, json={"choices":[{"message":{"content":content},"finish_reason":"stop"}]})
     call_provider(config, httpx.MockTransport(provider), operation)
+
+
+@pytest.mark.parametrize("raw", ['before {"queries":[]} after', '```json\n{}\n```\n{}', '```yaml\nqueries: []\n```', '```json\n{}', '```json\n[]\n```'])
+def test_model_json_fences_do_not_accept_prose_multiple_objects_or_nonobjects(raw):
+    from backend.ai_responses import model_json_object
+    with pytest.raises(ValueError):
+        model_json_object(raw)
+
+
+def test_provider_envelopes_still_require_native_json():
+    with pytest.raises(ValueError):
+        provider_content('```json\n{"choices":[]}\n```', "chat_completions")
