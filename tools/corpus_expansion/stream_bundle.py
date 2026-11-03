@@ -161,7 +161,8 @@ def run(args):
     ):
         info = es.info()
         if (
-            info["cluster_name"] != "scholarlens-local"
+            info["cluster_name"] != args.cluster_name
+            or info["cluster_uuid"] != args.cluster_uuid
             or info["version"]["number"] != "8.19.23"
         ):
             raise ValueError("unexpected cluster")
@@ -175,10 +176,15 @@ def run(args):
             raise ValueError("bundle metadata differs from identity")
         if state_path.exists():
             state = json.loads(state_path.read_text())
-            if state["identity"] != identity or state["aliases"] != [
-                args.keyword_alias,
-                args.vector_alias,
-            ]:
+            if (
+                state["identity"] != identity
+                or state["aliases"]
+                != [
+                    args.keyword_alias,
+                    args.vector_alias,
+                ]
+                or state.get("cluster_uuid") != info["cluster_uuid"]
+            ):
                 raise ValueError("import checkpoint differs")
         else:
             if any(
@@ -195,6 +201,7 @@ def run(args):
                 "papers_completed": 0,
                 "chunks_completed": 0,
                 "status": "building",
+                "cluster_uuid": info["cluster_uuid"],
             }
             atomic_state(state_path, state)
         kg, vg = state["keyword_generation"], state["vector_generation"]
@@ -272,6 +279,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--bundle", type=Path, required=True)
     parser.add_argument("--url", default="http://127.0.0.1:19200")
+    parser.add_argument("--cluster-name", default="scholarlens-local")
+    parser.add_argument(
+        "--cluster-uuid",
+        required=True,
+        help="UUID verified read-only on the intended target",
+    )
     parser.add_argument(
         "--keyword-alias", default="scholarlens-papers-expansion-20261103-real"
     )

@@ -20,7 +20,7 @@ backend/.venv/Scripts/python.exe -m tools.corpus_expansion.offline_vectors --inp
 ```
 
 ```sh
-python -m tools.corpus_expansion.stream_bundle --bundle /path/to/bundle
+python -m tools.corpus_expansion.stream_bundle --bundle /path/to/bundle --cluster-name <verified-cluster-name> --cluster-uuid <verified-cluster-uuid>
 ```
 
 原始两批 JSONL 不改字段、不改 ID；沿用既有规则隔离 27 篇乱码正文，保留其元数据。新片段总数本轮重新计算为 236947。运行完成、线上切换和公网验收是三个独立阶段，最终结果记录在发布文档中。

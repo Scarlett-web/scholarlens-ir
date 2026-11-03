@@ -112,3 +112,37 @@ def test_existing_production_alias_is_not_a_valid_target(bundle, alias):
     (args.bundle / "offline-state.json").write_text(json.dumps(state))
     with pytest.raises(ValueError, match="isolated"):
         stream_bundle.run(args)
+
+
+@pytest.mark.parametrize("changed", ["cluster_name", "cluster_uuid", "version"])
+def test_wrong_target_identity_cannot_create_an_index(bundle, monkeypatch, changed):
+    args, state = bundle
+    args.cluster_name, args.cluster_uuid = "expected-cluster", "expected-uuid"
+    np.save(args.bundle / "vectors.npy", np.ones((1, DIMENSIONS), dtype="<f4"))
+    state["files"]["vectors.npy"] = hashlib.sha256(
+        (args.bundle / "vectors.npy").read_bytes()
+    ).hexdigest()
+    (args.bundle / "offline-state.json").write_text(json.dumps(state))
+    identity = {
+        "cluster_name": args.cluster_name,
+        "cluster_uuid": args.cluster_uuid,
+        "version": {"number": "8.19.23"},
+    }
+    identity[changed] = {"number": "different"} if changed == "version" else "different"
+
+    class ReadOnlyTarget:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            pass
+
+        def info(self):
+            return identity
+
+    monkeypatch.setattr(stream_bundle, "Elasticsearch", ReadOnlyTarget)
+    with pytest.raises(ValueError, match="unexpected cluster"):
+        stream_bundle.run(args)
