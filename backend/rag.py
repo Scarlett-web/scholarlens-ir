@@ -313,7 +313,7 @@ def generate(settings, question: str, evidence: list[dict], transport=None, hist
         endpoint, payload = provider_request(settings, [
             {"role": "system", "content": system},
             {"role": "user", "content": json.dumps(prompt, ensure_ascii=False)},
-        ], min(max(settings.ai_max_tokens, 64), 16384))
+        ], settings.ai_max_tokens)
     except ValueError:
         raise problem(503, "ai_not_configured", "AI协议或 Token 参数配置无效") from None
     if settings.ai_personal and transport is None:
@@ -517,7 +517,7 @@ def router(es, settings, metadata, read_paper, upload_indices=lambda: [], store=
     def personal_connection_test(request: Request, authorization: str | None = Header(default=None)):
         """One minimal real generation, no retrieval and no conversation storage."""
         effective = connection_settings(request, authorization)
-        effective = replace(effective, ai_max_tokens=64, ai_timeout=25)
+        effective = replace(effective, ai_timeout=25)
         answer = generate(effective, "Only reply: OK", [], general=True, deadline=time.monotonic() + 25)
         if not answer.strip():
             raise problem(502, "ai_invalid_response", "模型未返回有效文字")

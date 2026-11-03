@@ -98,7 +98,7 @@ def test_responses_protocol_reaches_planner_and_answer_without_chat_fields(tmp_p
         assert body["model"] == "fixture-model" and body["store"] is False and body["stream"] is False
         assert body["input"][0]["role"] == "system" and len(body["input"]) == 2
         assert "messages" not in body and "max_completion_tokens" not in body and "max_tokens" not in body
-        assert 1 <= body["max_output_tokens"] <= config.ai_max_tokens
+        assert "max_output_tokens" not in body
         return httpx.Response(200, json=response_envelope(text))
     transport = httpx.MockTransport(reply)
     result = (model_plan(config, "fixture", "ask", "skill", transport=transport) if operation == "plan"
@@ -147,19 +147,52 @@ def test_token_truncated_answer_is_rejected_with_actionable_error(tmp_path, prot
     assert "UNTRUSTED_PARTIAL" not in json.dumps(error.value.detail)
 
 
-@pytest.mark.parametrize("operation", ["answer", "plan"])
-@pytest.mark.parametrize("explicit_limit", [None, 256])
-def test_generation_budget_allows_structured_answer_and_respects_explicit_limit(tmp_path, operation, explicit_limit):
-    config = provider_settings(tmp_path)
+@pytest.mark.parametrize("operation", ["answer", "plan", "general"])
+@pytest.mark.parametrize("protocol,parameter", [
+    ("chat_completions", "max_completion_tokens"),
+    ("chat_completions", "max_tokens"),
+    ("responses", "max_output_tokens"),
+])
+@pytest.mark.parametrize("explicit_limit", [None, 32, 256, 65536])
+def test_output_limits_are_omitted_by_default_and_explicit_limits_are_not_clamped(
+        tmp_path, operation, protocol, parameter, explicit_limit):
+    config = replace(provider_settings(tmp_path), ai_protocol=protocol,
+                     ai_token_parameter=parameter if protocol == "chat_completions" else "max_completion_tokens")
     if explicit_limit is not None:
         config = replace(config, ai_max_tokens=explicit_limit)
-    expected = explicit_limit if explicit_limit else (4096 if operation == "plan" else 8192)
     def provider(request):
         payload = json.loads(request.content)
-        assert payload["max_completion_tokens"] == expected
-        content = '{"queries":["computer vision"]}' if operation == "plan" else '{"answer":"","citations":[]}'
-        return httpx.Response(200, json={"choices":[{"message":{"content":content},"finish_reason":"stop"}]})
-    call_provider(config, httpx.MockTransport(provider), operation)
+        token_fields = set(payload) & {"max_tokens", "max_completion_tokens", "max_output_tokens"}
+        if explicit_limit is None:
+            assert not token_fields
+        else:
+            assert token_fields == {parameter}
+            assert payload[parameter] == explicit_limit
+        content = ('{"queries":["computer vision"]}' if operation == "plan" else
+                   "Hello" if operation == "general" else '{"answer":"","citations":[]}')
+        envelope = (response_envelope(content) if protocol == "responses" else
+                    {"choices": [{"message": {"content": content}, "finish_reason": "stop"}]})
+        return httpx.Response(200, json=envelope)
+    transport = httpx.MockTransport(provider)
+    if operation == "general":
+        assert generate(config, "hello", [], transport=transport, general=True) == "Hello"
+    else:
+        call_provider(config, transport, operation)
+
+
+def test_environment_output_limit_defaults_to_provider_and_accepts_explicit_opt_in(monkeypatch):
+    monkeypatch.delenv("AI_MAX_OUTPUT_TOKENS", raising=False)
+    assert Settings().ai_max_tokens == Settings.from_env().ai_max_tokens == 0
+    monkeypatch.setenv("AI_MAX_OUTPUT_TOKENS", "65536")
+    assert Settings.from_env().ai_max_tokens == 65536
+
+
+@pytest.mark.parametrize("protocol", ["chat_completions", "responses"])
+def test_negative_output_limits_fail_before_network(tmp_path, protocol):
+    from backend.ai_responses import provider_request
+    config = replace(provider_settings(tmp_path), ai_protocol=protocol)
+    with pytest.raises(ValueError):
+        provider_request(config, [], -1)
 
 
 @pytest.mark.parametrize("raw", ['before {"queries":[]} after', '```json\n{}\n```\n{}', '```yaml\nqueries: []\n```', '```json\n{}', '```json\n[]\n```'])

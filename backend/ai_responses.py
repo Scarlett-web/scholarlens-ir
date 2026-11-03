@@ -48,18 +48,20 @@ def chat_content(raw: str | bytes | bytearray) -> str:
 
 
 def provider_request(settings, messages: list[dict], max_tokens: int):
-    """Build one explicit protocol request; never silently switch models or retry protocols."""
+    """Omit output limits at zero; forward explicit positive limits without clamping."""
+    if max_tokens < 0:
+        raise ValueError("Output token limit must be nonnegative")
     if settings.ai_protocol == "responses":
-        return settings.ai_base_url.rstrip("/") + "/responses", {
-            "model": settings.ai_model, "input": messages, "stream": False,
-            "store": False, "max_output_tokens": max_tokens,
-        }
+        payload = {"model": settings.ai_model, "input": messages, "stream": False, "store": False}
+        if max_tokens:
+            payload["max_output_tokens"] = max_tokens
+        return settings.ai_base_url.rstrip("/") + "/responses", payload
     if settings.ai_protocol != "chat_completions" or settings.ai_token_parameter not in ("max_tokens", "max_completion_tokens"):
         raise ValueError("Unsupported provider protocol")
-    return settings.ai_base_url.rstrip("/") + "/chat/completions", {
-        "model": settings.ai_model, "messages": messages, "stream": False,
-        settings.ai_token_parameter: max_tokens,
-    }
+    payload = {"model": settings.ai_model, "messages": messages, "stream": False}
+    if max_tokens:
+        payload[settings.ai_token_parameter] = max_tokens
+    return settings.ai_base_url.rstrip("/") + "/chat/completions", payload
 
 
 def provider_content(raw: str | bytes | bytearray, protocol: str) -> str:

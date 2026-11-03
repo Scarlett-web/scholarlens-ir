@@ -23,7 +23,7 @@ class Settings:
     ai_model: str = ""
     ai_api_key: str = field(default="", repr=False)
     ai_timeout: float = 30
-    ai_max_tokens: int = 8192
+    ai_max_tokens: int = 0
     grobid_url: str = ""
     uploads_index: str = "scholarlens-uploads-real"
     upload_vector_index: str = "scholarlens-vectors-uploads-real"
@@ -60,7 +60,7 @@ class Settings:
             ai_model=os.getenv("AI_MODEL", ""),
             ai_api_key=os.getenv("AI_API_KEY", ""),
             ai_timeout=float(os.getenv("AI_TIMEOUT_SECONDS", "30")),
-            ai_max_tokens=int(os.getenv("AI_MAX_OUTPUT_TOKENS", "8192")),
+            ai_max_tokens=int(os.getenv("AI_MAX_OUTPUT_TOKENS", "0")),
             grobid_url=os.getenv("GROBID_URL", ""),
             uploads_index=os.getenv("UPLOADS_INDEX", cls.uploads_index),
             upload_vector_index=os.getenv("UPLOAD_VECTOR_INDEX", cls.upload_vector_index),

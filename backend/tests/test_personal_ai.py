@@ -139,7 +139,7 @@ def test_models_and_connection_test_are_authenticated_request_only(tmp_path, mon
         if request.url.path.endswith("/models"):
             return httpx.Response(200, json={"data": [{"id": "available-model"}, {"id": "available-model"}, {"id": {}}]})
         body = json.loads(request.content)
-        assert body["max_output_tokens"] == 64 and body["model"] == "available-model"
+        assert "max_output_tokens" not in body and body["model"] == "available-model"
         return httpx.Response(200, json={"status": "completed", "output": [{"type": "message", "role": "assistant",
             "content": [{"type": "output_text", "text": "OK"}]}]})
     monkeypatch.setattr(rag, "PublicAITransport", lambda: httpx.MockTransport(provider))

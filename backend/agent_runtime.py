@@ -71,7 +71,7 @@ def model_plan(settings, question, operation, skill, transport=None, deadline=No
         {"role": "user", "content": json.dumps({"question": question, "operation": operation}, ensure_ascii=False)},
     ]
     try:
-        endpoint, payload = provider_request(settings, messages, min(settings.ai_max_tokens, 4096))
+        endpoint, payload = provider_request(settings, messages, settings.ai_max_tokens)
         remaining = max(0.1, deadline - time.monotonic()) if deadline else 25
         with httpx.Client(timeout=min(max(settings.ai_timeout, 1), 25, remaining), trust_env=False,
                           follow_redirects=False, transport=transport) as client:
