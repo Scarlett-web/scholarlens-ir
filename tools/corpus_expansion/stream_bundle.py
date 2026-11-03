@@ -10,7 +10,6 @@ import gzip
 import hashlib
 import json
 import math
-import mmap
 import re
 import struct
 import uuid
@@ -46,20 +45,17 @@ class NpyVectors:
             self.offset = stream.tell()
             if path.stat().st_size != self.offset + count * DIMENSIONS * 4:
                 raise ValueError("vector file size differs")
-            self.mapping = mmap.mmap(stream.fileno(), 0, access=mmap.ACCESS_READ)
+        self.stream = path.open("rb")
         self.count = count
 
     def __getitem__(self, index):
         if not 0 <= index < self.count:
             raise IndexError(index)
-        return list(
-            struct.unpack_from(
-                "<384f", self.mapping, self.offset + index * DIMENSIONS * 4
-            )
-        )
+        self.stream.seek(self.offset + index * DIMENSIONS * 4)
+        return list(struct.unpack("<384f", self.stream.read(DIMENSIONS * 4)))
 
     def close(self):
-        self.mapping.close()
+        self.stream.close()
 
 
 def digest(path):
